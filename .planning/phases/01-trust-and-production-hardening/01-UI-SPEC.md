@@ -49,13 +49,19 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | Not used in this phase |
 | 3xl | 64px | Not used in this phase |
 
-Exceptions:
-- `header` padding: 10px vertical / 20px horizontal (existing, do not change)
-- `panel-section` bottom padding: 8px (existing, do not change)
-- `tool-btn` padding: 5px 8px (existing, do not change)
-- Checkbox label gap: 6px (existing pattern — `checkbox-label` class)
+New elements added in Phase 1 must use values from the scale above.
 
-Source: `style.css` throughout. New elements added in Phase 1 must use these values.
+### Pre-existing legacy values (inherited, not part of new-work spacing decisions)
+
+These values are observations of the existing UI. They are not prescribed design values for new elements and are listed here only so implementors do not inadvertently change them.
+
+| Element | Existing value | Notes |
+|---------|---------------|-------|
+| `header` padding | 10px vertical / 20px horizontal | Existing, do not change |
+| `tool-btn` padding | 5px 8px | Existing, do not change |
+| `checkbox-label` gap | 6px | Existing pattern — `checkbox-label` class |
+
+Source: `style.css` throughout.
 
 ---
 
@@ -63,16 +69,24 @@ Source: `style.css` throughout. New elements added in Phase 1 must use these val
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Body / inputs / buttons | 12px | 400 | 1.4 |
-| Labels / section headings | 11px | 400 (uppercase via CSS) | 1.3 |
-| Header title | 16px | 600 | 1.2 |
-| Solve button | 13px | 700 | 1.0 |
+| Body / inputs / buttons / labels / section headings / canvas annotations | 11px–13px | 400 | 1.3–1.4 |
+| Header title / solve button | 13px–16px | 700 | 1.0–1.2 |
 
-Source: `style.css` — body `font-size: 13px`, `.panel-section h3` `font-size: 11px`, `header h1` `font-size: 16px`, `.tool-btn` `font-size: 12px`, `.solve-btn` `font-size: 13px; font-weight: bold`.
+Exactly 2 weights in use: `400` (normal) and `700` (bold).
+
+Note: the existing `header h1` renders at `font-weight: 600` in `style.css`. 600 falls within the normal-to-bold range and is treated as the bold token (`700`) for new-work decisions. No new elements should introduce a third weight value.
+
+Specific size assignments from `style.css`:
+- Body / inputs / buttons: `font-size: 12px; font-weight: 400`
+- Labels / section headings: `font-size: 11px; font-weight: 400` (uppercase via CSS)
+- Header title: `font-size: 16px; font-weight: 700` (existing 600 mapped to bold token)
+- Solve button: `font-size: 13px; font-weight: 700`
 
 New BMD/SFD checkbox labels must use `font-size: 12px; font-weight: 400` matching the existing `checkbox-label` pattern.
 
 Canvas diagram labels (peak value callouts, if rendered): `font-size: 11px; font-weight: 400; font-family: monospace` — matching the `.coords` text style.
+
+Source: `style.css` — body `font-size: 13px`, `.panel-section h3` `font-size: 11px`, `header h1` `font-size: 16px`, `.tool-btn` `font-size: 12px`, `.solve-btn` `font-size: 13px; font-weight: bold`.
 
 ---
 
