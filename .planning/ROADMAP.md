@@ -30,7 +30,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Every test in the suite asserts global equilibrium: sum(FG) + sum(applied loads) approximately equals zero
   5. Frame2d UI renders a Bending Moment Diagram and Shear Force Diagram on the canvas after solving, alongside the deformed shape
   6. AnalysisResult meta includes member stress values (stress = F/A per member) for frame and truss solves
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 01-01-PLAN.md — Error handling, print removal, and member stress output
+- [ ] 01-02-PLAN.md — Test suite expansion with 5 analytical cases and equilibrium assertions
+- [ ] 01-03-PLAN.md — BMD/SFD canvas rendering and stress display in UI
 **UI hint**: yes
 
 ### Phase 2: 3D Truss Solver
@@ -74,7 +78,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Trust and Production Hardening | 0/TBD | Not started | - |
+| 1. Trust and Production Hardening | 0/3 | Planning complete | - |
 | 2. 3D Truss Solver | 0/TBD | Not started | - |
 | 3. Model Evolution and UX Polish | 0/TBD | Not started | - |
 | 4. Grillage Solver | 0/TBD | Not started | - |
