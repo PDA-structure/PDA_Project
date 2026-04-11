@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDA – 2D Frame & Beam Solver</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>⬡ PDA – 2D Frame &amp; Beam Solver</h1>
+  </header>
+
+  <div class="workspace">
+
+    <!-- Left panel -->
+    <aside class="panel">
+
+      <section class="panel-section">
+        <h3>Geometry</h3>
+        <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
+        <button class="tool-btn" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">🔗 Add Member</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Supports</h3>
+        <button class="tool-btn support-btn" data-mode="fixed" onclick="setMode('fixed')"
+          title="Fully fixed — restrains X, Y and rotation">
+          ▪ Fixed
+          <span class="support-tag fixed">X + Y + θ</span>
+        </button>
+        <button class="tool-btn support-btn" data-mode="pinned" onclick="setMode('pinned')"
+          title="Pin — restrains X and Y, rotation is free">
+          📌 Pin
+          <span class="support-tag fixed">X + Y fixed</span>
+        </button>
+        <button class="tool-btn support-btn" data-mode="rollerY" onclick="setMode('rollerY')"
+          title="Horizontal roller — free to slide left/right, vertical movement restrained">
+          🛞 Roller
+          <span class="support-tag">↔ free &nbsp;|&nbsp; Y fixed</span>
+        </button>
+        <button class="tool-btn support-btn" data-mode="rollerX" onclick="setMode('rollerX')"
+          title="Vertical roller — free to slide up/down, horizontal movement restrained">
+          🛞 Roller
+          <span class="support-tag">↕ free &nbsp;|&nbsp; X fixed</span>
+        </button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Node Loads</h3>
+        <button class="tool-btn" data-mode="loadX"      onclick="setMode('loadX')"      title="Apply horizontal force at a node">→ Force X</button>
+        <button class="tool-btn" data-mode="loadY"      onclick="setMode('loadY')"      title="Apply vertical force at a node">↓ Force Y</button>
+        <button class="tool-btn" data-mode="loadMoment" onclick="setMode('loadMoment')" title="Apply moment at a node">↺ Moment</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Member Loads</h3>
+        <button class="tool-btn" data-mode="udl" onclick="setMode('udl')" title="Apply uniform distributed load to a member">▤ UDL</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Member Properties</h3>
+        <button class="tool-btn" data-mode="toggleBar"  onclick="setMode('toggleBar')"  title="Toggle member between beam (bending) and bar (axial only)">⇌ Beam / Bar</button>
+        <button class="tool-btn" data-mode="pinLeft"    onclick="setMode('pinLeft')"    title="Toggle rotation release at the start node of a member">◎ Pin — Left end</button>
+        <button class="tool-btn" data-mode="pinRight"   onclick="setMode('pinRight')"   title="Toggle rotation release at the end node of a member">◎ Pin — Right end</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Edit</h3>
+        <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
+        <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
+        <button class="tool-btn" data-mode="delete" onclick="setMode('delete')"  title="Delete a node or member">🗑 Delete</button>
+        <button class="tool-btn danger" onclick="resetAll()">🔄 Reset All</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Material Properties</h3>
+        <label>E (GPa)
+          <input type="number" id="inputE" value="200" min="0" step="1">
+        </label>
+        <label>I (cm⁴)
+          <input type="number" id="inputI" value="10000" min="0" step="100">
+        </label>
+        <label>A (cm²)
+          <input type="number" id="inputA" value="100" min="0" step="1">
+        </label>
+      </section>
+
+      <section class="panel-section">
+        <h3>Display</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkDeflected"> Show deflected shape
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkBMD" disabled> Show bending moment diagram
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkSFD" disabled> Show shear force diagram
+        </label>
+        <label>Deflection scale ×
+          <input type="number" id="inputScale" value="100" min="1" step="10">
+        </label>
+        <label>BMD / SFD scale ×
+          <input type="number" id="inputDiagramScale" value="1" min="0.1" step="0.5">
+        </label>
+      </section>
+
+      <section class="panel-section">
+        <button class="tool-btn" onclick="resetView()" title="Reset zoom and pan to default (or scroll wheel to zoom, middle-mouse to pan)">🔍 Reset View</button>
+      </section>
+
+      <section class="panel-section">
+        <button class="solve-btn" onclick="solve()">▶ SOLVE</button>
+        <div id="solveStatus"></div>
+      </section>
+
+    </aside>
+
+    <!-- Canvas -->
+    <main class="canvas-area">
+      <div class="canvas-topbar">
+        <span class="mode-indicator">Mode: <span id="modeLabel">Add Node</span></span>
+        <span class="coords" id="coords">x: — &nbsp; y: —</span>
+      </div>
+      <canvas id="canvas" width="1000" height="620"></canvas>
+    </main>
+
+  </div>
+
+  <!-- Results -->
+  <div class="results-panel" id="resultsPanel" style="display:none">
+    <div class="results-grid">
+
+      <div class="results-table-wrap">
+        <h3>Member Actions</h3>
+        <table id="tableMemberActions">
+          <thead>
+            <tr>
+              <th>Mbr</th><th>Nodes</th><th>Type</th>
+              <th>Axial (kN)</th>
+              <th>V_i (kN)</th><th>V_j (kN)</th>
+              <th>M_i (kNm)</th><th>M_j (kNm)</th>
+              <th>&sigma; (MPa)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="results-table-wrap">
+        <h3>Reactions</h3>
+        <table id="tableReactions">
+          <thead><tr><th>Node</th><th>Dir</th><th>Reaction (kN / kNm)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="results-table-wrap">
+        <h3>Nodal Displacements</h3>
+        <table id="tableDisplacements">
+          <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th><th>θ (mrad)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="results-table-wrap">
+        <h3>Summary</h3>
+        <table id="tableSummary">
+          <thead><tr><th>Quantity</th><th>Value</th><th>Location</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

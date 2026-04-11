@@ -1,0 +1,93 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-04-11T09:29:05.656Z",
+  "phase": "01",
+  "phase_name": "trust-and-production-hardening",
+  "phase_dir": ".planning/phases/01-trust-and-production-hardening",
+  "plan": 3,
+  "task": 2,
+  "total_tasks": 2,
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": "01-01-T1",
+      "name": "RuntimeError handler + remove print() + member_stresses in adapters",
+      "status": "done",
+      "commit": "187895b"
+    },
+    {
+      "id": "01-02-T1",
+      "name": "5 new analytical frame tests (UDL, portal frame, bar, pin release, propped cantilever)",
+      "status": "done",
+      "commit": "uncommitted"
+    },
+    {
+      "id": "01-02-T2",
+      "name": "Retrofit equilibrium assertions to all existing tests",
+      "status": "done",
+      "commit": "uncommitted"
+    },
+    {
+      "id": "01-03-T1",
+      "name": "BMD/SFD checkboxes, drawBMD/drawSFD/drawDeflected with multi-point interpolation, sigma column",
+      "status": "done",
+      "commit": "uncommitted"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": "01-03-T2",
+      "name": "Human visual verification of BMD/SFD/deflected shape in browser",
+      "status": "not_started",
+      "note": "User already verified diagrams were wrong; fixed version just committed. Needs re-verification."
+    }
+  ],
+  "blockers": [],
+  "human_actions_pending": [
+    {
+      "action": "Re-verify BMD/SFD/deflected shape in browser after diagram fix",
+      "context": "User found diagrams incorrect (simply-supported beam: deflected shape showed nothing, BMD was a triangle not parabola). Root cause was: (1) straight-line interpolation between restrained nodes; (2) 3-point polygon for UDL BMD. Fixed with cubic Hermite + quartic UDL correction + 20-point sampling. Needs browser re-test.",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "beamPinRight condenses theta from element stiffness — caller must add that theta DOF to pinDoF",
+      "rationale": "Discovered through singular matrix failure in test_pin_release_beam_pin_right. The element condensation removes the DOF from the stiffness matrix, so it must also be removed from the reduced system via pinDoF.",
+      "phase": "01"
+    },
+    {
+      "decision": "Bar elements leave Ux and theta DOFs at the bar-end node without stiffness contribution",
+      "rationale": "Vertical bar only provides Y-direction stiffness. If no other element connects to that node, Ux and theta DOFs have zero stiffness → singular. Must restrain or supply via pinDoF.",
+      "phase": "01"
+    },
+    {
+      "decision": "FG = Kp @ UG includes both reactions AND applied loads — sum(FG) is always 0",
+      "rationale": "Equilibrium checks must target specific reaction DOFs, not np.sum(FG). Discovered through failing truss tests that used np.sum(FG) + applied_load which gave 0 + load ≠ 0.",
+      "phase": "01"
+    },
+    {
+      "decision": "Solver theta sign convention: positive = clockwise. Standard Hermite needs dy/dx = -solver_theta",
+      "rationale": "Discovered when deriving cubic Hermite for drawDeflected. Cantilever test confirms: tip load down → tip rotates clockwise → solver theta positive → standard slope negative.",
+      "phase": "01"
+    },
+    {
+      "decision": "Cubic Hermite underestimates UDL midspan deflection by ~20% — quartic particular solution correction needed",
+      "rationale": "Exact deflection is quartic for UDL but Hermite is cubic. The correction term is -w*L^4/(24EI)*xi^2*(1-xi)^2 and gives exact midspan when added to cubic result.",
+      "phase": "01"
+    }
+  ],
+  "uncommitted_files": [
+    "tests/test_frame_v2.py",
+    "tests/test_truss2d.py",
+    "solver_core/src/pda_analysis_software/adapters/frame_adapters.py",
+    "solver_core/src/pda_analysis_software/adapters/truss_adapters.py",
+    "ui/frame2d/index.html",
+    "ui/frame2d/script.js",
+    ".planning/phases/01-trust-and-production-hardening/01-01-SUMMARY.md",
+    ".planning/phases/01-trust-and-production-hardening/01-02-SUMMARY.md",
+    ".planning/STATE.md"
+  ],
+  "next_action": "Start uvicorn, open ui/frame2d/index.html, test SS beam with UDL: verify parabolic BMD, linear SFD with zero-crossing at midspan, cubic deflected shape. If all correct, create 01-03-SUMMARY.md, update STATE.md to mark phase 01 complete, commit.",
+  "context_notes": "Phase 01 is 95% done. All three plans are implemented and tested. Only the browser visual verification of the fixed diagram rendering remains. The diagram fixes are mathematically correct (verified analytically). The key insight was that 2-node beam elements require multi-point interpolation for visualization — straight-line between restrained nodes shows nothing."
+}
