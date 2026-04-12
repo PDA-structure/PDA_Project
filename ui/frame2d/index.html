@@ -63,6 +63,7 @@
         <button class="tool-btn" data-mode="toggleBar"  onclick="setMode('toggleBar')"  title="Toggle member between beam (bending) and bar (axial only)">⇌ Beam / Bar</button>
         <button class="tool-btn" data-mode="pinLeft"    onclick="setMode('pinLeft')"    title="Toggle rotation release at the start node of a member">◎ Pin — Left end</button>
         <button class="tool-btn" data-mode="pinRight"   onclick="setMode('pinRight')"   title="Toggle rotation release at the end node of a member">◎ Pin — Right end</button>
+        <button class="tool-btn" data-mode="memberProps" onclick="setMode('memberProps')" title="Click a member to assign per-member E, I, A overrides">&#x229e; Per-Member E/I/A</button>
       </section>
 
       <section class="panel-section">
@@ -84,6 +85,35 @@
         <label>A (cm²)
           <input type="number" id="inputA" value="100" min="0" step="1">
         </label>
+      </section>
+
+      <section class="panel-section">
+        <h3>Section Calculator</h3>
+        <label class="panel-label">Section type
+          <select id="sectionType" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;">
+            <option value="rectangle">Rectangle</option>
+            <option value="circle">Circle</option>
+            <option value="i_section">I-section</option>
+          </select>
+        </label>
+        <div id="sec-rectangle" class="sec-inputs">
+          <label class="panel-label">b (mm) <input type="number" id="sec_b" value="100"></label>
+          <label class="panel-label">h (mm) <input type="number" id="sec_h" value="200"></label>
+        </div>
+        <div id="sec-circle" class="sec-inputs" style="display:none">
+          <label class="panel-label">d (mm) <input type="number" id="sec_d" value="100"></label>
+        </div>
+        <div id="sec-i_section" class="sec-inputs" style="display:none">
+          <label class="panel-label">b (mm) <input type="number" id="sec_ib" value="100"></label>
+          <label class="panel-label">H (mm) <input type="number" id="sec_H" value="200"></label>
+          <label class="panel-label">tf (mm) <input type="number" id="sec_tf" value="10"></label>
+          <label class="panel-label">tw (mm) <input type="number" id="sec_tw" value="8"></label>
+        </div>
+        <button class="tool-btn" onclick="calcSection()">Calculate</button>
+        <div id="secResults" style="display:none">
+          <div id="secResultI" style="color:#1565c0;font-size:12px;margin-top:4px;"></div>
+          <div id="secResultA" style="color:#1565c0;font-size:12px;"></div>
+        </div>
       </section>
 
       <section class="panel-section">

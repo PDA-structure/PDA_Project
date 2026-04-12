@@ -90,6 +90,9 @@ canvas.addEventListener('click', e => {
           pinLeft: false,
           pinRight: false,
           udl: null,
+          E_override: null,
+          I_override: null,
+          A_override: null,
         });
         currentMemberStart = null;
         results = null;
@@ -159,6 +162,36 @@ canvas.addEventListener('click', e => {
       saveHistory();
       members[mi].pinRight = !members[mi].pinRight;
       results = null;
+    }
+
+  // ---- Per-member E/I/A overrides ----
+  } else if (mode === 'memberProps') {
+    const mi = findMemberAt(px, py);
+    if (mi !== null) {
+      const m = members[mi];
+      const eInput = prompt('Member ' + (mi+1) + ' \u2014 E (GPa), blank = use global:', m.E_override != null ? m.E_override : '');
+      if (eInput !== null) {
+        if (eInput.trim() !== '') {
+          const val = parseFloat(eInput);
+          m.E_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.E_override) : val;
+        } else { m.E_override = null; }
+      }
+      const iInput = prompt('Member ' + (mi+1) + ' \u2014 I (cm\u2074), blank = use global:', m.I_override != null ? m.I_override : '');
+      if (iInput !== null) {
+        if (iInput.trim() !== '') {
+          const val = parseFloat(iInput);
+          m.I_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.I_override) : val;
+        } else { m.I_override = null; }
+      }
+      const aInput = prompt('Member ' + (mi+1) + ' \u2014 A (cm\u00B2), blank = use global:', m.A_override != null ? m.A_override : '');
+      if (aInput !== null) {
+        if (aInput.trim() !== '') {
+          const val = parseFloat(aInput);
+          m.A_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.A_override) : val;
+        } else { m.A_override = null; }
+      }
+      results = null;
+      draw();
     }
 
   // ---- Edit node ----
@@ -296,9 +329,17 @@ async function solve() {
   if ([E_GPa, I_cm4, A_cm2].some(v => isNaN(v) || v <= 0))
     return setStatus('Check E, I and A values.', true);
 
-  const E = E_GPa * 1e9;
-  const I = I_cm4 * 1e-8;   // cm⁴ → m⁴
-  const A = A_cm2 * 1e-4;   // cm² → m²
+  // Resolve per-member overrides: use list payload if any member has an override
+  const anyOverride = members.some(m => m.E_override != null || m.I_override != null || m.A_override != null);
+  const E = anyOverride
+    ? members.map(m => (m.E_override != null ? m.E_override : E_GPa) * 1e9)
+    : E_GPa * 1e9;
+  const I = anyOverride
+    ? members.map(m => (m.I_override != null ? m.I_override : I_cm4) * 1e-8)
+    : I_cm4 * 1e-8;
+  const A = anyOverride
+    ? members.map(m => (m.A_override != null ? m.A_override : A_cm2) * 1e-4)
+    : A_cm2 * 1e-4;
 
   // restrainedDoF — 1-based, 3 DOF per node (Ux, Uy, θ)
   const restrainedDoF = [];
@@ -442,6 +483,17 @@ function drawMembers() {
     ctx.setLineDash([]);
 
     if (forceLabel) drawMemberLabel(n1, n2, forceLabel, color);
+
+    // override indicator — blue outline when member has per-member E/I/A
+    if (m.E_override != null || m.I_override != null || m.A_override != null) {
+      ctx.strokeStyle = '#3f51b5';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.stroke();
+    }
 
     // pin release circles
     if (m.pinLeft)  drawPinCircle(n1.x, n1.y, n2.x, n2.y, 'start');
@@ -1180,6 +1232,47 @@ canvas.addEventListener('mousemove', e => {
   } else {
     el.textContent = 'x: — \u00a0 y: —';
   }
+});
+
+// ── Section calculator ────────────────────────────────────────────────────
+function calcSection() {
+  const type = document.getElementById('sectionType').value;
+  let I_mm4 = 0, A_mm2 = 0;
+
+  if (type === 'rectangle') {
+    const b = parseFloat(document.getElementById('sec_b').value);
+    const h = parseFloat(document.getElementById('sec_h').value);
+    if (isNaN(b) || isNaN(h) || b <= 0 || h <= 0) { alert('Enter valid positive b and h.'); return; }
+    I_mm4 = b * Math.pow(h, 3) / 12;
+    A_mm2 = b * h;
+  } else if (type === 'circle') {
+    const d = parseFloat(document.getElementById('sec_d').value);
+    if (isNaN(d) || d <= 0) { alert('Enter valid positive d.'); return; }
+    I_mm4 = Math.PI * Math.pow(d, 4) / 64;
+    A_mm2 = Math.PI * d * d / 4;
+  } else if (type === 'i_section') {
+    const b  = parseFloat(document.getElementById('sec_ib').value);
+    const H  = parseFloat(document.getElementById('sec_H').value);
+    const tf = parseFloat(document.getElementById('sec_tf').value);
+    const tw = parseFloat(document.getElementById('sec_tw').value);
+    if ([b, H, tf, tw].some(v => isNaN(v) || v <= 0)) { alert('Enter valid positive dimensions.'); return; }
+    const hw = H - 2 * tf;
+    if (hw <= 0) { alert('Web height (H - 2*tf) must be positive.'); return; }
+    I_mm4 = b * Math.pow(H, 3) / 12 - (b - tw) * Math.pow(hw, 3) / 12;
+    A_mm2 = 2 * b * tf + tw * hw;
+  }
+
+  const I_cm4 = I_mm4 / 1e4;
+  const A_cm2 = A_mm2 / 100;
+
+  document.getElementById('secResultI').textContent = 'I = ' + I_cm4.toFixed(2) + ' cm\u2074';
+  document.getElementById('secResultA').textContent = 'A = ' + A_cm2.toFixed(4) + ' cm\u00B2';
+  document.getElementById('secResults').style.display = 'block';
+}
+
+document.getElementById('sectionType').addEventListener('change', function() {
+  document.querySelectorAll('.sec-inputs').forEach(el => el.style.display = 'none');
+  document.getElementById('sec-' + this.value).style.display = '';
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────
