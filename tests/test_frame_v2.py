@@ -328,3 +328,45 @@ def test_propped_cantilever_udl():
 
     # Equilibrium: sum of vertical reactions = total UDL
     assert np.isclose(s.FG[1, 0] + s.FG[4, 0] - w * L_pc, 0, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Case 8: Per-member E/I — two-span beam with different E per member (TRUST-08)
+#
+# Nodes: 1(0,0) fixed, 2(L,0) intermediate support (Uy pinned), 3(2L,0) roller
+# Members: [1,2] E1=200e9, [2,3] E2=100e9
+# Load: -F applied at node 2 (DoF 5) vertically
+#
+# Equilibrium check: R1 + R3 = F (vertical reactions at fixed and roller ends)
+# ---------------------------------------------------------------------------
+def test_per_member_EI_two_span():
+    """TRUST-08: Per-member E list — vertical reaction equilibrium for two-span beam."""
+    E1 = 200e9
+    E2 = 100e9
+    I_val = 1e-4
+    A_val = 0.01
+    L_span = 1.0
+    F_applied = 1000.0
+
+    model = FrameModel2D(
+        nodes=np.array([[0.0, 0.0], [L_span, 0.0], [2 * L_span, 0.0]]),
+        members=np.array([[1, 2], [2, 3]]),
+        ENForces=np.array([[0.0, 0.0], [0.0, 0.0]]),
+        ENMoments=np.array([[0.0, 0.0], [0.0, 0.0]]),
+        forceVector=np.array([0.0, 0.0, 0.0, 0.0, -F_applied, 0.0, 0.0, 0.0, 0.0]).reshape(-1, 1),
+        E=[E1, E2],
+        I=[I_val, I_val],
+        A=A_val,
+        restrainedDoF=[1, 2, 3, 8],  # fix node1 (Ux,Uy,theta), rollerY at node3 (Uy=DOF 8)
+        pinDoF=[],
+        bars=[],
+        beamPinLeft=[], beamPinRight=[],
+        springDoF=[], springStiffness=[],
+    )
+    result = FrameV2Adapter(model).solve()
+
+    # Global vertical equilibrium: reactions at node1 (DOF 2, index 1) and node3 (DOF 8, index 7)
+    # plus any reaction at intermediate node if Uy is free there — sum must equal applied load
+    R1 = result.FG[1, 0]
+    R3 = result.FG[7, 0]
+    assert np.isclose(R1 + R3, F_applied, atol=1e-6)

@@ -66,9 +66,6 @@ class BeamBarStructure_v2:
         self.force_vector = fv
         self._force_vector_base = fv.copy()  # used to reset before each solve
 
-        self.E = float(E)
-        self.I = float(I)
-
         self.bars = set(bars or [])
         self.beamPinLeft = set(beamPinLeft or [])
         self.beamPinRight = set(beamPinRight or [])
@@ -99,6 +96,12 @@ class BeamBarStructure_v2:
 
         if self.members.min() < 1 or self.members.max() > self.n_nodes:
             raise ValueError("members contain node numbers outside 1..n_nodes")
+
+        # ---- per-member E and I ----
+        E_raw = E if isinstance(E, (list, np.ndarray)) else [float(E)] * self.n_members
+        I_raw = I if isinstance(I, (list, np.ndarray)) else [float(I)] * self.n_members
+        self.Em = np.asarray(E_raw, float)
+        self.Im = np.asarray(I_raw, float)
 
         if self.ENForces.shape != (self.n_members, 2):
             raise ValueError(f"ENForces must have shape ({self.n_members}, 2)")
@@ -134,7 +137,10 @@ class BeamBarStructure_v2:
         else:
             if A is None:
                 raise ValueError("Provide either A (scalar) OR (A_beam and A_bar).")
-            self.Am[:] = float(A)
+            if isinstance(A, (list, np.ndarray)):
+                self.Am[:] = np.asarray(A, float)
+            else:
+                self.Am[:] = float(A)
 
         # ---- geometry ----
         if orientations is None or lengths is None:
@@ -281,7 +287,7 @@ class BeamBarStructure_v2:
         c, s = math.cos(theta), math.sin(theta)
 
         A = self.Am[e]
-        Kl = self._K_local_frame_6x6(self.E, A, self.I, L)
+        Kl = self._K_local_frame_6x6(self.Em[e], A, self.Im[e], L)
         T = self._T_frame(c, s)
         Kg = T.T @ Kl @ T
 
@@ -306,7 +312,7 @@ class BeamBarStructure_v2:
         c, s = math.cos(theta), math.sin(theta)
 
         A = self.Am[e]
-        k = self.E * A / L
+        k = self.Em[e] * A / L
 
         R = np.array([[c * c, c * s], [c * s, s * s]], float)
         Ke = k * np.block([[R, -R], [-R, R]])
@@ -431,11 +437,11 @@ class BeamBarStructure_v2:
                 dof = [3 * i, 3 * i + 1, 3 * j, 3 * j + 1]
                 u = self.UG[dof, 0]
                 ext = (-c * u[0] - s * u[1] + c * u[2] + s * u[3])
-                self.mbrForces[e] = (self.E * self.Am[e] / L) * float(ext)
+                self.mbrForces[e] = (self.Em[e] * self.Am[e] / L) * float(ext)
                 continue
 
             A = self.Am[e]
-            Kl = self._K_local_frame_6x6(self.E, A, self.I, L)
+            Kl = self._K_local_frame_6x6(self.Em[e], A, self.Im[e], L)
             T = self._T_frame(c, s)
 
             dof6 = [3 * i, 3 * i + 1, 3 * i + 2, 3 * j, 3 * j + 1, 3 * j + 2]

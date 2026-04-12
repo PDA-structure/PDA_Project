@@ -12,15 +12,35 @@ class FrameV2Adapter:
         self.model = model
 
     def solve(self) -> AnalysisResult:
+        n = len(self.model.members)
+        E_raw = self.model.E
+        I_raw = self.model.I
+        A_raw = self.model.A
+
+        E_list = E_raw if isinstance(E_raw, list) else [float(E_raw)] * n
+        I_list = I_raw if isinstance(I_raw, list) else [float(I_raw)] * n
+
+        if A_raw is None:
+            A_list = None
+        elif isinstance(A_raw, list):
+            A_list = A_raw
+        else:
+            A_list = [float(A_raw)] * n
+
+        if len(E_list) != n or len(I_list) != n:
+            raise ValueError(f"E/I list length must equal n_members={n}")
+        if A_list is not None and len(A_list) != n:
+            raise ValueError(f"A list length must equal n_members={n}")
+
         s = BeamBarStructure_v2(
             nodes=self.model.nodes,
             members=self.model.members,
             ENForces=self.model.ENForces,
             ENMoments=self.model.ENMoments,
             force_vector=self.model.forceVector,
-            E=self.model.E,
-            I=self.model.I,
-            A=self.model.A,
+            E=E_list,
+            I=I_list,
+            A=A_list,
             A_beam=self.model.A_beam,
             A_bar=self.model.A_bar,
             bars=self.model.bars,
@@ -35,13 +55,10 @@ class FrameV2Adapter:
 
         s.solve_structure()
 
-        # Determine effective area for stress calculation
-        A_eff = self.model.A
-        if A_eff is None:
-            A_eff = self.model.A_beam if self.model.A_beam is not None else 1.0
-
+        # Per-member stress using solver's resolved area array
+        A_eff_arr = np.array(s.Am, float)
         member_forces_arr = np.array(s.mbrForces, float) if s.mbrForces is not None else None
-        member_stresses = member_forces_arr / A_eff if member_forces_arr is not None else None
+        member_stresses = (member_forces_arr / A_eff_arr).tolist() if member_forces_arr is not None else None
 
         return AnalysisResult(
             solver="frame_v2",
@@ -53,6 +70,6 @@ class FrameV2Adapter:
             meta={
                 "n_nodes": int(s.n_nodes),
                 "n_members": int(s.n_members),
-                "member_stresses": member_stresses.tolist() if member_stresses is not None else None,
+                "member_stresses": member_stresses,
             },
         )

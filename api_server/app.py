@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Union
 import numpy as np
 
 from pda_analysis_software.engine.analysis_engine import AnalysisEngine
@@ -48,9 +48,9 @@ class Frame2DRequest(BaseModel):
     ENMoments: List[List[float]]
     forceVector: List[float]
 
-    E: float
-    I: float
-    A: Optional[float] = None
+    E: Union[float, List[float]]
+    I: Union[float, List[float]]
+    A: Optional[Union[float, List[float]]] = None
     A_beam: Optional[float] = None
     A_bar: Optional[float] = None
 
