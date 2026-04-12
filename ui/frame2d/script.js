@@ -6,6 +6,13 @@ const ctx    = canvas.getContext('2d');
 const GRID = 20;
 const UNIT = 1;
 
+let _lastBlobUrl = null;
+
+// ── Symbol scale helper ───────────────────────────────────────────────────
+function getSymbolScale() {
+  return parseFloat(document.getElementById('inputSymbolScale').value) || 1.0;
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 let mode   = 'node';
 let origin = null;
@@ -393,6 +400,9 @@ function draw() {
   if (document.getElementById('chkSupports').checked) drawSupports();
   if (document.getElementById('chkLoads').checked) drawNodeLoads();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
+  if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
+    drawNodeLabels();
+  }
 }
 
 function drawGrid() {
@@ -474,9 +484,10 @@ function drawPinCircle(x1, y1, x2, y2, end) {
 }
 
 function drawNodes() {
+  const r = 5 * getSymbolScale();
   nodes.forEach(n => {
     ctx.beginPath();
-    ctx.arc(n.x, n.y, 5, 0, Math.PI*2);
+    ctx.arc(n.x, n.y, r, 0, Math.PI*2);
     ctx.fillStyle = '#e53935';
     ctx.fill();
     ctx.fillStyle = '#222';
@@ -508,51 +519,55 @@ function drawSupports() {
 }
 
 function drawFixed(x, y) {
-  const w = 22, h = 7;
+  const sc = getSymbolScale();
+  const w = 22 * sc, h = 7 * sc;
   ctx.fillStyle = '#1a2744';
   ctx.fillRect(x - w/2, y, w, h);
-  drawHatch(x - w/2 - 2, x + w/2 + 2, y + h, 'H');
+  drawHatch(x - w/2 - 2*sc, x + w/2 + 2*sc, y + h, 'H');
 }
 
 function drawPin(x, y) {
-  const h = 14, hw = 12;
+  const sc = getSymbolScale();
+  const h = 14 * sc, hw = 12 * sc;
   ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - hw, y + h); ctx.lineTo(x + hw, y + h);
   ctx.closePath(); ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(x - hw - 3, y + h); ctx.lineTo(x + hw + 3, y + h); ctx.stroke();
-  drawHatch(x - hw - 3, x + hw + 3, y + h, 'H');
+  ctx.moveTo(x - hw - 3*sc, y + h); ctx.lineTo(x + hw + 3*sc, y + h); ctx.stroke();
+  drawHatch(x - hw - 3*sc, x + hw + 3*sc, y + h, 'H');
 }
 
 function drawRollerH(x, y) {
-  const h = 12, hw = 11, r = 3;
+  const sc = getSymbolScale();
+  const h = 12 * sc, hw = 11 * sc, r = 3 * sc;
   ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - hw, y + h); ctx.lineTo(x + hw, y + h);
   ctx.closePath(); ctx.stroke();
-  const wy = y + h + r + 2;
+  const wy = y + h + r + 2*sc;
   [-hw*0.45, hw*0.45].forEach(dx => {
     ctx.beginPath(); ctx.arc(x + dx, wy, r, 0, Math.PI*2); ctx.stroke();
   });
-  const by = wy + r + 2;
-  ctx.beginPath(); ctx.moveTo(x - hw - 3, by); ctx.lineTo(x + hw + 3, by); ctx.stroke();
-  drawHatch(x - hw - 3, x + hw + 3, by, 'H');
+  const by = wy + r + 2*sc;
+  ctx.beginPath(); ctx.moveTo(x - hw - 3*sc, by); ctx.lineTo(x + hw + 3*sc, by); ctx.stroke();
+  drawHatch(x - hw - 3*sc, x + hw + 3*sc, by, 'H');
 }
 
 function drawRollerV(x, y) {
-  const h = 12, hh = 11, r = 3;
+  const sc = getSymbolScale();
+  const h = 12 * sc, hh = 11 * sc, r = 3 * sc;
   ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - h, y - hh); ctx.lineTo(x - h, y + hh);
   ctx.closePath(); ctx.stroke();
-  const wx = x - h - r - 2;
+  const wx = x - h - r - 2*sc;
   [-hh*0.45, hh*0.45].forEach(dy => {
     ctx.beginPath(); ctx.arc(wx, y + dy, r, 0, Math.PI*2); ctx.stroke();
   });
-  const wl = wx - r - 2;
-  ctx.beginPath(); ctx.moveTo(wl, y - hh - 3); ctx.lineTo(wl, y + hh + 3); ctx.stroke();
-  drawHatch(y - hh - 3, y + hh + 3, wl, 'V');
+  const wl = wx - r - 2*sc;
+  ctx.beginPath(); ctx.moveTo(wl, y - hh - 3*sc); ctx.lineTo(wl, y + hh + 3*sc); ctx.stroke();
+  drawHatch(y - hh - 3*sc, y + hh + 3*sc, wl, 'V');
 }
 
 function drawHatch(from, to, base, dir) {
@@ -570,6 +585,10 @@ function drawHatch(from, to, base, dir) {
 
 // ── Node loads ────────────────────────────────────────────────────────────
 function drawNodeLoads() {
+  const sc = getSymbolScale();
+  const arrowLen = 24 * sc;
+  const arrowTip = 19 * sc;
+  const arrowHW = 5 * sc;
   nodeLoads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
@@ -577,25 +596,25 @@ function drawNodeLoads() {
 
     if (l.direction === 'y') {
       const sign = l.magnitude < 0 ? 1 : -1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * 24); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(n.x - 5, n.y + sign*19); ctx.lineTo(n.x, n.y + sign*24); ctx.lineTo(n.x + 5, n.y + sign*19);
+      ctx.moveTo(n.x - arrowHW, n.y + sign*arrowTip); ctx.lineTo(n.x, n.y + sign*arrowLen); ctx.lineTo(n.x + arrowHW, n.y + sign*arrowTip);
       ctx.fill();
       ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1b5e20';
-      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x, n.y + sign*38);
+      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x, n.y + sign*(arrowLen + 14*sc));
 
     } else if (l.direction === 'x') {
       const sign = l.magnitude < 0 ? -1 : 1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign*24, n.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(n.x + sign*19, n.y - 5); ctx.lineTo(n.x + sign*24, n.y); ctx.lineTo(n.x + sign*19, n.y + 5);
+      ctx.moveTo(n.x + sign*arrowTip, n.y - arrowHW); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.lineTo(n.x + sign*arrowTip, n.y + arrowHW);
       ctx.fill();
       ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1b5e20';
-      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x + sign*36, n.y - 6);
+      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x + sign*(arrowLen + 12*sc), n.y - 6);
 
     } else if (l.direction === 'moment') {
       // curved arrow for moment
-      const r = 14;
+      const r = 14 * sc;
       const sign = l.magnitude > 0 ? 1 : -1;  // + = CCW
       ctx.strokeStyle = '#6a1b9a'; ctx.fillStyle = '#6a1b9a'; ctx.lineWidth = 2;
       ctx.beginPath();
@@ -606,15 +625,31 @@ function drawNodeLoads() {
       const ax = n.x + r * Math.cos(endAngle);
       const ay = n.y + r * Math.sin(endAngle);
       const tang = endAngle + sign * Math.PI/2;
+      const arrowSz = 5 * sc;
       ctx.beginPath();
-      ctx.moveTo(ax + 5*Math.cos(tang - 0.5), ay + 5*Math.sin(tang - 0.5));
+      ctx.moveTo(ax + arrowSz*Math.cos(tang - 0.5), ay + arrowSz*Math.sin(tang - 0.5));
       ctx.lineTo(ax, ay);
-      ctx.lineTo(ax + 5*Math.cos(tang + 0.5), ay + 5*Math.sin(tang + 0.5));
+      ctx.lineTo(ax + arrowSz*Math.cos(tang + 0.5), ay + arrowSz*Math.sin(tang + 0.5));
       ctx.fill();
       ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#4a148c';
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kNm', n.x, n.y - r - 6);
     }
   });
+}
+
+// ── Node label overlay ────────────────────────────────────────────────────
+function drawNodeLabels() {
+  ctx.save();
+  ctx.font = '600 11px Arial';
+  ctx.fillStyle = '#1a2744';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  nodes.forEach(function(n, i) {
+    var base = i * 3 + 1;
+    var label = 'N' + i + ' [' + base + ',' + (base + 1) + ',' + (base + 2) + ']';
+    ctx.fillText(label, n.x + 8, n.y - 8);
+  });
+  ctx.restore();
 }
 
 // ── UDL arrows ────────────────────────────────────────────────────────────
@@ -941,11 +976,53 @@ document.getElementById('chkLoads').addEventListener('change', draw);
 document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
+document.getElementById('chkNodeLabels').addEventListener('change', draw);
 document.getElementById('inputScale').addEventListener('input', draw);
 document.getElementById('inputDiagramScale').addEventListener('input', draw);
+document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Results tables ────────────────────────────────────────────────────────
+function createDownloadLink(res) {
+  if (_lastBlobUrl) URL.revokeObjectURL(_lastBlobUrl);
+  const json = JSON.stringify(res, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  _lastBlobUrl = URL.createObjectURL(blob);
+
+  const now = new Date();
+  const ts = now.getFullYear().toString()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + '-'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
+  const filename = (res.solver || 'results') + '-results-' + ts + '.json';
+
+  const a = document.createElement('a');
+  a.href = _lastBlobUrl;
+  a.download = filename;
+  a.textContent = 'Download results (JSON)';
+  a.className = 'download-link';
+  a.style.color = '#1a2744';
+  a.style.textDecoration = 'underline';
+  a.style.display = 'block';
+  a.style.marginBottom = '8px';
+  a.style.fontSize = '12px';
+  a.addEventListener('mouseover', function() { a.style.color = '#3f51b5'; });
+  a.addEventListener('mouseout',  function() { a.style.color = '#1a2744'; });
+  return a;
+}
+
 function renderResults(res) {
+  // Remove any existing download link
+  const existingLink = document.querySelector('.download-link');
+  if (existingLink) existingLink.remove();
+
+  // Add download link at top of results panel
+  const panel = document.getElementById('resultsPanel');
+  const downloadLink = createDownloadLink(res);
+  panel.insertBefore(downloadLink, panel.firstChild);
+
   const UG = res.UG;
   const FG = res.FG;
 
