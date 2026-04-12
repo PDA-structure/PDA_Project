@@ -8,6 +8,11 @@ const UNIT   = 1;    // 1 grid cell = 1 metre
 
 let _lastBlobUrl = null;
 
+// ── Symbol scale helper ───────────────────────────────────────────────────
+function getSymbolScale() {
+  return parseFloat(document.getElementById('inputSymbolScale').value) || 1.0;
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 let mode   = 'node';
 let origin = null;           // canvas pixel of real-world (0,0)
@@ -349,9 +354,10 @@ function drawMemberLabel(n1, n2, text, color) {
 }
 
 function drawNodes() {
+  const r = 5 * getSymbolScale();
   nodes.forEach(n => {
     ctx.beginPath();
-    ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#e53935';
     ctx.fill();
     ctx.fillStyle = '#222';
@@ -382,7 +388,8 @@ function drawSupports() {
 
 // ── Pin: filled triangle + baseline + hatching ────────────────────────────
 function drawPin(x, y) {
-  const h = 14, hw = 12;
+  const sc = getSymbolScale();
+  const h = 14 * sc, hw = 12 * sc;
   ctx.strokeStyle = '#1a1a2e';
   ctx.fillStyle   = '#1a1a2e';
   ctx.lineWidth   = 1.5;
@@ -397,17 +404,18 @@ function drawPin(x, y) {
 
   // baseline
   ctx.beginPath();
-  ctx.moveTo(x - hw - 3, y + h);
-  ctx.lineTo(x + hw + 3, y + h);
+  ctx.moveTo(x - hw - 3*sc, y + h);
+  ctx.lineTo(x + hw + 3*sc, y + h);
   ctx.stroke();
 
   // hatching below baseline
-  drawHatch(x - hw - 3, x + hw + 3, y + h, 'H');
+  drawHatch(x - hw - 3*sc, x + hw + 3*sc, y + h, 'H');
 }
 
 // ── Roller on horizontal surface: open triangle + wheels + baseline + hatch
 function drawRollerH(x, y) {
-  const h = 12, hw = 11, r = 3;
+  const sc = getSymbolScale();
+  const h = 12 * sc, hw = 11 * sc, r = 3 * sc;
   ctx.strokeStyle = '#1a1a2e';
   ctx.fillStyle   = '#1a1a2e';
   ctx.lineWidth   = 1.5;
@@ -421,7 +429,7 @@ function drawRollerH(x, y) {
   ctx.stroke();
 
   // two wheel circles
-  const wy = y + h + r + 2;
+  const wy = y + h + r + 2*sc;
   [-hw * 0.45, hw * 0.45].forEach(dx => {
     ctx.beginPath();
     ctx.arc(x + dx, wy, r, 0, Math.PI * 2);
@@ -429,19 +437,20 @@ function drawRollerH(x, y) {
   });
 
   // baseline
-  const by = wy + r + 2;
+  const by = wy + r + 2*sc;
   ctx.beginPath();
-  ctx.moveTo(x - hw - 3, by);
-  ctx.lineTo(x + hw + 3, by);
+  ctx.moveTo(x - hw - 3*sc, by);
+  ctx.lineTo(x + hw + 3*sc, by);
   ctx.stroke();
 
   // hatching
-  drawHatch(x - hw - 3, x + hw + 3, by, 'H');
+  drawHatch(x - hw - 3*sc, x + hw + 3*sc, by, 'H');
 }
 
 // ── Roller on vertical wall: open triangle (rotated) + wheels + wall + hatch
 function drawRollerV(x, y) {
-  const h = 12, hh = 11, r = 3;
+  const sc = getSymbolScale();
+  const h = 12 * sc, hh = 11 * sc, r = 3 * sc;
   ctx.strokeStyle = '#1a1a2e';
   ctx.fillStyle   = '#1a1a2e';
   ctx.lineWidth   = 1.5;
@@ -455,7 +464,7 @@ function drawRollerV(x, y) {
   ctx.stroke();
 
   // two wheel circles
-  const wx = x - h - r - 2;
+  const wx = x - h - r - 2*sc;
   [-hh * 0.45, hh * 0.45].forEach(dy => {
     ctx.beginPath();
     ctx.arc(wx, y + dy, r, 0, Math.PI * 2);
@@ -463,14 +472,14 @@ function drawRollerV(x, y) {
   });
 
   // wall line
-  const wl = wx - r - 2;
+  const wl = wx - r - 2*sc;
   ctx.beginPath();
-  ctx.moveTo(wl, y - hh - 3);
-  ctx.lineTo(wl, y + hh + 3);
+  ctx.moveTo(wl, y - hh - 3*sc);
+  ctx.lineTo(wl, y + hh + 3*sc);
   ctx.stroke();
 
   // hatching (left side of wall)
-  drawHatch(y - hh - 3, y + hh + 3, wl, 'V');
+  drawHatch(y - hh - 3*sc, y + hh + 3*sc, wl, 'V');
 }
 
 // ── Hatching helper ───────────────────────────────────────────────────────
@@ -494,6 +503,10 @@ function drawHatch(from, to, base, dir) {
 }
 
 function drawLoads() {
+  const sc = getSymbolScale();
+  const arrowLen = 24 * sc;
+  const arrowTip = 19 * sc;
+  const arrowHW  = 5 * sc;
   loads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
@@ -504,26 +517,26 @@ function drawLoads() {
 
     if (l.direction === 'y') {
       const sign = mag < 0 ? 1 : -1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * 24); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(n.x - 5, n.y + sign * 19);
-      ctx.lineTo(n.x, n.y + sign * 24);
-      ctx.lineTo(n.x + 5, n.y + sign * 19);
+      ctx.moveTo(n.x - arrowHW, n.y + sign * arrowTip);
+      ctx.lineTo(n.x, n.y + sign * arrowLen);
+      ctx.lineTo(n.x + arrowHW, n.y + sign * arrowTip);
       ctx.fill();
     } else {
       const sign = mag < 0 ? -1 : 1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign * 24, n.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign * arrowLen, n.y); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(n.x + sign * 19, n.y - 5);
-      ctx.lineTo(n.x + sign * 24, n.y);
-      ctx.lineTo(n.x + sign * 19, n.y + 5);
+      ctx.moveTo(n.x + sign * arrowTip, n.y - arrowHW);
+      ctx.lineTo(n.x + sign * arrowLen, n.y);
+      ctx.lineTo(n.x + sign * arrowTip, n.y + arrowHW);
       ctx.fill();
     }
 
     ctx.fillStyle = '#1b5e20';
     ctx.font = '10px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText((Math.abs(mag) / 1000).toFixed(1) + ' kN', n.x, n.y + (l.direction === 'y' ? 38 : -8));
+    ctx.fillText((Math.abs(mag) / 1000).toFixed(1) + ' kN', n.x, n.y + (l.direction === 'y' ? arrowLen + 14*sc : -8));
   });
 }
 
@@ -576,6 +589,7 @@ canvas.addEventListener('mousemove', e => {
   document.getElementById('coords').textContent = `x: ${rx} m \u00a0 y: ${ry} m`;
 });
 document.getElementById('inputScale').addEventListener('input', draw);
+document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {
