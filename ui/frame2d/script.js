@@ -6,6 +6,8 @@ const ctx    = canvas.getContext('2d');
 const GRID = 20;
 const UNIT = 1;
 
+let _lastBlobUrl = null;
+
 // ── State ─────────────────────────────────────────────────────────────────
 let mode   = 'node';
 let origin = null;
@@ -945,7 +947,47 @@ document.getElementById('inputScale').addEventListener('input', draw);
 document.getElementById('inputDiagramScale').addEventListener('input', draw);
 
 // ── Results tables ────────────────────────────────────────────────────────
+function createDownloadLink(res) {
+  if (_lastBlobUrl) URL.revokeObjectURL(_lastBlobUrl);
+  const json = JSON.stringify(res, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  _lastBlobUrl = URL.createObjectURL(blob);
+
+  const now = new Date();
+  const ts = now.getFullYear().toString()
+    + String(now.getMonth() + 1).padStart(2, '0')
+    + String(now.getDate()).padStart(2, '0')
+    + '-'
+    + String(now.getHours()).padStart(2, '0')
+    + String(now.getMinutes()).padStart(2, '0')
+    + String(now.getSeconds()).padStart(2, '0');
+  const filename = (res.solver || 'results') + '-results-' + ts + '.json';
+
+  const a = document.createElement('a');
+  a.href = _lastBlobUrl;
+  a.download = filename;
+  a.textContent = 'Download results (JSON)';
+  a.className = 'download-link';
+  a.style.color = '#1a2744';
+  a.style.textDecoration = 'underline';
+  a.style.display = 'block';
+  a.style.marginBottom = '8px';
+  a.style.fontSize = '12px';
+  a.addEventListener('mouseover', function() { a.style.color = '#3f51b5'; });
+  a.addEventListener('mouseout',  function() { a.style.color = '#1a2744'; });
+  return a;
+}
+
 function renderResults(res) {
+  // Remove any existing download link
+  const existingLink = document.querySelector('.download-link');
+  if (existingLink) existingLink.remove();
+
+  // Add download link at top of results panel
+  const panel = document.getElementById('resultsPanel');
+  const downloadLink = createDownloadLink(res);
+  panel.insertBefore(downloadLink, panel.firstChild);
+
   const UG = res.UG;
   const FG = res.FG;
 

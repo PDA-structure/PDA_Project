@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PDA – 2D Truss Solver</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>△ PDA – 2D Truss Solver</h1>
+  </header>
+
+  <div class="workspace">
+
+    <aside class="panel">
+
+      <section class="panel-section">
+        <h3>Geometry</h3>
+        <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
+        <button class="tool-btn" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">🔗 Add Member</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Supports</h3>
+        <button class="tool-btn support-btn" data-mode="pinned" onclick="setMode('pinned')"
+          title="Restrains X and Y — no translation allowed">
+          📌 Pin
+          <span class="support-tag fixed">X + Y fixed</span>
+        </button>
+        <button class="tool-btn support-btn" data-mode="rollerY" onclick="setMode('rollerY')"
+          title="Sits on a horizontal surface — free to slide left/right, vertical movement restrained">
+          🛞 Roller
+          <span class="support-tag">↔ free &nbsp;|&nbsp; Y fixed</span>
+        </button>
+        <button class="tool-btn support-btn" data-mode="rollerX" onclick="setMode('rollerX')"
+          title="Sits on a vertical wall — free to slide up/down, horizontal movement restrained">
+          🛞 Roller
+          <span class="support-tag">↕ free &nbsp;|&nbsp; X fixed</span>
+        </button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Loads</h3>
+        <button class="tool-btn" data-mode="load" onclick="setMode('load')" title="Apply force at a node">📥 Add Load</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Edit</h3>
+        <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
+        <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
+        <button class="tool-btn" data-mode="delete" onclick="setMode('delete')" title="Delete a node or member">🗑 Delete</button>
+        <button class="tool-btn danger" onclick="resetAll()">🔄 Reset All</button>
+      </section>
+
+      <section class="panel-section">
+        <h3>Material Properties</h3>
+        <label>E (GPa)
+          <input type="number" id="inputE" value="200" min="0" step="1">
+        </label>
+        <label>A (cm²)
+          <input type="number" id="inputA" value="100" min="0" step="1">
+        </label>
+      </section>
+
+      <section class="panel-section">
+        <h3>Display</h3>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkDeflected"> Show deflected shape
+        </label>
+        <label>Scale factor
+          <input type="number" id="inputScale" value="100" min="1" step="10">
+        </label>
+      </section>
+
+      <section class="panel-section">
+        <button class="solve-btn" onclick="solve()">▶ SOLVE</button>
+        <div id="solveStatus"></div>
+      </section>
+
+    </aside>
+
+    <main class="canvas-area">
+      <div class="canvas-topbar">
+        <span class="mode-indicator">Mode: <span id="modeLabel">Add Node</span></span>
+        <span class="coords" id="coords">x: — &nbsp; y: —</span>
+      </div>
+      <canvas id="canvas" width="1000" height="600"></canvas>
+    </main>
+
+  </div>
+
+  <div class="results-panel" id="resultsPanel" style="display:none">
+    <div class="results-grid">
+
+      <div class="results-table-wrap">
+        <h3>Member Forces</h3>
+        <table id="tableMemberForces">
+          <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="results-table-wrap">
+        <h3>Reactions</h3>
+        <table id="tableReactions">
+          <thead><tr><th>Node</th><th>Direction</th><th>Reaction (kN)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="results-table-wrap">
+        <h3>Nodal Displacements</h3>
+        <table id="tableDisplacements">
+          <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
