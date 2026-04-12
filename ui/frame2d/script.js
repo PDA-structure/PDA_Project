@@ -380,7 +380,7 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
   drawGrid();
-  drawUDLs();
+  if (document.getElementById('chkLoads').checked) drawUDLs();
   drawMembers();
   if (results) {
     if (document.getElementById('chkBMD').checked) drawBMD();
@@ -390,8 +390,8 @@ function draw() {
     clearDiagramState();
   }
   drawNodes();
-  drawSupports();
-  drawNodeLoads();
+  if (document.getElementById('chkSupports').checked) drawSupports();
+  if (document.getElementById('chkLoads').checked) drawNodeLoads();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
 }
 
@@ -936,6 +936,8 @@ function drawSFD() {
   });
 }
 
+document.getElementById('chkSupports').addEventListener('change', draw);
+document.getElementById('chkLoads').addEventListener('change', draw);
 document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
