@@ -24,6 +24,7 @@ let supports   = [];   // { nodeId, type:'fixed'|'pinned'|'rollerX'|'rollerY' }
 let nodeLoads  = [];   // { nodeId, direction:'x'|'y'|'moment', magnitude }
 let history    = [];
 let results    = null;
+let _udlActiveMemberIdx = null;
 
 // ── View transform (zoom / pan) ───────────────────────────────────────────
 let view = { scale: 1, tx: 0, ty: 0 };
@@ -130,20 +131,13 @@ canvas.addEventListener('click', e => {
   } else if (mode === 'udl') {
     const mi = findMemberAt(px, py);
     if (mi !== null) {
+      _udlActiveMemberIdx = mi;
       const m = members[mi];
-      const magY = parseFloat(prompt(
-        'Vertical UDL w_y (N/m, positive = downward):', m.udl !== null ? m.udl : '10000'));
-      if (!isNaN(magY)) {
-        saveHistory();
-        members[mi].udl = magY;
-        results = null;
-      }
-      const magX = parseFloat(prompt(
-        'Horizontal UDL w_x (N/m, positive = left-to-right, 0 to clear):', m.udl_x !== null ? m.udl_x : '0'));
-      if (!isNaN(magX)) {
-        members[mi].udl_x = magX === 0 ? null : magX;
-        results = null;
-      }
+      document.getElementById('udlPanelTitle').textContent = 'UDL — Member ' + (mi + 1);
+      document.getElementById('udlWy').value = m.udl !== null && m.udl !== undefined ? m.udl : '';
+      document.getElementById('udlWx').value = m.udl_x !== null && m.udl_x !== undefined ? m.udl_x : '';
+      document.getElementById('udlPanel').style.display = 'block';
+      document.getElementById('udlWy').focus();
     }
 
   // ---- Member property toggles ----
@@ -269,6 +263,10 @@ function undoLastAction() {
 
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undoLastAction(); }
+  if (e.key === 'Escape') {
+    document.getElementById('udlPanel').style.display = 'none';
+    _udlActiveMemberIdx = null;
+  }
 });
 
 function resetAll() {
@@ -1328,6 +1326,30 @@ function calcSection() {
 document.getElementById('sectionType').addEventListener('change', function() {
   document.querySelectorAll('.sec-inputs').forEach(el => el.style.display = 'none');
   document.getElementById('sec-' + this.value).style.display = '';
+});
+
+// ── UDL panel event wiring ────────────────────────────────────────────────
+document.getElementById('udlApplyBtn').addEventListener('click', function() {
+  if (_udlActiveMemberIdx === null) return;
+  const wy = parseFloat(document.getElementById('udlWy').value);
+  const wx = parseFloat(document.getElementById('udlWx').value);
+  saveHistory();
+  if (!isNaN(wy)) members[_udlActiveMemberIdx].udl = wy === 0 ? null : wy;
+  if (!isNaN(wx)) members[_udlActiveMemberIdx].udl_x = wx === 0 ? null : wx;
+  results = null;
+  document.getElementById('udlPanel').style.display = 'none';
+  _udlActiveMemberIdx = null;
+  draw();
+});
+
+document.getElementById('udlClearBtn').addEventListener('click', function() {
+  document.getElementById('udlWy').value = '';
+  document.getElementById('udlWx').value = '';
+});
+
+document.getElementById('udlCancelBtn').addEventListener('click', function() {
+  document.getElementById('udlPanel').style.display = 'none';
+  _udlActiveMemberIdx = null;
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────

@@ -214,6 +214,26 @@
     </div>
   </div>
 
+  <!-- UDL floating panel -->
+  <div id="udlPanel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+       background:#fff; border:1px solid #90caf9; border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,.18);
+       padding:16px 20px; z-index:200; min-width:240px; font-family:inherit;">
+    <div style="font-weight:600; margin-bottom:10px; font-size:13px;" id="udlPanelTitle">UDL — Member ?</div>
+    <label style="display:block; margin-bottom:6px; font-size:12px;">
+      w<sub>y</sub> (N/m, + = downward)
+      <input type="number" id="udlWy" step="100" style="width:100%; margin-top:3px; padding:3px 5px; font-size:12px; box-sizing:border-box;">
+    </label>
+    <label style="display:block; margin-bottom:10px; font-size:12px;">
+      w<sub>x</sub> (N/m, + = rightward / wind)
+      <input type="number" id="udlWx" step="100" style="width:100%; margin-top:3px; padding:3px 5px; font-size:12px; box-sizing:border-box;">
+    </label>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button id="udlClearBtn" style="font-size:11px; padding:4px 10px;">Clear</button>
+      <button id="udlCancelBtn" style="font-size:11px; padding:4px 10px;">Cancel</button>
+      <button id="udlApplyBtn" style="font-size:11px; padding:4px 10px; background:#1565c0; color:#fff; border:none; border-radius:3px;">Apply</button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
