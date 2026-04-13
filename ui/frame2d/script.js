@@ -90,6 +90,7 @@ canvas.addEventListener('click', e => {
           pinLeft: false,
           pinRight: false,
           udl: null,
+          udl_x: null,
           E_override: null,
           I_override: null,
           A_override: null,
@@ -130,11 +131,17 @@ canvas.addEventListener('click', e => {
     const mi = findMemberAt(px, py);
     if (mi !== null) {
       const m = members[mi];
-      const current = m.udl !== null ? m.udl : '';
-      const mag = parseFloat(prompt('UDL magnitude in N/m (positive = downward):', current || '10000'));
-      if (!isNaN(mag)) {
+      const magY = parseFloat(prompt(
+        'Vertical UDL w_y (N/m, positive = downward):', m.udl !== null ? m.udl : '10000'));
+      if (!isNaN(magY)) {
         saveHistory();
-        members[mi].udl = mag;
+        members[mi].udl = magY;
+        results = null;
+      }
+      const magX = parseFloat(prompt(
+        'Horizontal UDL w_x (N/m, positive = left-to-right, 0 to clear):', m.udl_x !== null ? m.udl_x : '0'));
+      if (!isNaN(magX)) {
+        members[mi].udl_x = magX === 0 ? null : magX;
         results = null;
       }
     }
@@ -385,6 +392,7 @@ async function solve() {
     bars, beamPinLeft, beamPinRight,
     restrainedDoF,
     pinDoF: [], springDoF: [], springStiffness: [],
+    udl_x: members.map(m => m.udl_x !== null ? m.udl_x : 0),
   };
 
   setStatus('Solving…');
@@ -745,6 +753,53 @@ function drawUDLs() {
     const my = (n1.y + n2.y) / 2;
     ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#4a148c';
     ctx.fillText((Math.abs(m.udl)/1000).toFixed(1)+' kN/m', mx, my - arrowLen*sign - 6);
+  });
+
+  // Horizontal UDL (w_x) — blue arrows perpendicular to member, pointing left or right
+  members.forEach(m => {
+    if (!m.udl_x) return;
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    if (!n1 || !n2) return;
+
+    const arrowLen = 20;
+    const sign = m.udl_x > 0 ? 1 : -1;  // positive = rightward on canvas
+
+    // unit vector along member
+    const dx = n2.x - n1.x, dy = n2.y - n1.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    // perpendicular (90° CCW): (-uy, ux)
+    const perpX = -uy, perpY = ux;
+
+    const steps = Math.max(2, Math.floor(len / 22));
+    ctx.strokeStyle = '#0288d1'; ctx.fillStyle = '#0288d1'; ctx.lineWidth = 1.5;
+
+    // baseline line offset perpendicular to member
+    ctx.beginPath();
+    ctx.moveTo(n1.x + perpX * arrowLen * sign, n1.y + perpY * arrowLen * sign);
+    ctx.lineTo(n2.x + perpX * arrowLen * sign, n2.y + perpY * arrowLen * sign);
+    ctx.stroke();
+
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const ax = n1.x + t * (n2.x - n1.x);
+      const ay = n1.y + t * (n2.y - n1.y);
+      ctx.beginPath();
+      ctx.moveTo(ax + perpX * arrowLen * sign, ay + perpY * arrowLen * sign);
+      ctx.lineTo(ax, ay);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(ax + perpX * 8 * sign, ay + perpY * 8 * sign);
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(ax - ux * 4, ay - uy * 4);
+      ctx.fill();
+    }
+
+    const mx = (n1.x + n2.x) / 2;
+    const my = (n1.y + n2.y) / 2;
+    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#01579b';
+    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx + perpX * arrowLen * sign * 1.5, my + perpY * arrowLen * sign * 1.5);
   });
 }
 
