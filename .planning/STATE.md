@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 3 UI-SPEC approved
 last_updated: "2026-04-12T19:15:28.251Z"
-last_activity: 2026-04-13 -- Completed quick task 260413-rlh: Add horizontal UDL support to frame2d
+last_activity: 2026-04-13 -- Completed quick task 260413-t8l: Improve horizontal UDL UX and correctness for inclined members
 progress:
   total_phases: 4
   completed_phases: 1
@@ -44,13 +44,14 @@ Progress: [██░░░░░░░░] 25%
 
 ### Pending Todos
 
-1 pending todo — UI symbol size scale control for frame2d and truss2d (`/gsd-check-todos` to review)
+7 pending todos — run `/gsd-check-todos` to review
 
 ### Quick Tasks Completed
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260413-rlh | Add horizontal UDL support to frame2d | 2026-04-13 | 43bb4a1 | [260413-rlh-add-horizontal-udl-support-to-frame2d](.planning/quick/260413-rlh-add-horizontal-udl-support-to-frame2d/) |
+| 260413-t8l | Improve horizontal UDL UX and correctness for inclined members | 2026-04-13 | 3241b02 | [260413-t8l-improve-horizontal-udl-ux-and-correctnes](.planning/quick/260413-t8l-improve-horizontal-udl-ux-and-correctnes/) |
 
 ### Blockers/Concerns
 
