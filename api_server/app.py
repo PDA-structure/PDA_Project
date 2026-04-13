@@ -63,16 +63,42 @@ class Frame2DRequest(BaseModel):
     pinDoF: List[int] = []
     springDoF: List[int] = []
     springStiffness: List[float] = []
+    udl_x: Optional[List[float]] = None   # one value per member, N/m, positive = left-to-right
 
 
 @app.post("/solve/frame2d")
 def solve_frame2d(req: Frame2DRequest):
+    # --- Horizontal UDL (w_x) assembly ---
+    # w_x contributes:
+    #   X-DOF nodal forces: -w_x*L/2 at start node, -w_x*L/2 at end node
+    #   Fixed-end moments: +w_x*L^2/12 at start, -w_x*L^2/12 at end
+    fv = list(req.forceVector)          # mutable copy (flat, length = 3*n_nodes)
+    en_moments = [list(row) for row in req.ENMoments]  # mutable copy
+
+    if req.udl_x:
+        nodes_arr = req.nodes           # list of [x,y]
+        for ei, wx in enumerate(req.udl_x):
+            if wx == 0.0:
+                continue
+            ni, nj = req.members[ei][0] - 1, req.members[ei][1] - 1   # 0-based node indices
+            xi, yi = nodes_arr[ni]
+            xj, yj = nodes_arr[nj]
+            L = ((xj - xi) ** 2 + (yj - yi) ** 2) ** 0.5
+            if L == 0:
+                continue
+            # X-DOF: global indices base = node_idx * 3 + 0 (0-based flat index)
+            fv[ni * 3 + 0] += -wx * L / 2
+            fv[nj * 3 + 0] += -wx * L / 2
+            # Moments (same DOF index [base+2] as vertical UDL):
+            en_moments[ei][0] += wx * L * L / 12
+            en_moments[ei][1] += -wx * L * L / 12
+
     model = FrameModel2D(
         nodes=np.array(req.nodes, float),
         members=np.array(req.members, int),
         ENForces=np.array(req.ENForces, float),
-        ENMoments=np.array(req.ENMoments, float),
-        forceVector=np.array(req.forceVector, float).reshape(-1, 1),
+        ENMoments=np.array(en_moments, float),
+        forceVector=np.array(fv, float).reshape(-1, 1),
         E=req.E,
         I=req.I,
         A=req.A,
