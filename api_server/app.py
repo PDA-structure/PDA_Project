@@ -70,12 +70,14 @@ class Frame2DRequest(BaseModel):
 @app.post("/solve/frame2d")
 def solve_frame2d(req: Frame2DRequest):
     # --- Horizontal UDL (w_x) assembly ---
-    # w_x contributes:
-    #   X-DOF nodal forces: -w_x*L/2 at start node, -w_x*L/2 at end node
-    #   Fixed-end moments: +w_x*L^2/12 at start, -w_x*L^2/12 at end
+    # Global-X load convention: wx (N/m) acts in the global +X direction regardless of member angle.
+    # Consistent load vector for any orientation: fx = wx*L/2 at each node (global X), fy = 0.
+    # Moments from the transverse component: mi = -wx*sin(θ)*L²/12, mj = +wx*sin(θ)*L²/12.
+    # Direct fv contributions are subtracted from FG post-solve (mirrors solver's remove_ENA step).
     fv = list(req.forceVector)          # mutable copy (flat, length = 3*n_nodes)
     en_moments = [list(row) for row in req.ENMoments]  # mutable copy
 
+    wx_fv_to_remove = []   # track direct-fv contributions for FG post-correction
     if req.udl_x:
         nodes_arr = req.nodes           # list of [x,y]
         for ei, wx in enumerate(req.udl_x):
@@ -87,38 +89,27 @@ def solve_frame2d(req: Frame2DRequest):
             L = ((xj - xi) ** 2 + (yj - yi) ** 2) ** 0.5
             if L == 0:
                 continue
-            # Project global-X load into local member frame via direction cosines
+
+            # Consistent load vector for global-X uniform load (wx N/m):
+            # By the FEM work-equivalent principle, for ANY member orientation:
+            #   Global-X force at each node = wx * L / 2  (never negative, independent of angle)
+            #   Global-Y force at each node = 0
+            # Moment from the transverse (local-y) component only:
+            #   mi = -wx * sin(theta) * L² / 12  (same value in local and global frames)
+            #   mj = +wx * sin(theta) * L² / 12
             theta = math.atan2(yj - yi, xj - xi)
-            c, s = math.cos(theta), math.sin(theta)
+            s = math.sin(theta)
+            fx_each = wx * L / 2
+            mi_g =  -wx * s * L * L / 12
+            mj_g =   wx * s * L * L / 12
 
-            # Local axial and transverse components of global-X distributed load
-            wx_a = wx * c       # local axial force per unit length
-            wx_t = -wx * s      # local transverse force per unit length
-
-            # Fixed-end forces in LOCAL frame (6-component: [fx_i, fy_i, m_i, fx_j, fy_j, m_j])
-            fx_i_loc = -wx_a * L / 2
-            fy_i_loc = -wx_t * L / 2
-            mi_loc   =  wx_t * L * L / 12
-            fx_j_loc = -wx_a * L / 2
-            fy_j_loc = -wx_t * L / 2
-            mj_loc   = -wx_t * L * L / 12
-
-            # Rotate to global: ENA_global = T^T @ ENA_local
-            fx_i_g =  c * fx_i_loc - s * fy_i_loc
-            fy_i_g =  s * fx_i_loc + c * fy_i_loc
-            mi_g   =  mi_loc
-            fx_j_g =  c * fx_j_loc - s * fy_j_loc
-            fy_j_g =  s * fx_j_loc + c * fy_j_loc
-            mj_g   =  mj_loc
-
-            # Inject into global force vector (0-based flat index: node*3 + dof)
-            fv[ni * 3 + 0] += fx_i_g
-            fv[ni * 3 + 1] += fy_i_g
-            fv[nj * 3 + 0] += fx_j_g
-            fv[nj * 3 + 1] += fy_j_g
-            # Moments go into en_moments (consumed by solver via ENMoments path)
+            fv[ni * 3 + 0] += fx_each
+            fv[nj * 3 + 0] += fx_each
             en_moments[ei][0] += mi_g
             en_moments[ei][1] += mj_g
+
+            # Record so we can subtract from FG after solve (mirrors remove_ENA pattern)
+            wx_fv_to_remove.append((ni, nj, fx_each))
 
     model = FrameModel2D(
         nodes=np.array(req.nodes, float),
@@ -142,6 +133,12 @@ def solve_frame2d(req: Frame2DRequest):
     )
 
     result = engine.solve(model, solver_name=req.solver)
+
+    # Subtract wx direct-fv contributions from FG (mirrors remove_equivalent_nodal_actions).
+    # Forces added to fv are not auto-removed by the solver's ENA mechanism, so we do it here.
+    for ni, nj, fx_each in wx_fv_to_remove:
+        result.FG[ni * 3 + 0, 0] -= fx_each
+        result.FG[nj * 3 + 0, 0] -= fx_each
 
     # Return JSON-friendly lists
     return {
