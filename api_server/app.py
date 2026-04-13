@@ -1,3 +1,4 @@
+import math
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -86,12 +87,38 @@ def solve_frame2d(req: Frame2DRequest):
             L = ((xj - xi) ** 2 + (yj - yi) ** 2) ** 0.5
             if L == 0:
                 continue
-            # X-DOF: global indices base = node_idx * 3 + 0 (0-based flat index)
-            fv[ni * 3 + 0] += -wx * L / 2
-            fv[nj * 3 + 0] += -wx * L / 2
-            # Moments (same DOF index [base+2] as vertical UDL):
-            en_moments[ei][0] += wx * L * L / 12
-            en_moments[ei][1] += -wx * L * L / 12
+            # Project global-X load into local member frame via direction cosines
+            theta = math.atan2(yj - yi, xj - xi)
+            c, s = math.cos(theta), math.sin(theta)
+
+            # Local axial and transverse components of global-X distributed load
+            wx_a = wx * c       # local axial force per unit length
+            wx_t = -wx * s      # local transverse force per unit length
+
+            # Fixed-end forces in LOCAL frame (6-component: [fx_i, fy_i, m_i, fx_j, fy_j, m_j])
+            fx_i_loc = -wx_a * L / 2
+            fy_i_loc = -wx_t * L / 2
+            mi_loc   =  wx_t * L * L / 12
+            fx_j_loc = -wx_a * L / 2
+            fy_j_loc = -wx_t * L / 2
+            mj_loc   = -wx_t * L * L / 12
+
+            # Rotate to global: ENA_global = T^T @ ENA_local
+            fx_i_g =  c * fx_i_loc - s * fy_i_loc
+            fy_i_g =  s * fx_i_loc + c * fy_i_loc
+            mi_g   =  mi_loc
+            fx_j_g =  c * fx_j_loc - s * fy_j_loc
+            fy_j_g =  s * fx_j_loc + c * fy_j_loc
+            mj_g   =  mj_loc
+
+            # Inject into global force vector (0-based flat index: node*3 + dof)
+            fv[ni * 3 + 0] += fx_i_g
+            fv[ni * 3 + 1] += fy_i_g
+            fv[nj * 3 + 0] += fx_j_g
+            fv[nj * 3 + 1] += fy_j_g
+            # Moments go into en_moments (consumed by solver via ENMoments path)
+            en_moments[ei][0] += mi_g
+            en_moments[ei][1] += mj_g
 
     model = FrameModel2D(
         nodes=np.array(req.nodes, float),
