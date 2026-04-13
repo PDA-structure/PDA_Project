@@ -753,7 +753,7 @@ function drawUDLs() {
     ctx.fillText((Math.abs(m.udl)/1000).toFixed(1)+' kN/m', mx, my - arrowLen*sign - 6);
   });
 
-  // Horizontal UDL (w_x) — blue arrows perpendicular to member, pointing left or right
+  // Horizontal UDL (w_x) — horizontal arrows in global X direction (wind load convention)
   members.forEach(m => {
     if (!m.udl_x) return;
     const n1 = nodes.find(n => n.id === m.start);
@@ -761,43 +761,45 @@ function drawUDLs() {
     if (!n1 || !n2) return;
 
     const arrowLen = 20;
-    const sign = m.udl_x > 0 ? 1 : -1;  // positive = rightward on canvas
+    const sign = m.udl_x > 0 ? 1 : -1;  // positive = rightward on canvas (+X global)
 
-    // unit vector along member
     const dx = n2.x - n1.x, dy = n2.y - n1.y;
     const len = Math.hypot(dx, dy) || 1;
-    const ux = dx / len, uy = dy / len;
-    // perpendicular (90° CCW): (-uy, ux)
-    const perpX = -uy, perpY = ux;
 
     const steps = Math.max(2, Math.floor(len / 22));
     ctx.strokeStyle = '#0288d1'; ctx.fillStyle = '#0288d1'; ctx.lineWidth = 1.5;
 
-    // baseline line offset perpendicular to member
+    // Horizontal baseline along the arrow tails (offset horizontally from member)
+    const baseOffsetX = arrowLen * sign;
     ctx.beginPath();
-    ctx.moveTo(n1.x + perpX * arrowLen * sign, n1.y + perpY * arrowLen * sign);
-    ctx.lineTo(n2.x + perpX * arrowLen * sign, n2.y + perpY * arrowLen * sign);
+    ctx.moveTo(n1.x + baseOffsetX, n1.y);
+    ctx.lineTo(n2.x + baseOffsetX, n2.y);
     ctx.stroke();
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      const ax = n1.x + t * (n2.x - n1.x);
-      const ay = n1.y + t * (n2.y - n1.y);
+      const ax = n1.x + t * dx;   // point on member (arrow tip)
+      const ay = n1.y + t * dy;
+      // Arrow drawn horizontally: tail at (ax + arrowLen*sign, ay), tip at (ax, ay)
+      const tailX = ax + arrowLen * sign;
+      const tailY = ay;
       ctx.beginPath();
-      ctx.moveTo(ax + perpX * arrowLen * sign, ay + perpY * arrowLen * sign);
+      ctx.moveTo(tailX, tailY);
       ctx.lineTo(ax, ay);
       ctx.stroke();
+      // Arrowhead as filled triangle pointing toward the member
       ctx.beginPath();
-      ctx.moveTo(ax + perpX * 8 * sign, ay + perpY * 8 * sign);
-      ctx.lineTo(ax, ay);
-      ctx.lineTo(ax - ux * 4, ay - uy * 4);
+      ctx.moveTo(ax, ay);                    // tip
+      ctx.lineTo(ax + 8 * sign, ay - 4);    // upper tail corner
+      ctx.lineTo(ax + 8 * sign, ay + 4);    // lower tail corner
+      ctx.closePath();
       ctx.fill();
     }
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
     ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#01579b';
-    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx + perpX * arrowLen * sign * 1.5, my + perpY * arrowLen * sign * 1.5);
+    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx + arrowLen * sign * 1.8, my);
   });
 }
 
