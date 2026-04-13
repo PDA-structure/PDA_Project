@@ -3,6 +3,8 @@ created: 2026-04-13T19:27:21.797Z
 title: Improve horizontal UDL UX and correctness in frame2d
 area: ui
 priority: high
+research: true
+notes: Run with --research flag — research online best practices for UDL UX in structural engineering tools and fixed-end force derivations for inclined members before implementing.
 files:
   - ui/frame2d/script.js
   - api_server/app.py
