@@ -273,8 +273,12 @@ function resetAll() {
   if (!confirm('Reset everything?')) return;
   nodes = []; members = []; supports = []; nodeLoads = [];
   origin = null; currentMemberStart = null; results = null; history = [];
+  _udlActiveMemberIdx = null;
+  view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
+  document.getElementById('udlPanel').style.display = 'none';
   setStatus('');
+  setMode('node');
   draw();
 }
 

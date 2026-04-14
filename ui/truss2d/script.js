@@ -182,8 +182,10 @@ function resetAll() {
   nodes = []; members = []; supports = []; loads = [];
   origin = null; currentMemberStart = null; results = null;
   history = [];
+  view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
   setStatus('');
+  setMode('node');
   draw();
 }
 
