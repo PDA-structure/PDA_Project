@@ -50,6 +50,7 @@
         <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
         <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
         <button class="tool-btn" data-mode="delete" onclick="setMode('delete')" title="Delete a node or member">🗑 Delete</button>
+        <button class="tool-btn" onclick="resetView()">🔍 Reset View</button>
         <button class="tool-btn danger" onclick="resetAll()">🔄 Reset All</button>
       </section>
 
@@ -67,6 +68,15 @@
         <h3>Display</h3>
         <label class="checkbox-label">
           <input type="checkbox" id="chkDeflected"> Show deflected shape
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkSupports" checked onchange="draw()"> Show supports
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkLoads" checked onchange="draw()"> Show loads
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkNodeLabels" onchange="draw()"> Node labels / DOFs
         </label>
         <label>Scale factor
           <input type="number" id="inputScale" value="100" min="1" step="10">
@@ -99,7 +109,7 @@
       <div class="results-table-wrap">
         <h3>Member Forces</h3>
         <table id="tableMemberForces">
-          <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th></tr></thead>
+          <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th><th>&sigma; (MPa)</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
