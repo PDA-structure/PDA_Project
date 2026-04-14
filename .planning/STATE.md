@@ -54,6 +54,7 @@ Progress: [██░░░░░░░░] 25%
 | 260413-t8l | Improve horizontal UDL UX and correctness for inclined members | 2026-04-13 | 3241b02 | [260413-t8l-improve-horizontal-udl-ux-and-correctnes](.planning/quick/260413-t8l-improve-horizontal-udl-ux-and-correctnes/) |
 | 260414-r5c | Fix wx UDL arrow direction in frame2d UI — positive wx renders rightward | 2026-04-14 | 7725f9e | [260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui](.planning/quick/260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui/) |
 | 260414-roe | Improve truss2d UI — zoom/pan, node labels/DOFs, display toggles, stress column | 2026-04-14 | 3877eca | [260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s](.planning/quick/260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s/) |
+| 260414-s3t | Fix resetAll — reset view, mode to node, clear stale panel state (both UIs) | 2026-04-14 | 71ede0f | [260414-s3t-fix-resetall-in-truss2d-and-frame2d-rese](.planning/quick/260414-s3t-fix-resetall-in-truss2d-and-frame2d-rese/) |
 
 ### Blockers/Concerns
 
