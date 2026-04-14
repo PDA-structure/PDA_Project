@@ -5,7 +5,7 @@ milestone_name: milestone
 status: executing
 stopped_at: Phase 3 UI-SPEC approved
 last_updated: "2026-04-12T19:15:28.251Z"
-last_activity: 2026-04-14 -- Completed quick task 260414-r5c: Fix wx UDL arrow direction in frame2d UI
+last_activity: 2026-04-14 -- Completed quick task 260414-roe: Improve truss2d UI — zoom/pan, node labels, display toggles, stress column
 progress:
   total_phases: 4
   completed_phases: 1
@@ -53,6 +53,7 @@ Progress: [██░░░░░░░░] 25%
 | 260413-rlh | Add horizontal UDL support to frame2d | 2026-04-13 | 43bb4a1 | [260413-rlh-add-horizontal-udl-support-to-frame2d](.planning/quick/260413-rlh-add-horizontal-udl-support-to-frame2d/) |
 | 260413-t8l | Improve horizontal UDL UX and correctness for inclined members | 2026-04-13 | 3241b02 | [260413-t8l-improve-horizontal-udl-ux-and-correctnes](.planning/quick/260413-t8l-improve-horizontal-udl-ux-and-correctnes/) |
 | 260414-r5c | Fix wx UDL arrow direction in frame2d UI — positive wx renders rightward | 2026-04-14 | 7725f9e | [260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui](.planning/quick/260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui/) |
+| 260414-roe | Improve truss2d UI — zoom/pan, node labels/DOFs, display toggles, stress column | 2026-04-14 | 3877eca | [260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s](.planning/quick/260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s/) |
 
 ### Blockers/Concerns
 
