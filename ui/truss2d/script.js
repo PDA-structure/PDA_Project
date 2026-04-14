@@ -8,6 +8,19 @@ const UNIT   = 1;    // 1 grid cell = 1 metre
 
 let _lastBlobUrl = null;
 
+// ── View transform ─────────────────────────────────────────────────────────
+let view = { scale: 1, tx: 0, ty: 0 };
+let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy = 0;
+
+function toWorld(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const px = (clientX - rect.left) * (canvas.width  / rect.width);
+  const py = (clientY - rect.top)  * (canvas.height / rect.height);
+  return { x: (px - view.tx) / view.scale, y: (py - view.ty) / view.scale };
+}
+
+function resetView() { view = { scale: 1, tx: 0, ty: 0 }; draw(); }
+
 // ── Symbol scale helper ───────────────────────────────────────────────────
 function getSymbolScale() {
   return parseFloat(document.getElementById('inputSymbolScale').value) || 1.0;
@@ -44,11 +57,7 @@ function setMode(m) {
 
 // ── Canvas click ──────────────────────────────────────────────────────────
 canvas.addEventListener('click', e => {
-  const rect   = canvas.getBoundingClientRect();
-  const scaleX = canvas.width  / rect.width;
-  const scaleY = canvas.height / rect.height;
-  let px = (e.clientX - rect.left) * scaleX;
-  let py = (e.clientY - rect.top)  * scaleY;
+  let { x: px, y: py } = toWorld(e.clientX, e.clientY);
 
   if (mode === 'node') {
     saveHistory();
@@ -279,12 +288,15 @@ function setStatus(msg, isError = false) {
 
 // ── Draw ──────────────────────────────────────────────────────────────────
 function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
   drawGrid();
   drawMembers();
   drawNodes();
-  drawSupports();
-  drawLoads();
+  if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
+  if (document.getElementById('chkSupports')?.checked) drawSupports();
+  if (document.getElementById('chkLoads')?.checked) drawLoads();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
 }
@@ -342,11 +354,12 @@ function drawMemberLabel(n1, n2, text, color) {
   const oy = my + ny * 14;
 
   const angle = Math.atan2(dy, dx);
+  const fs = Math.round(10 * getSymbolScale());
   ctx.save();
   ctx.translate(ox, oy);
   ctx.rotate(Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle);
   ctx.fillStyle = color;
-  ctx.font = '10px Arial';
+  ctx.font = `${fs}px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 0, 0);
@@ -355,15 +368,30 @@ function drawMemberLabel(n1, n2, text, color) {
 
 function drawNodes() {
   const r = 5 * getSymbolScale();
+  const fs = Math.round(11 * getSymbolScale());
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#e53935';
     ctx.fill();
     ctx.fillStyle = '#222';
-    ctx.font = 'bold 11px Arial';
+    ctx.font = `bold ${fs}px Arial`;
     ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
   });
+}
+
+function drawNodeLabels() {
+  ctx.save();
+  ctx.font = '600 11px Arial';
+  ctx.fillStyle = '#1a2744';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  nodes.forEach(function(n, i) {
+    var base = i * 2 + 1;
+    var label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
+    ctx.fillText(label, n.x + 8, n.y - 8);
+  });
+  ctx.restore();
 }
 
 function highlightNode(n, color) {
@@ -576,18 +604,51 @@ function drawDeflected() {
 // ── Deflected shape toggle ────────────────────────────────────────────────
 document.getElementById('chkDeflected').addEventListener('change', draw);
 
-// ── Coordinate display ────────────────────────────────────────────────────
+// ── Coordinate display + pan ──────────────────────────────────────────────
 canvas.addEventListener('mousemove', e => {
-  const rect   = canvas.getBoundingClientRect();
-  const scaleX = canvas.width  / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const px = (e.clientX - rect.left) * scaleX;
-  const py = (e.clientY - rect.top)  * scaleY;
+  if (isPanning) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+    view.tx = panStartTx + (mx - panStartX);
+    view.ty = panStartTy + (my - panStartY);
+    draw();
+    return;
+  }
+  const { x: px, y: py } = toWorld(e.clientX, e.clientY);
   if (!origin) { document.getElementById('coords').textContent = 'x: — \u00a0 y: —'; return; }
   const rx = ((px - origin.x) / GRID * UNIT).toFixed(2);
   const ry = ((origin.y - py) / GRID * UNIT).toFixed(2);
   document.getElementById('coords').textContent = `x: ${rx} m \u00a0 y: ${ry} m`;
 });
+
+// ── Wheel zoom ────────────────────────────────────────────────────────────
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  view.tx = mx - (mx - view.tx) * factor;
+  view.ty = my - (my - view.ty) * factor;
+  view.scale *= factor;
+  draw();
+}, { passive: false });
+
+// ── Middle-mouse pan ──────────────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 1) return;
+  e.preventDefault();
+  isPanning = true;
+  const rect = canvas.getBoundingClientRect();
+  panStartX = (e.clientX - rect.left) * (canvas.width / rect.width);
+  panStartY = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  panStartTx = view.tx;
+  panStartTy = view.ty;
+});
+canvas.addEventListener('mouseup',    () => { isPanning = false; });
+canvas.addEventListener('mouseleave', () => { isPanning = false; });
+
 document.getElementById('inputScale').addEventListener('input', draw);
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
@@ -642,12 +703,14 @@ function renderResults(res) {
       const fkN = f / 1000;
       const type = Math.abs(f) < 1e-3 ? 'Zero' : (f > 0 ? 'Tension' : 'Compression');
       const cls  = Math.abs(f) < 1e-3 ? 'zero-force' : (f > 0 ? 'tension' : 'compression');
+      const stress = res.meta?.member_stresses?.[idx];
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${idx + 1}</td>
         <td>${m.start + 1} – ${m.end + 1}</td>
         <td class="${cls}">${fkN.toFixed(3)}</td>
-        <td class="${cls}">${type}</td>`;
+        <td class="${cls}">${type}</td>
+        <td>${stress !== undefined ? (stress / 1e6).toFixed(2) : '—'}</td>`;
       mBody.appendChild(tr);
     });
   }
