@@ -811,12 +811,14 @@ function drawUDLs() {
 // Draws text with a white backing rect so it's readable over diagrams.
 function labelText(text, x, y, color) {
   ctx.save();
-  ctx.font = 'bold 10px sans-serif';
+  const fs = Math.round(10 * getSymbolScale());
+  ctx.font = `bold ${fs}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const w = ctx.measureText(text).width;
+  const h = fs + 4;
   ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.fillRect(x - w/2 - 2, y - 7, w + 4, 14);
+  ctx.fillRect(x - w/2 - 2, y - h/2, w + 4, h);
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
   ctx.restore();
@@ -969,6 +971,7 @@ function drawBMD() {
 
   // ── Annotate end moments and UDL midspan peak ─────────────────────────
   const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
+  const nudgeM = 8 * getSymbolScale();
   members.forEach((m, idx) => {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
@@ -978,11 +981,15 @@ function drawBMD() {
     const perpX = -Math.sin(angle), perpY = Math.cos(angle);
     const Mi = moments[idx][0], Mj = moments[idx][1];
     const L_m = memberLengthReal(m);
-    if (Math.abs(Mi) > maxMoment * 0.01)
-      labelText(fmtM(Mi), n1.x + perpX * Mi * scaleFactor, n1.y + perpY * Mi * scaleFactor, '#1565c0');
+    if (Math.abs(Mi) > maxMoment * 0.01) {
+      const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
+      labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, '#1565c0');
+    }
     const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
-    if (Math.abs(Mj_bmd) > maxMoment * 0.01)
-      labelText(fmtM(Mj_bmd), n2.x + perpX * Mj_bmd * scaleFactor, n2.y + perpY * Mj_bmd * scaleFactor, '#1565c0');
+    if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
+      const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
+      labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, '#1565c0');
+    }
     if (m.udl && m.type !== 'bar') {
       let peakM = 0, peakXi = 0.5;
       for (let k = 0; k <= NSEG; k++) {
@@ -992,7 +999,8 @@ function drawBMD() {
       }
       if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
         const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
-        labelText(fmtM(peakM), bx + perpX * peakM * scaleFactor, by + perpY * peakM * scaleFactor, '#1565c0');
+        const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
+        labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, '#1565c0');
       }
     }
   });
@@ -1055,6 +1063,7 @@ function drawSFD() {
 
   // ── Annotate end shears and zero crossings ────────────────────────────
   const fmtV = v => (v / 1000).toFixed(2) + ' kN';
+  const nudgeV = 8 * getSymbolScale();
   members.forEach((m, idx) => {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
@@ -1063,10 +1072,14 @@ function drawSFD() {
     const angle = Math.atan2(dy, dx);
     const perpX = -Math.sin(angle), perpY = Math.cos(angle);
     const Vi = shears[idx][0], Vj = -shears[idx][1];
-    if (Math.abs(Vi) > maxShear * 0.01)
-      labelText(fmtV(Vi), n1.x + perpX * Vi * scaleFactor, n1.y + perpY * Vi * scaleFactor, '#2e7d32');
-    if (Math.abs(Vj) > maxShear * 0.01)
-      labelText(fmtV(Vj), n2.x + perpX * Vj * scaleFactor, n2.y + perpY * Vj * scaleFactor, '#2e7d32');
+    if (Math.abs(Vi) > maxShear * 0.01) {
+      const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
+      labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, '#2e7d32');
+    }
+    if (Math.abs(Vj) > maxShear * 0.01) {
+      const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
+      labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, '#2e7d32');
+    }
     if (Vi * Vj < 0) {
       const xi0 = Vi / (Vi - Vj);
       const zx = n1.x + xi0 * dx, zy = n1.y + xi0 * dy;
