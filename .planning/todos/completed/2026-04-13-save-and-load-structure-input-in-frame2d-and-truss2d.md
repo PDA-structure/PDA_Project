@@ -1,5 +1,7 @@
 ---
 created: 2026-04-13T19:45:00.000Z
+promoted: 2026-04-14
+promoted_to: Phase 3 (Interchange Format and External Inputs)
 title: Save and load structure input in frame2d and truss2d
 area: ui
 priority: high

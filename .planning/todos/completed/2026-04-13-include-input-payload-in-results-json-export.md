@@ -1,5 +1,7 @@
 ---
 created: 2026-04-13T22:55:03.445Z
+promoted: 2026-04-14
+promoted_to: Phase 3 (Interchange Format and External Inputs)
 title: Include input payload in results JSON export
 area: ui
 files:
