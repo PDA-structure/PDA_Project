@@ -770,7 +770,7 @@ function drawUDLs() {
     ctx.strokeStyle = '#0288d1'; ctx.fillStyle = '#0288d1'; ctx.lineWidth = 1.5;
 
     // Horizontal baseline along the arrow tails (offset horizontally from member)
-    const baseOffsetX = arrowLen * sign;
+    const baseOffsetX = -arrowLen * sign;
     ctx.beginPath();
     ctx.moveTo(n1.x + baseOffsetX, n1.y);
     ctx.lineTo(n2.x + baseOffsetX, n2.y);
@@ -780,8 +780,8 @@ function drawUDLs() {
       const t = i / steps;
       const ax = n1.x + t * dx;   // point on member (arrow tip)
       const ay = n1.y + t * dy;
-      // Arrow drawn horizontally: tail at (ax + arrowLen*sign, ay), tip at (ax, ay)
-      const tailX = ax + arrowLen * sign;
+      // Arrow drawn horizontally: tail at (ax - arrowLen*sign, ay), tip at (ax, ay)
+      const tailX = ax - arrowLen * sign;
       const tailY = ay;
       ctx.beginPath();
       ctx.moveTo(tailX, tailY);
@@ -790,8 +790,8 @@ function drawUDLs() {
       // Arrowhead as filled triangle pointing toward the member
       ctx.beginPath();
       ctx.moveTo(ax, ay);                    // tip
-      ctx.lineTo(ax + 8 * sign, ay - 4);    // upper tail corner
-      ctx.lineTo(ax + 8 * sign, ay + 4);    // lower tail corner
+      ctx.lineTo(ax - 8 * sign, ay - 4);    // upper tail corner
+      ctx.lineTo(ax - 8 * sign, ay + 4);    // lower tail corner
       ctx.closePath();
       ctx.fill();
     }
@@ -799,7 +799,7 @@ function drawUDLs() {
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
     ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#01579b';
-    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx + arrowLen * sign * 1.8, my);
+    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx - arrowLen * sign * 1.8, my);
   });
 }
 
