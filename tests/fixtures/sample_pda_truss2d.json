@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "solver": "truss2d",
+  "nodes": [[0.0, 0.0], [1.0, 0.0]],
+  "members": [[1, 2]],
+  "E": 200000000000.0,
+  "A": 0.01,
+  "forceVector": [0, 0, 1000, 0],
+  "restrainedDoF": [1, 2, 4],
+  "canvas": {
+    "origin": {"x": 100, "y": 400},
+    "nodes": [
+      {"id": 0, "x": 100, "y": 400, "realX": 0, "realY": 0},
+      {"id": 1, "x": 120, "y": 400, "realX": 1, "realY": 0}
+    ],
+    "members": [
+      {"id": 0, "start": 0, "end": 1}
+    ],
+    "supports": {"0": "pinned", "1": "rollerY"},
+    "loads": [{"nodeId": 1, "fx": 1000, "fy": 0}]
+  }
+}
