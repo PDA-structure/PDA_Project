@@ -140,6 +140,7 @@ canvas.addEventListener('click', e => {
     }
   }
 
+  updateSaveButtonState();
   draw();
 });
 
@@ -166,6 +167,7 @@ function undoLastAction() {
   origin   = prev.origin;
   currentMemberStart = prev.currentMemberStart;
   results  = null;
+  updateSaveButtonState();
   draw();
 }
 
@@ -186,6 +188,7 @@ function resetAll() {
   document.getElementById('resultsPanel').style.display = 'none';
   setStatus('');
   setMode('node');
+  updateSaveButtonState();
   draw();
 }
 
@@ -654,6 +657,150 @@ canvas.addEventListener('mouseleave', () => { isPanning = false; });
 document.getElementById('inputScale').addEventListener('input', draw);
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
+// ── Save / Load model (Phase 3 interchange format) ────────────────────────
+function updateSaveButtonState() {
+  const btn = document.getElementById('btnSave');
+  if (btn) btn.disabled = nodes.length === 0;
+}
+
+function saveModel() {
+  if (nodes.length === 0) return;
+
+  // Solve payload — mirror solve() so file is directly POST-able to /solve/truss2d
+  const E_GPa = parseFloat(document.getElementById('inputE').value);
+  const A_cm2 = parseFloat(document.getElementById('inputA').value);
+  const E = E_GPa * 1e9;
+  const A = A_cm2 * 1e-4;
+
+  // restrainedDoF — 1-based, 2 DOF per node (Ux, Uy)
+  const restrainedDoF = [];
+  supports.forEach(s => {
+    const base = s.nodeId * 2;
+    if (s.type === 'pinned')  { restrainedDoF.push(base + 1, base + 2); }
+    if (s.type === 'rollerX') { restrainedDoF.push(base + 1); }
+    if (s.type === 'rollerY') { restrainedDoF.push(base + 2); }
+  });
+
+  // forceVector — flat, length = 2 * nNodes
+  const forceVector = new Array(nodes.length * 2).fill(0);
+  loads.forEach(l => {
+    const idx = l.nodeId * 2 + (l.direction === 'y' ? 1 : 0);
+    forceVector[idx] = l.magnitude;
+  });
+
+  // Canvas state per D-04 — supports as object keyed by nodeId string (NOT array)
+  const canvasSupports = supports.reduce((obj, s) => {
+    obj[String(s.nodeId)] = s.type;
+    return obj;
+  }, {});
+
+  const model = {
+    // Metadata — D-03
+    schema_version: "1.0",
+    solver: "truss2d",           // routing key AND engine name (coincide for truss2d)
+    // Solve payload — mirrors Truss2DRequest (D-01)
+    nodes:  nodes.map(n => [n.realX, n.realY]),
+    members: members.map(m => [m.start + 1, m.end + 1]),
+    E, A,
+    forceVector,
+    restrainedDoF,
+    // Canvas state — D-02/D-04 shape (no udl, no memberOverrides for truss2d)
+    canvas: {
+      origin: origin ? { x: origin.x, y: origin.y } : null,
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      members: JSON.parse(JSON.stringify(members)),
+      supports: canvasSupports,
+      loads: JSON.parse(JSON.stringify(loads)),
+    },
+  };
+
+  // Trigger download — D-06: filename = truss2d-model-{ISO timestamp}.json
+  const blob = new Blob([JSON.stringify(model, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const ts = now.getFullYear() + '-'
+    + String(now.getMonth()+1).padStart(2,'0') + '-'
+    + String(now.getDate()).padStart(2,'0') + 'T'
+    + String(now.getHours()).padStart(2,'0') + '-'
+    + String(now.getMinutes()).padStart(2,'0') + '-'
+    + String(now.getSeconds()).padStart(2,'0');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'truss2d-model-' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function triggerLoad() {
+  document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    let data;
+    try {
+      data = JSON.parse(evt.target.result);
+    } catch {
+      alert("Could not read file. Make sure it is a valid PDA JSON file.");
+      e.target.value = '';
+      return;
+    }
+    if (!data.schema_version || !data.solver || !data.nodes || !data.members) {
+      alert("File is missing required data. The file may be from an older version.");
+      e.target.value = '';
+      return;
+    }
+    if (data.solver !== 'truss2d') {
+      alert("This file is for the " + data.solver + " solver and cannot be loaded here.");
+      e.target.value = '';
+      return;
+    }
+    if (nodes.length > 0 && !confirm("This will replace the current structure. Continue?")) {
+      e.target.value = '';
+      return;
+    }
+
+    // Restore canvas state
+    origin   = data.canvas && data.canvas.origin ? data.canvas.origin : null;
+    nodes    = data.canvas && data.canvas.nodes ? data.canvas.nodes : [];
+    members  = data.canvas && data.canvas.members ? data.canvas.members : [];
+
+    // D-04: supports is an object keyed by nodeId — convert back to array
+    const sObj = (data.canvas && data.canvas.supports) || {};
+    supports = Object.entries(sObj).map(([nodeId, type]) => ({
+      nodeId: parseInt(nodeId, 10),
+      type: type,
+    }));
+
+    // truss2d uses "loads" (not nodeLoads)
+    loads = (data.canvas && data.canvas.loads) ? data.canvas.loads : [];
+
+    // Recalculate pixel positions from real coordinates + origin (Pitfall 1)
+    nodes.forEach(syncPixelFromReal);
+
+    // Reset solve + history + transient UI state
+    results = null;
+    history = [];
+    currentMemberStart = null;
+
+    const resultsPanel = document.getElementById('resultsPanel');
+    if (resultsPanel) resultsPanel.style.display = 'none';
+
+    updateSaveButtonState();
+    setStatus('', false);
+    draw();
+
+    // Pitfall 6 — reset input so same file can reload
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {
   if (_lastBlobUrl) URL.revokeObjectURL(_lastBlobUrl);
@@ -752,4 +899,5 @@ function renderResults(res) {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 setMode('node');
+updateSaveButtonState();
 draw();
