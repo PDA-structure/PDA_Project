@@ -232,6 +232,7 @@ canvas.addEventListener('click', e => {
     }
   }
 
+  updateSaveButtonState();
   draw();
 });
 
@@ -258,6 +259,7 @@ function undoLastAction() {
   origin        = prev.origin;
   currentMemberStart = prev.currentMemberStart;
   results = null;
+  updateSaveButtonState();
   draw();
 }
 
@@ -279,6 +281,7 @@ function resetAll() {
   document.getElementById('udlPanel').style.display = 'none';
   setStatus('');
   setMode('node');
+  updateSaveButtonState();
   draw();
 }
 
@@ -1137,6 +1140,232 @@ function createDownloadLink(res) {
   return a;
 }
 
+// ── Save / Load model (Phase 3 interchange format) ────────────────────────
+function updateSaveButtonState() {
+  const btn = document.getElementById('btnSave');
+  if (btn) btn.disabled = nodes.length === 0;
+}
+
+function saveModel() {
+  if (nodes.length === 0) return;
+
+  // ── Solve payload: mirror exactly the same logic as solve() to produce
+  //    a file that can be POSTed to /solve/frame2d without any transformation.
+  const E_GPa = parseFloat(document.getElementById('inputE').value);
+  const I_cm4 = parseFloat(document.getElementById('inputI').value);
+  const A_cm2 = parseFloat(document.getElementById('inputA').value);
+
+  const anyOverride = members.some(m => m.E_override != null || m.I_override != null || m.A_override != null);
+  const E = anyOverride
+    ? members.map(m => (m.E_override != null ? m.E_override : E_GPa) * 1e9)
+    : E_GPa * 1e9;
+  const I = anyOverride
+    ? members.map(m => (m.I_override != null ? m.I_override : I_cm4) * 1e-8)
+    : I_cm4 * 1e-8;
+  const A = anyOverride
+    ? members.map(m => (m.A_override != null ? m.A_override : A_cm2) * 1e-4)
+    : A_cm2 * 1e-4;
+
+  // restrainedDoF — 1-based, 3 DOF per node (Ux, Uy, θ)
+  const restrainedDoF = [];
+  supports.forEach(s => {
+    const base = s.nodeId * 3 + 1;
+    if (s.type === 'fixed')   restrainedDoF.push(base, base+1, base+2);
+    if (s.type === 'pinned')  restrainedDoF.push(base, base+1);
+    if (s.type === 'rollerX') restrainedDoF.push(base);
+    if (s.type === 'rollerY') restrainedDoF.push(base+1);
+  });
+
+  // forceVector — flat, length = 3 * nNodes
+  const forceVector = new Array(nodes.length * 3).fill(0);
+  nodeLoads.forEach(l => {
+    const base = l.nodeId * 3;
+    if (l.direction === 'x')      forceVector[base]     = l.magnitude;
+    if (l.direction === 'y')      forceVector[base + 1] = l.magnitude;
+    if (l.direction === 'moment') forceVector[base + 2] = l.magnitude;
+  });
+
+  // ENForces & ENMoments from UDLs
+  const ENForces  = members.map(m => {
+    if (!m.udl || m.type === 'bar') return [0, 0];
+    const L = memberLengthReal(m);
+    return [-(m.udl * L) / 2, -(m.udl * L) / 2];
+  });
+  const ENMoments = members.map(m => {
+    if (!m.udl || m.type === 'bar') return [0, 0];
+    const w = m.udl, L = memberLengthReal(m);
+    return [w * L * L / 12, -(w * L * L) / 12];
+  });
+
+  const bars         = members.map((m,i) => m.type === 'bar' ? i+1 : null).filter(Boolean);
+  const beamPinLeft  = members.map((m,i) => m.pinLeft        ? i+1 : null).filter(Boolean);
+  const beamPinRight = members.map((m,i) => m.pinRight       ? i+1 : null).filter(Boolean);
+
+  // ── Canvas state per D-04 schema ────────────────────────────────────────
+  // supports as OBJECT keyed by nodeId string (not array) — per D-04
+  const canvasSupports = supports.reduce((obj, s) => {
+    obj[String(s.nodeId)] = s.type;
+    return obj;
+  }, {});
+
+  // udl as array of {memberId, wy, wx} — per D-02/D-04
+  const canvasUdl = members
+    .filter(m => (m.udl !== null && m.udl !== undefined) || (m.udl_x !== null && m.udl_x !== undefined))
+    .map(m => ({ memberId: m.id, wy: m.udl || 0, wx: m.udl_x || 0 }));
+
+  // memberOverrides as object keyed by memberId string — per D-02/D-04
+  const canvasMemberOverrides = members.reduce((obj, m) => {
+    if (m.E_override != null || m.I_override != null || m.A_override != null) {
+      obj[String(m.id)] = {
+        E_GPa: m.E_override,
+        I_cm4: m.I_override,
+        A_cm2: m.A_override,
+      };
+    }
+    return obj;
+  }, {});
+
+  const model = {
+    // Metadata — D-03
+    schema_version: "1.0",
+    solver: "frame2d",            // file routing key (per D-03)
+    // Solve payload — mirrors Frame2DRequest (D-01)
+    // NOTE: inner solver field is the engine name (frame_v2) for direct POST to /solve/frame2d
+    nodes:   nodes.map(n => [n.realX, n.realY]),
+    members: members.map(m => [m.start + 1, m.end + 1]),
+    ENForces, ENMoments, forceVector,
+    E, I, A,
+    bars, beamPinLeft, beamPinRight,
+    restrainedDoF,
+    pinDoF: [], springDoF: [], springStiffness: [],
+    udl_x: members.map(m => m.udl_x !== null ? m.udl_x : 0),
+    // Canvas state — D-02/D-04 shape
+    canvas: {
+      origin: origin ? { x: origin.x, y: origin.y } : null,
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      members: JSON.parse(JSON.stringify(members)),
+      supports: canvasSupports,
+      nodeLoads: JSON.parse(JSON.stringify(nodeLoads)),
+      udl: canvasUdl,
+      memberOverrides: canvasMemberOverrides,
+    },
+  };
+
+  // Trigger download — D-06: filename = frame2d-model-{ISO timestamp}.json
+  const blob = new Blob([JSON.stringify(model, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const ts = now.getFullYear() + '-'
+    + String(now.getMonth()+1).padStart(2,'0') + '-'
+    + String(now.getDate()).padStart(2,'0') + 'T'
+    + String(now.getHours()).padStart(2,'0') + '-'
+    + String(now.getMinutes()).padStart(2,'0') + '-'
+    + String(now.getSeconds()).padStart(2,'0');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'frame2d-model-' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function triggerLoad() {
+  document.getElementById('fileInput').click();
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    let data;
+    try {
+      data = JSON.parse(evt.target.result);
+    } catch {
+      alert("Could not read file. Make sure it is a valid PDA JSON file.");
+      e.target.value = '';
+      return;
+    }
+    if (!data.schema_version || !data.solver || !data.nodes || !data.members) {
+      alert("File is missing required data. The file may be from an older version.");
+      e.target.value = '';
+      return;
+    }
+    if (data.solver !== 'frame2d') {
+      alert("This file is for the " + data.solver + " solver and cannot be loaded here.");
+      e.target.value = '';
+      return;
+    }
+    if (nodes.length > 0 && !confirm("This will replace the current structure. Continue?")) {
+      e.target.value = '';
+      return;
+    }
+
+    // Restore canvas state from canvas section
+    origin    = data.canvas && data.canvas.origin ? data.canvas.origin : null;
+    nodes     = data.canvas && data.canvas.nodes ? data.canvas.nodes : [];
+    members   = data.canvas && data.canvas.members ? data.canvas.members : [];
+
+    // D-04: supports is an object keyed by nodeId — convert back to array
+    const sObj = (data.canvas && data.canvas.supports) || {};
+    supports = Object.entries(sObj).map(([nodeId, type]) => ({
+      nodeId: parseInt(nodeId, 10),
+      type: type,
+    }));
+
+    nodeLoads = (data.canvas && data.canvas.nodeLoads) ? data.canvas.nodeLoads : [];
+
+    // D-02/D-04: Restore udl from canvas.udl array back into member objects
+    if (data.canvas && data.canvas.udl && data.canvas.udl.length > 0) {
+      const udlMap = {};
+      data.canvas.udl.forEach(u => { udlMap[u.memberId] = u; });
+      members.forEach(m => {
+        if (udlMap[m.id] !== undefined) {
+          m.udl = udlMap[m.id].wy !== undefined && udlMap[m.id].wy !== 0 ? udlMap[m.id].wy : (m.udl != null ? m.udl : null);
+          m.udl_x = udlMap[m.id].wx !== undefined && udlMap[m.id].wx !== 0 ? udlMap[m.id].wx : (m.udl_x != null ? m.udl_x : null);
+        }
+      });
+    }
+
+    // D-02/D-04: Restore memberOverrides from canvas.memberOverrides back into member objects
+    if (data.canvas && data.canvas.memberOverrides) {
+      Object.entries(data.canvas.memberOverrides).forEach(([memberId, overrides]) => {
+        const mid = parseInt(memberId, 10);
+        const m = members.find(mem => mem.id === mid);
+        if (m) {
+          m.E_override = overrides.E_GPa != null ? overrides.E_GPa : null;
+          m.I_override = overrides.I_cm4 != null ? overrides.I_cm4 : null;
+          m.A_override = overrides.A_cm2 != null ? overrides.A_cm2 : null;
+        }
+      });
+    }
+
+    // Recalculate pixel positions from real coordinates + origin (Pitfall 1)
+    nodes.forEach(syncPixelFromReal);
+
+    // Reset solve results and history
+    results = null;
+    history = [];
+    _udlActiveMemberIdx = null;
+    currentMemberStart = null;
+
+    // Clear stale UI state (results panel, diagram toggles)
+    const resultsPanel = document.getElementById('resultsPanel');
+    if (resultsPanel) resultsPanel.style.display = 'none';
+    clearDiagramState();
+
+    // Update Save button state — D-08: no auto-solve
+    updateSaveButtonState();
+    setStatus('', false);
+    draw();
+
+    // Reset file input so same file can be re-loaded (Pitfall 6)
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+
 function renderResults(res) {
   // Remove any existing download link
   const existingLink = document.querySelector('.download-link');
@@ -1373,4 +1602,5 @@ document.getElementById('udlCancelBtn').addEventListener('click', function() {
 
 // ── Init ──────────────────────────────────────────────────────────────────
 setMode('node');
+updateSaveButtonState();
 draw();

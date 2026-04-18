@@ -75,6 +75,17 @@
       </section>
 
       <section class="panel-section">
+        <h3>File</h3>
+        <button class="tool-btn" id="btnSave" onclick="saveModel()" title="Download structure as JSON" disabled>
+          &#x1F4BE; Save JSON
+        </button>
+        <button class="tool-btn" id="btnLoad" onclick="triggerLoad()" title="Load structure from JSON file">
+          &#x1F4C2; Load JSON
+        </button>
+        <input type="file" id="fileInput" accept=".json" style="display:none">
+      </section>
+
+      <section class="panel-section">
         <h3>Material Properties</h3>
         <label>E (GPa)
           <input type="number" id="inputE" value="200" min="0" step="1">
