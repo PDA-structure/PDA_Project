@@ -324,6 +324,52 @@ class BeamBarStructure_v2:
         return Ke, dof
 
     # ---------- loads (equivalent nodal actions) ----------
+    def _condensed_ena_local(self, e, fyi, mi, fyj, mj):
+        """Apply static condensation ``f_c = f_a - K_ab @ K_bb^{-1} @ f_b`` to the
+        local 6-component ENA for member ``e``, zeroing released-DOF components.
+
+        Uses the same ``_K_local_frame_6x6`` as assembly so the condensed ENA is
+        consistent with the condensed element stiffness (``_condense_release``)
+        used for that member. Returns a ``(6, 1)`` column vector in local axes
+        ``[Nx_i, Vy_i, M_i, Nx_j, Vy_j, M_j]`` suitable for the existing
+        ``T.T @ ENA_local`` global rotation step.
+        """
+        m = e + 1
+        rel_i = m in self.beamPinLeft
+        rel_j = m in self.beamPinRight
+
+        f = np.array([[0.0, fyi, mi, 0.0, fyj, mj]]).T  # (6, 1)
+
+        if not rel_i and not rel_j:
+            return f
+
+        release_dofs = []
+        if rel_i:
+            release_dofs.append(2)  # local M_i
+        if rel_j:
+            release_dofs.append(5)  # local M_j
+
+        Kl = self._K_local_frame_6x6(self.Em[e], self.Am[e], self.Im[e], self.lengths[e])
+        keep = [k for k in range(6) if k not in release_dofs]
+
+        Kab = Kl[np.ix_(keep, release_dofs)]
+        Kbb = Kl[np.ix_(release_dofs, release_dofs)]
+
+        try:
+            Kbb_inv = np.linalg.inv(Kbb)
+        except np.linalg.LinAlgError:
+            Kbb_inv = np.linalg.pinv(Kbb)
+
+        f_a = f[keep, :]
+        f_b = f[release_dofs, :]
+        f_a_c = f_a - Kab @ Kbb_inv @ f_b
+
+        out = np.zeros((6, 1), float)
+        for idx, row in enumerate(keep):
+            out[row, 0] = f_a_c[idx, 0]
+        # released-DOF rows remain 0 by construction
+        return out
+
     def apply_equivalent_nodal_actions(self):
         for e, (ni, nj) in enumerate(self.members):
             m = e + 1
@@ -333,16 +379,11 @@ class BeamBarStructure_v2:
             fyi, fyj = self.ENForces[e, 0], self.ENForces[e, 1]
             mi, mj = self.ENMoments[e, 0], self.ENMoments[e, 1]
 
-            if m in self.beamPinLeft:
-                mi = 0.0
-            if m in self.beamPinRight:
-                mj = 0.0
-
             theta = self.orientations[e]
             c, s = math.cos(theta), math.sin(theta)
             T = self._T_frame(c, s)
 
-            ENA_local = np.array([[0, fyi, mi, 0, fyj, mj]]).T
+            ENA_local = self._condensed_ena_local(e, fyi, mi, fyj, mj)
             ENA_global = T.T @ ENA_local
 
             i = ni - 1
@@ -478,16 +519,12 @@ class BeamBarStructure_v2:
 
             fyi, fyj = self.ENForces[e, 0], self.ENForces[e, 1]
             mi, mj = self.ENMoments[e, 0], self.ENMoments[e, 1]
-            if m in self.beamPinLeft:
-                mi = 0.0
-            if m in self.beamPinRight:
-                mj = 0.0
 
             theta = self.orientations[e]
             c, s = math.cos(theta), math.sin(theta)
             T = self._T_frame(c, s)
 
-            ENA_local = np.array([[0, fyi, mi, 0, fyj, mj]]).T
+            ENA_local = self._condensed_ena_local(e, fyi, mi, fyj, mj)
             ENA_global = T.T @ ENA_local
 
             i = ni - 1
@@ -509,15 +546,12 @@ class BeamBarStructure_v2:
 
             fyi, fyj = self.ENForces[e, 0], self.ENForces[e, 1]
             mi, mj = self.ENMoments[e, 0], self.ENMoments[e, 1]
-            if m in self.beamPinLeft:
-                mi = 0.0
-            if m in self.beamPinRight:
-                mj = 0.0
 
-            self.mbrShears[e, 0] -= fyi
-            self.mbrShears[e, 1] -= fyj
-            self.mbrMoments[e, 0] -= mi
-            self.mbrMoments[e, 1] -= mj
+            ena = self._condensed_ena_local(e, fyi, mi, fyj, mj).reshape(-1)
+            self.mbrShears[e, 0]  -= ena[1]   # Vy_i
+            self.mbrShears[e, 1]  -= ena[4]   # Vy_j
+            self.mbrMoments[e, 0] -= ena[2]   # M_i
+            self.mbrMoments[e, 1] -= ena[5]   # M_j
 
     # ---------- full pipeline ----------
     def solve_structure(self):
