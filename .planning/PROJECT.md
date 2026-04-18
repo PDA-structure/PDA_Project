@@ -9,10 +9,15 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 **Shipped:** v1.0 — 2D Solver Foundation (2026-04-18)
 
 - 2D truss and 2D frame solvers — working, tested, trusted
-- 15 pytest tests passing — all with analytical verification and equilibrium assertions
 - FastAPI server with /health, /solve/truss2d, /solve/frame2d
 - Browser UIs for both solvers: node/member drawing, supports, loads, UDL (vertical + horizontal), per-member E/I/A, section calculator, BMD/SFD/deformed shape, result export
-- ~5,300 LOC (Python + JS + HTML + CSS)
+
+**Phase 3 complete:** Interchange Format and External Inputs (2026-04-18)
+
+- Canonical JSON schema v1.0 for both solvers — save and reload from browser UI without re-entering data
+- Tekla Structural Designer Excel CLI converter (`converters/tekla_to_pda.py`) with editable COLUMN_MAP
+- Revit PyRevit exporter (`pyrevit_exporters/export_to_pda.py`) for Revit 2023+ analytical models
+- 37/37 pytest tests passing (8 interchange round-trip + 9 Tekla converter + 20 existing solver tests)
 
 ## Core Value
 
@@ -45,10 +50,10 @@ Engineers can define a structure, solve it, and get accurate displacement, react
 
 ### Active (next milestone)
 
-- [ ] Canonical interchange format (save/load JSON in browser UIs)
-- [ ] Tekla Structural Designer Excel import → canonical JSON schema
-- [ ] Revit PyRevit export → canonical JSON schema
-- [ ] Interchange format documented as communication/debugging tool
+- ✓ Canonical interchange format (save/load JSON in browser UIs) — validated in Phase 3
+- ✓ Tekla Structural Designer Excel import → canonical JSON schema — validated in Phase 3
+- ✓ Revit PyRevit export → canonical JSON schema — validated in Phase 3
+- ✓ Interchange format documented as communication/debugging tool — validated in Phase 3
 - [ ] Grillage solver (/solve/grillage, torsional stiffness, analytical tests)
 
 ### Out of Scope
@@ -113,4 +118,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after v1.0 milestone*
+*Last updated: 2026-04-18 after Phase 3 completion*
