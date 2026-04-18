@@ -1,0 +1,9 @@
+# PDA Analysis Software - development / tooling dependencies.
+#
+# IMPORTANT: These are NOT solver_core runtime dependencies. Do NOT add them
+# to solver_core/pyproject.toml (hard project rule — solver_core depends only
+# on numpy).
+#
+# Install into the active environment:
+#     pip install -r requirements-dev.txt
+openpyxl>=3.1
