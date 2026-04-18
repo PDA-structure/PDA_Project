@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: interchange-format-and-external-inputs
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-04-18
+reviewed_at: 2026-04-18
 ---
 
 # Phase 3 — UI Design Contract
@@ -44,7 +45,7 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | — (not used at this phase scale) |
 | 3xl | 64px | — (not used at this phase scale) |
 
-Exceptions: Button margin-bottom is 3px (existing convention — do not change; matches every `.tool-btn { margin-bottom: 3px }`). Panel padding is 10px 8px (existing — do not change).
+The following are inherited CSS values from existing stylesheets that predate this spec and are out of scope for this phase: `margin-bottom: 3px` on `.tool-btn` (existing), `padding: 10px 8px` on `.left-panel` (existing). New Save JSON/Load JSON buttons inherit these values from the `.tool-btn` class — no new spacing token is introduced.
 
 ---
 
@@ -61,13 +62,13 @@ All values extracted directly from the existing CSS. Do not introduce new sizes 
 
 **Source:** frame2d/style.css — `body { font-size: 13px }`, `.tool-btn { font-size: 12px }`, `.panel-section h3 { font-size: 11px }`, `header h1 { font-size: 16px; font-weight: 600 }`.
 
-New Save/Load button labels must use 12px weight 400 — identical to all other `.tool-btn` elements.
+New Save JSON/Load JSON button labels must use 12px weight 400 — identical to all other `.tool-btn` elements.
 
 ---
 
 ## Color
 
-All values extracted from the existing CSS. No new colors introduced for Save/Load.
+All values extracted from the existing CSS. No new colors introduced for Save JSON/Load JSON.
 
 | Role | Value | Usage |
 |------|-------|-------|
@@ -77,7 +78,7 @@ All values extracted from the existing CSS. No new colors introduced for Save/Lo
 | Accent variant | `#3f51b5` | Active toolbar button fill (truss2d), solve-btn hover, support-tag badge text |
 | Destructive | `#c62828` | `.tool-btn.danger` text color, error state text, compression force indicator |
 
-Accent (`#1a2744`) is reserved for: active/selected toolbar button background, Solve button background, page header background, results panel top border. Save/Load buttons are stateless actions (not modes) — they do NOT use the accent color at rest. They use the standard `.tool-btn` background (`#f5f5f5`) with hover state (`#e8eaf6` / `#9fa8da` border), identical to Undo and Reset View.
+Accent (`#1a2744`) is reserved for: active/selected toolbar button background, Solve button background, page header background, results panel top border. Save JSON/Load JSON buttons are stateless actions (not modes) — they do NOT use the accent color at rest. They use the standard `.tool-btn` background (`#f5f5f5`) with hover state (`#e8eaf6` / `#9fa8da` border), identical to Undo and Reset View.
 
 **Source:** frame2d/style.css and truss2d/style.css cross-referenced.
 
@@ -93,22 +94,22 @@ Both `frame2d/index.html` and `truss2d/index.html` receive a new `<section class
 <section class="panel-section">
   <h3>File</h3>
   <button class="tool-btn" id="btnSave" onclick="saveModel()" title="Download structure as JSON">
-    &#x1F4BE; Save
+    &#x1F4BE; Save JSON
   </button>
   <button class="tool-btn" id="btnLoad" onclick="triggerLoad()" title="Load structure from JSON file">
-    &#x1F4C2; Load
+    &#x1F4C2; Load JSON
   </button>
   <input type="file" id="fileInput" accept=".json" style="display:none">
 </section>
 ```
 
-**Button label copy:** "Save" and "Load" — single-word, consistent with existing terse label style ("Delete", "Undo", "Solve").
+**Button label copy:** "Save JSON" and "Load JSON" — verb + object format, consistent with the action performed and parallel to each other.
 
-**Icons:** Unicode emoji `📾` (💾, U+1F4BE floppy disk) for Save; `📂` (U+1F4C2 open folder) for Load. These are inline emoji matching the existing pattern (➕, 🔗, 📌, 🛞, 🗑, ↩️, ✏️, ▤, ◎).
+**Icons:** Unicode emoji `📾` (💾, U+1F4BE floppy disk) for Save JSON; `📂` (U+1F4C2 open folder) for Load JSON. These are inline emoji matching the existing pattern (➕, 🔗, 📌, 🛞, 🗑, ↩️, ✏️, ▤, ◎).
 
-**Save disabled state:** Save is disabled (`disabled` attribute + `.tool-btn:disabled { opacity: 0.45; cursor: not-allowed }`) when canvas is empty (zero nodes). Re-enabled on first node placement. This is within Claude's discretion (D-05 does not prohibit it) and prevents generating an empty/degenerate JSON file.
+**Save JSON disabled state:** Save JSON is disabled (`disabled` attribute + `.tool-btn:disabled { opacity: 0.45; cursor: not-allowed }`) when canvas is empty (zero nodes). Re-enabled on first node placement. This is within Claude's discretion (D-05 does not prohibit it) and prevents generating an empty/degenerate JSON file.
 
-**Hidden file input:** `<input type="file" id="fileInput" accept=".json" style="display:none">` is placed immediately after the Load button in the DOM. It has no visual presence.
+**Hidden file input:** `<input type="file" id="fileInput" accept=".json" style="display:none">` is placed immediately after the Load JSON button in the DOM. It has no visual presence.
 
 ---
 
@@ -116,17 +117,17 @@ Both `frame2d/index.html` and `truss2d/index.html` receive a new `<section class
 
 ### Save flow
 
-1. User clicks "Save" button.
+1. User clicks "Save JSON" button.
 2. `saveModel()` assembles the canonical JSON object (schema version 1.0 — see D-04).
 3. Creates a `Blob` with `type: 'application/json'` — same pattern as existing `createDownloadLink()`.
 4. Triggers download with filename: `frame2d-model-{ISO timestamp}.json` or `truss2d-model-{ISO timestamp}.json`. ISO timestamp format: `YYYY-MM-DDTHH-MM-SS` (colons replaced with hyphens for filesystem safety).
 5. No user prompt. No success toast or status message. The file download is self-confirming.
 
-**Save disabled condition:** button has `disabled` attribute when `nodes.length === 0`. JavaScript enables/disables it alongside canvas state changes (same locations that call `draw()`).
+**Save JSON disabled condition:** button has `disabled` attribute when `nodes.length === 0`. JavaScript enables/disables it alongside canvas state changes (same locations that call `draw()`).
 
 ### Load flow
 
-1. User clicks "Load" button.
+1. User clicks "Load JSON" button.
 2. `triggerLoad()` calls `document.getElementById('fileInput').click()`.
 3. User selects a `.json` file in the OS file picker.
 4. `fileInput` `change` event fires → reads file with `FileReader.readAsText()`.
@@ -149,8 +150,8 @@ All errors use `alert()` — consistent with existing error patterns in both UIs
 
 | Element | Copy |
 |---------|------|
-| Save button label | Save |
-| Load button label | Load |
+| Save button label | Save JSON |
+| Load button label | Load JSON |
 | Save button title (tooltip) | Download structure as JSON |
 | Load button title (tooltip) | Load structure from JSON file |
 | File section heading | File |
@@ -158,7 +159,7 @@ All errors use `alert()` — consistent with existing error patterns in both UIs
 | Error — JSON parse failure | Could not read file. Make sure it is a valid PDA JSON file. |
 | Error — wrong solver | This file is for the {solver} solver and cannot be loaded here. |
 | Error — missing fields | File is missing required data. The file may be from an older version. |
-| Save disabled title | Save (canvas is empty) |
+| Save JSON disabled title | Save JSON (canvas is empty) |
 
 **Copywriting rules applied:**
 - No ellipsis on button labels (existing convention: "Delete", "Undo" — not "Delete…").
@@ -180,9 +181,9 @@ Not applicable. This phase uses no npm packages, no shadcn components, no third-
 
 ## Accessibility Notes
 
-- Save and Load buttons are standard `<button>` elements — keyboard focusable, screen-reader accessible by default.
+- Save JSON and Load JSON buttons are standard `<button>` elements — keyboard focusable, screen-reader accessible by default.
 - `title` attributes provide tooltip text and supplement assistive technology labelling.
-- Disabled Save button uses native `disabled` attribute (not `aria-disabled`) — correct for buttons that perform no action when canvas is empty.
+- Disabled Save JSON button uses native `disabled` attribute (not `aria-disabled`) — correct for buttons that perform no action when canvas is empty.
 - `confirm()` and `alert()` dialogs are native browser — handled by assistive technology without additional ARIA.
 
 ---
