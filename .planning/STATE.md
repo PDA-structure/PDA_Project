@@ -59,6 +59,12 @@ None deferred at v1.0 close.
 | 260414-roe | Improve truss2d UI — zoom/pan, node labels, display toggles, stress column | 2026-04-14 | 3877eca |
 | 260414-s3t | Fix resetAll — reset view, mode, clear stale panel state (both UIs) | 2026-04-14 | 71ede0f |
 
+### Quick Tasks Completed (v1.1)
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260418-vcg | Fix frame_v2 pin-release + UDL condensation bug (add shared `_condensed_ena_local` helper + TRUST-09/10/11 regression tests) | 2026-04-18 | d112ab9 | [260418-vcg-fix-frame-v2-pin-release-and-udl-condens](./quick/260418-vcg-fix-frame-v2-pin-release-and-udl-condens/) |
+
 ### Blockers/Concerns
 
 None.
@@ -66,5 +72,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-18
-Stopped at: Session resumed — Phase 3 plans committed, proceeding to execute
-Resume: Run `/gsd-execute-phase 3` to execute Phase 3 (03-01, 03-02, 03-03)
+Stopped at: Phase 3 complete + quick task 260418-vcg complete
+Resume: `/gsd-check-todos` to review remaining todos, or `/gsd-discuss-phase 4` to start Grillage Solver planning
