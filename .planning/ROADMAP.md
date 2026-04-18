@@ -54,8 +54,8 @@ Full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 Plans:
 - [x] 03-01-PLAN.md — Save/Load JSON in frame2d and truss2d UIs + test fixtures
-- [ ] 03-02-PLAN.md — Integration tests for interchange format round-trip
-- [ ] 03-03-PLAN.md — Tekla Excel converter CLI + Revit PyRevit exporter
+- [x] 03-02-PLAN.md — Integration tests for interchange format round-trip
+- [x] 03-03-PLAN.md — Tekla Excel converter CLI + Revit PyRevit exporter
 
 **UI hint**: yes
 
