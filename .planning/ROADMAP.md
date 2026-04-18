@@ -1,66 +1,44 @@
 # Roadmap: PDA Analysis Software
 
-## Overview
+## Milestones
 
-Starting from a working 2D truss and 2D frame baseline, this roadmap takes the platform from developer prototype to a professional structural engineering SaaS tool. The roadmap is organised into three blocks:
+- ✅ **v1.0 — 2D Solver Foundation** — Phases 1–2 (shipped 2026-04-18)
+- 🚧 **v1.1 — Interchange and Grillage** — Phases 3–4 (in progress)
+- 📋 **v2.0 — 3D Solvers** — Phases 5–6 (planned)
+- 📋 **v3.0 — Advanced Solvers** — Phases 7–10 (planned)
 
-- **2D Foundation (Phases 1–4):** Complete the 2D solver world — hardening, model evolution, interchange format, and grillage. Browser canvas UI (vanilla JS) throughout.
-- **3D Transition (Phases 5–6):** 3D truss and 3D frame solvers. Blender add-on as primary UI (imports solver_core directly via bpy). Solver + API validated via interchange format JSON before any 3D UI is built.
-- **Advanced Solvers (Phases 7–10):** Dynamics, plate/shell, continuum FEM, non-linear cablenet. Solver + API first; UI research and design as a sub-phase once each solver is validated.
+## Phases
 
-**Phase Numbering:**
-- Integer phases (1–10): Planned milestone work in execution order
-- Decimal phases (e.g. 2.1): Urgent insertions (marked with INSERTED)
-- Directory naming for in-progress phases is preserved (e.g. `03-model-evolution-and-ux-polish` stays as-is)
+<details>
+<summary>✅ v1.0 — 2D Solver Foundation (Phases 1–2) — SHIPPED 2026-04-18</summary>
 
-- [x] **Phase 1: Trust and Production Hardening** - Fix production blockers, expand test suite, add BMD/SFD rendering and member stress output
-- [ ] **Phase 2: Model Evolution and UX Polish** - Per-member properties, section property calculator, result export, UI debugging tools *(directory: 03-model-evolution-and-ux-polish)*
-- [ ] **Phase 3: Interchange Format and External Inputs** - Save/load JSON in browser UIs, Tekla Structural Designer Excel import, Revit PyRevit export, canonical solver JSON schema
-- [ ] **Phase 4: Grillage Solver** - Add /solve/grillage endpoint with torsional stiffness and analytical tests
-- [ ] **Phase 5: 3D Truss Solver** - Add working /solve/truss3d endpoint with full analytical test coverage *(directory: 02-3d-truss-solver when created)*
-- [ ] **Phase 6: 3D Frame Solver** - Add /solve/frame3d endpoint, 6 DOF/node, full 3D transformation matrices, Blender add-on UI
-- [ ] **Phase 7: Structural Dynamics** - Modal analysis, natural frequencies, time-history response; starts with 2D frame, extends to 3D
-- [ ] **Phase 8: Plate and Shell Structures** - 2D FEM plate/shell elements, membrane + bending, stepping stone to continuum
-- [ ] **Phase 9: Continuum Structures (FEM)** - General 2D/3D continuum elements, stress fields, builds on plate/shell patterns
-- [ ] **Phase 10: Non-linear Cablenet Structures** - Geometric non-linearity, tension-only members, iterative solver (Newton-Raphson or dynamic relaxation)
+- [x] **Phase 1: Trust and Production Hardening** (3/3 plans) — completed 2026-04-11
+  - HTTP 422 on unstable structures, print removal, 15 analytical tests, BMD/SFD canvas rendering, member stress output
+- [x] **Phase 2: Model Evolution and UX Polish** (3/3 plans) — completed 2026-04-18 *(directory: 03-model-evolution-and-ux-polish)*
+  - Per-member E/I/A, section property calculator, JSON result export, node label overlay, symbol size scaler
+
+Full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
+
+</details>
+
+### 🚧 v1.1 — Interchange and Grillage
+
+- [ ] **Phase 3: Interchange Format and External Inputs** — Save/load JSON in browser UIs, Tekla Structural Designer Excel import, Revit PyRevit export, canonical solver JSON schema
+- [ ] **Phase 4: Grillage Solver** — Add /solve/grillage endpoint with torsional stiffness and analytical tests
+
+### 📋 v2.0 — 3D Solvers
+
+- [ ] **Phase 5: 3D Truss Solver** — Add working /solve/truss3d endpoint with full analytical test coverage
+- [ ] **Phase 6: 3D Frame Solver** — Add /solve/frame3d endpoint, 6 DOF/node, full 3D transformation matrices, Blender add-on UI
+
+### 📋 v3.0 — Advanced Solvers
+
+- [ ] **Phase 7: Structural Dynamics** — Modal analysis, natural frequencies, time-history response
+- [ ] **Phase 8: Plate and Shell Structures** — 2D FEM plate/shell elements, membrane + bending
+- [ ] **Phase 9: Continuum Structures (FEM)** — General 2D/3D continuum elements, stress fields
+- [ ] **Phase 10: Non-linear Cablenet Structures** — Geometric non-linearity, tension-only members, iterative solver
 
 ## Phase Details
-
-### Phase 1: Trust and Production Hardening
-**Goal**: The existing solvers are reliable enough for structural engineers to trust — errors are handled gracefully, the codebase has no known violations, and analytical correctness is verified across representative structural cases
-**Depends on**: Nothing (first phase)
-**Requirements**: TRUST-01, TRUST-02, TRUST-03, TRUST-04, TRUST-05, TRUST-06, TRUST-07, TRUST-08, TRUST-09, TRUST-10, TRUST-11
-**Success Criteria** (what must be TRUE):
-  1. Submitting an under-restrained structure to /solve/frame2d or /solve/truss2d returns HTTP 422 with message "structure is unstable or under-restrained" — not HTTP 500
-  2. grep for print( or summarize_results in solver_core returns no matches
-  3. pytest runs 20+ tests covering UDL simply-supported beam, portal frame equilibrium, bar member, pin release, and propped cantilever — all passing with analytical verification
-  4. Every test in the suite asserts global equilibrium: sum(FG) + sum(applied loads) approximately equals zero
-  5. Frame2d UI renders a Bending Moment Diagram and Shear Force Diagram on the canvas after solving, alongside the deformed shape
-  6. AnalysisResult meta includes member stress values (stress = F/A per member) for frame and truss solves
-**Plans:** 3 plans
-Plans:
-- [x] 01-01-PLAN.md — Error handling, print removal, and member stress output
-- [x] 01-02-PLAN.md — Test suite expansion with 5 analytical cases and equilibrium assertions
-- [x] 01-03-PLAN.md — BMD/SFD canvas rendering and stress display in UI
-**UI hint**: yes
-
-### Phase 2: Model Evolution and UX Polish
-**Goal**: The frame2d solver accepts non-uniform member properties, engineers have a section property calculator to get I and A from geometry, and solve results can be exported from the browser
-**Depends on**: Phase 1
-**Directory**: `03-model-evolution-and-ux-polish` (original numbering preserved)
-**Requirements**: MODEL-01, MODEL-02, MODEL-03, MODEL-04, MODEL-05
-**Success Criteria** (what must be TRUE):
-  1. A FrameModel2D with per-member E/I/A (list values) solves correctly; existing scalar E/I/A inputs continue to work without change
-  2. Existing frame2d browser UI and all current tests pass without modification after the per-member model change
-  3. A section property calculator returns correct I and A given section type (rectangle, circle, I-section) and dimensions
-  4. After solving in the frame2d or truss2d browser UI, a download link produces a valid JSON file containing all result fields
-  5. Frame2d UI shows a toggle-able overlay displaying node numbers and DOF labels on the canvas
-**Plans**: 3 plans
-Plans:
-- [x] 03-01-PLAN.md — Per-member E/I/A model changes and adapter updates
-- [x] 03-02-PLAN.md — Section property calculator
-- [x] 03-03-PLAN.md — Result export and UI debugging overlay
-**UI hint**: yes
 
 ### Phase 3: Interchange Format and External Inputs
 **Goal**: Engineers can save and load structures from the browser UI; external tools (Tekla Structural Designer, Revit) can export to the same canonical JSON schema; the interchange format enables 3D solver testing before any 3D UI is built
@@ -113,19 +91,19 @@ Plans:
 **Depends on**: Phase 2 (2D frame solver), Phase 6 for 3D extension
 **Requirements**: TBD
 **Success Criteria** (what must be TRUE):
-  1. A dynamics solver returns correct natural frequencies for a hand-verifiable single-storey frame (compare against analytical formula)
+  1. A dynamics solver returns correct natural frequencies for a hand-verifiable single-storey frame
   2. Mode shapes are normalised and can be visualised as animated deflected shapes in the Blender add-on
   3. test_dynamics.py contains 3+ passing tests with analytical verification
 **Plans**: TBD
 
 ### Phase 8: Plate and Shell Structures
 **Goal**: Engineers can model and solve plate/shell structures using 2D FEM elements with both membrane and bending behaviour
-**Depends on**: Phase 6 (3D frame solver infrastructure)
+**Depends on**: Phase 6
 **Requirements**: TBD
 **Success Criteria** (what must be TRUE):
-  1. POST /solve/plate returns correct deflections for a simply-supported rectangular plate under uniform pressure (compare against Navier series solution)
+  1. POST /solve/plate returns correct deflections for a simply-supported rectangular plate under uniform pressure (Navier series solution)
   2. test_plate.py contains 3+ passing tests including equilibrium and symmetry checks
-  3. Blender add-on supports plate/shell geometry input and result visualisation (stress contours, deflected surface)
+  3. Blender add-on supports plate/shell geometry input and result visualisation
 **Plans**: TBD
 
 ### Phase 9: Continuum Structures (FEM)
@@ -144,27 +122,24 @@ Plans:
 **Requirements**: TBD
 **Success Criteria** (what must be TRUE):
   1. POST /solve/cablenet returns correct equilibrium geometry for a hand-verifiable two-cable problem
-  2. Iterative solver converges within a documented tolerance; non-convergence returns HTTP 422 with a meaningful message
+  2. Iterative solver converges within a documented tolerance; non-convergence returns HTTP 422
   3. test_cablenet.py contains 3+ passing tests including a symmetry check and a load-step convergence test
 **Plans**: TBD
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Trust and Production Hardening | 3/3 | Complete | 2026-04-11 |
-| 2. Model Evolution and UX Polish | 3/3 | In progress | - |
-| 3. Interchange Format and External Inputs | 0/TBD | Not started | - |
-| 4. Grillage Solver | 0/TBD | Not started | - |
-| 5. 3D Truss Solver | 0/TBD | Not started | - |
-| 6. 3D Frame Solver | 0/TBD | Not started | - |
-| 7. Structural Dynamics | 0/TBD | Not started | - |
-| 8. Plate and Shell Structures | 0/TBD | Not started | - |
-| 9. Continuum Structures (FEM) | 0/TBD | Not started | - |
-| 10. Non-linear Cablenet Structures | 0/TBD | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Trust and Production Hardening | v1.0 | 3/3 | Complete | 2026-04-11 |
+| 2. Model Evolution and UX Polish | v1.0 | 3/3 | Complete | 2026-04-18 |
+| 3. Interchange Format and External Inputs | v1.1 | 0/TBD | Not started | - |
+| 4. Grillage Solver | v1.1 | 0/TBD | Not started | - |
+| 5. 3D Truss Solver | v2.0 | 0/TBD | Not started | - |
+| 6. 3D Frame Solver | v2.0 | 0/TBD | Not started | - |
+| 7. Structural Dynamics | v3.0 | 0/TBD | Not started | - |
+| 8. Plate and Shell Structures | v3.0 | 0/TBD | Not started | - |
+| 9. Continuum Structures (FEM) | v3.0 | 0/TBD | Not started | - |
+| 10. Non-linear Cablenet Structures | v3.0 | 0/TBD | Not started | - |
 
 ## Backlog
 

@@ -1,60 +1,62 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Phase 3 UI-SPEC approved
-last_updated: "2026-04-12T19:15:28.251Z"
-last_activity: 2026-04-14 -- Completed quick task 260414-roe: Improve truss2d UI — zoom/pan, node labels, display toggles, stress column
+milestone: v1.1
+milestone_name: Interchange and Grillage
+status: planning
+stopped_at: v1.0 milestone complete — ready to start Phase 3
+last_updated: "2026-04-18"
+last_activity: 2026-04-18 -- Completed v1.0 milestone (2D Solver Foundation)
 progress:
-  total_phases: 4
-  completed_phases: 1
+  total_phases: 2
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 3
-  percent: 50
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-05)
+See: .planning/PROJECT.md (updated 2026-04-18 after v1.0 milestone)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 03 — model-evolution-and-ux-polish
+**Current focus:** v1.1 — Interchange and Grillage (Phases 3–4). Next: plan Phase 3.
 
 ## Current Position
 
-Phase: 03 (model-evolution-and-ux-polish) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 03
-Last activity: 2026-04-12 -- Phase 03 execution started
+Phase: v1.0 COMPLETE — preparing Phase 3 (Interchange Format and External Inputs)
+Status: Planning next phase
+Last activity: 2026-04-18 -- v1.0 milestone archived and tagged
 
-Progress: [██░░░░░░░░] 25%
+Progress: [██████████] 100% (v1.0 complete)
 
 ## Accumulated Context
 
 ### Decisions
 
-- Roadmap: 4 phases derived from requirement clusters — production hardening before any new solver work
-- Roadmap: Phase 3 (per-member properties) must precede Phase 4 (grillage)
-- Phase 02 (3D Truss) deferred by user — proceeding directly to Phase 03 per-member properties
-- Phase 03 scope: frame2d first, truss2d later; per-member I and A with global fallback defaults; click-member UI like UDL
-- Research flag: Phase 3 needs explicit API versioning strategy decision before implementation (union type vs versioned endpoint)
+- v1.0 covered Phases 1–2: Trust and Production Hardening + Model Evolution and UX Polish
+- UI/UX polish intentionally deferred — revisit after interchange format (Phase 3) stabilises data model
+- Phase 3 (Interchange Format) is the logical next step — enables save/load and external tool integration
+- Phase 4 (Grillage) can proceed in parallel with or after Phase 3 (depends on Phase 2, not Phase 3)
 
 ### Pending Todos
 
-7 pending todos — run `/gsd-check-todos` to review
+Run `/gsd-check-todos` to review pending todos.
 
-### Quick Tasks Completed
+### Deferred Items
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260413-rlh | Add horizontal UDL support to frame2d | 2026-04-13 | 43bb4a1 | [260413-rlh-add-horizontal-udl-support-to-frame2d](.planning/quick/260413-rlh-add-horizontal-udl-support-to-frame2d/) |
-| 260413-t8l | Improve horizontal UDL UX and correctness for inclined members | 2026-04-13 | 3241b02 | [260413-t8l-improve-horizontal-udl-ux-and-correctnes](.planning/quick/260413-t8l-improve-horizontal-udl-ux-and-correctnes/) |
-| 260414-r5c | Fix wx UDL arrow direction in frame2d UI — positive wx renders rightward | 2026-04-14 | 7725f9e | [260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui](.planning/quick/260414-r5c-fix-wx-udl-arrow-direction-in-frame2d-ui/) |
-| 260414-roe | Improve truss2d UI — zoom/pan, node labels/DOFs, display toggles, stress column | 2026-04-14 | 3877eca | [260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s](.planning/quick/260414-roe-improve-truss2d-ui-add-zoom-in-out-pan-s/) |
-| 260414-s3t | Fix resetAll — reset view, mode to node, clear stale panel state (both UIs) | 2026-04-14 | 71ede0f | [260414-s3t-fix-resetall-in-truss2d-and-frame2d-rese](.planning/quick/260414-s3t-fix-resetall-in-truss2d-and-frame2d-rese/) |
+None deferred at v1.0 close.
+
+### Quick Tasks Completed (v1.0)
+
+| # | Description | Date | Commit |
+|---|-------------|------|--------|
+| 260413-rlh | Add horizontal UDL support to frame2d | 2026-04-13 | 43bb4a1 |
+| 260413-t8l | Improve horizontal UDL UX and correctness for inclined members | 2026-04-13 | 3241b02 |
+| 260414-r5c | Fix wx UDL arrow direction — positive wx renders rightward | 2026-04-14 | 7725f9e |
+| 260414-roe | Improve truss2d UI — zoom/pan, node labels, display toggles, stress column | 2026-04-14 | 3877eca |
+| 260414-s3t | Fix resetAll — reset view, mode, clear stale panel state (both UIs) | 2026-04-14 | 71ede0f |
 
 ### Blockers/Concerns
 
@@ -62,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:38:12.157Z
-Stopped at: Phase 3 UI-SPEC approved
-Resume file: .planning/phases/03-model-evolution-and-ux-polish/03-UI-SPEC.md
+Last session: 2026-04-18
+Stopped at: v1.0 milestone complete
+Resume: Run `/gsd-plan-phase 3` to begin Phase 3 planning
