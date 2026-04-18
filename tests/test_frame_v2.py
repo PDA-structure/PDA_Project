@@ -370,3 +370,146 @@ def test_per_member_EI_two_span():
     R1 = result.FG[1, 0]
     R3 = result.FG[7, 0]
     assert np.isclose(R1 + R3, F_applied, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Case 9: Propped cantilever via beamPinRight + UDL (TRUST-09)
+#
+# Regression test for 260418-vcg: pin-release + UDL was not condensing the
+# local ENA. Only the far-end moment was zeroed while the stiffness was
+# condensed, producing incorrect shear distribution and bending moment.
+# With the fix, ENA condensation (f_c = f_a - Kab @ Kbb^-1 @ f_b) redistributes
+# the UDL to the propped cantilever pattern: 5wL/8 at fixed end, 3wL/8 at
+# released end, and M_i = +wL^2/8 at fixed end.
+#
+# Nodes: 1(0,0), 2(L_pc,0), L_pc=4m horizontal beam
+# Member 1: beam, beamPinRight=[1] — moment released at j-end (node 2)
+# Restraints: node1 fully fixed (DoFs 1,2,3); node2 Uy restrained as prop (DoF 5)
+# Released rotation at node2 (DoF 6) must be in pinDoF (same as TRUST-06)
+# ---------------------------------------------------------------------------
+def test_propped_cantilever_via_beam_pin_right_udl():
+    """TRUST-09: Propped cantilever via beamPinRight + UDL.
+
+    Guards against the pre-260418-vcg bug where pin-release + UDL did not
+    apply static condensation to the local ENA.
+    """
+    w = 10000.0
+    L_pc = 4.0
+    enf = -w * L_pc / 2
+    enm_i = w * L_pc**2 / 12
+    enm_j = -w * L_pc**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_pc, 0.0]],
+        members=[[1, 2]],
+        ENForces=[[enf, enf]],
+        ENMoments=[[enm_i, enm_j]],
+        force_vector=[0.0] * 6,
+        E=E, I=I, A=A,
+        beamPinRight=[1],
+        restrainedDoF=[1, 2, 3, 5],  # fix Ux1,Uy1,theta1, prop Uy2
+        pinDoF=[6],                   # released theta2 excluded from reduced system
+    )
+    s.solve_structure()
+
+    # Fixed-end (i) moment from propped cantilever UDL: magnitude wL^2/8.
+    # Solver sign convention: hogging fixed-end moment comes out negative
+    # (matches TRUST-07 real-roller propped cantilever, solver is self-consistent).
+    assert s.mbrMoments[0, 0] == pytest.approx(-w * L_pc**2 / 8, rel=1e-6)
+    # Released (j) end moment: zero
+    assert s.mbrMoments[0, 1] == pytest.approx(0.0, abs=1e-6)
+    # Fixed-end vertical reaction = 5wL/8
+    assert s.FG[1, 0] == pytest.approx(5 * w * L_pc / 8, rel=1e-6)
+    # Prop vertical reaction = 3wL/8
+    assert s.FG[4, 0] == pytest.approx(3 * w * L_pc / 8, rel=1e-6)
+    # Vertical equilibrium
+    assert np.isclose(s.FG[1, 0] + s.FG[4, 0] - w * L_pc, 0, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Case 10: Propped cantilever via beamPinLeft + UDL (TRUST-10)
+#
+# Mirror of TRUST-09: released rotation at i-end (node 1), fixed at j-end.
+# Solver sign convention: fixed j-end moment comes out positive (+wL^2/8),
+# opposite in sign to TRUST-09's fixed i-end, as expected for a mirrored
+# propped cantilever with the solver's 3-DoF frame convention.
+# ---------------------------------------------------------------------------
+def test_propped_cantilever_via_beam_pin_left_udl():
+    """TRUST-10: Propped cantilever via beamPinLeft + UDL (mirror of TRUST-09).
+
+    Guards against the pre-260418-vcg bug where pin-release + UDL did not
+    apply static condensation to the local ENA.
+    """
+    w = 10000.0
+    L_pc = 4.0
+    enf = -w * L_pc / 2
+    enm_i = w * L_pc**2 / 12
+    enm_j = -w * L_pc**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_pc, 0.0]],
+        members=[[1, 2]],
+        ENForces=[[enf, enf]],
+        ENMoments=[[enm_i, enm_j]],
+        force_vector=[0.0] * 6,
+        E=E, I=I, A=A,
+        beamPinLeft=[1],
+        restrainedDoF=[1, 2, 4, 5, 6],  # Ux1,Uy1 prop; Ux2,Uy2,theta2 fixed
+        pinDoF=[3],                      # released theta1 excluded from reduced system
+    )
+    s.solve_structure()
+
+    # Released (i) end moment: zero
+    assert s.mbrMoments[0, 0] == pytest.approx(0.0, abs=1e-6)
+    # Fixed (j) end moment: +wL^2/8 (positive in solver convention, mirror of
+    # TRUST-09's fixed-end sign — the end-rotation sign flips between i-end
+    # and j-end in the 3-DoF frame convention).
+    assert s.mbrMoments[0, 1] == pytest.approx(w * L_pc**2 / 8, rel=1e-6)
+    # Prop vertical reaction at i-end = 3wL/8
+    assert s.FG[1, 0] == pytest.approx(3 * w * L_pc / 8, rel=1e-6)
+    # Fixed vertical reaction at j-end = 5wL/8
+    assert s.FG[4, 0] == pytest.approx(5 * w * L_pc / 8, rel=1e-6)
+    # Vertical equilibrium
+    assert np.isclose(s.FG[1, 0] + s.FG[4, 0] - w * L_pc, 0, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Case 11: Simply-supported via both-end pin releases + UDL (TRUST-11)
+#
+# Both rotations released via beamPinLeft + beamPinRight. After condensation,
+# both end moments vanish and reactions are wL/2 at each node.
+# ---------------------------------------------------------------------------
+def test_simply_supported_via_both_end_pin_releases_udl():
+    """TRUST-11: Both-end pin-release + UDL reproduces simply-supported reactions.
+
+    Guards against the pre-260418-vcg bug where pin-release + UDL did not
+    apply static condensation to the local ENA.
+    """
+    w = 10000.0
+    L_pc = 4.0
+    enf = -w * L_pc / 2
+    enm_i = w * L_pc**2 / 12
+    enm_j = -w * L_pc**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_pc, 0.0]],
+        members=[[1, 2]],
+        ENForces=[[enf, enf]],
+        ENMoments=[[enm_i, enm_j]],
+        force_vector=[0.0] * 6,
+        E=E, I=I, A=A,
+        beamPinLeft=[1],
+        beamPinRight=[1],
+        restrainedDoF=[1, 2, 5],  # pin at node1, rollerY at node2
+        pinDoF=[3, 6],            # both released rotations excluded from reduced system
+    )
+    s.solve_structure()
+
+    # Both end moments zero (simply supported via releases)
+    assert s.mbrMoments[0, 0] == pytest.approx(0.0, abs=1e-6)
+    assert s.mbrMoments[0, 1] == pytest.approx(0.0, abs=1e-6)
+    # Reactions wL/2 at each node
+    assert s.FG[1, 0] == pytest.approx(w * L_pc / 2, rel=1e-6)
+    assert s.FG[4, 0] == pytest.approx(w * L_pc / 2, rel=1e-6)
+    # Vertical equilibrium
+    assert np.isclose(s.FG[1, 0] + s.FG[4, 0] - w * L_pc, 0, atol=1e-6)
