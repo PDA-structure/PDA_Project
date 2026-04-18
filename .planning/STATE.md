@@ -64,6 +64,7 @@ None deferred at v1.0 close.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260418-vcg | Fix frame_v2 pin-release + UDL condensation bug (add shared `_condensed_ena_local` helper + TRUST-09/10/11 regression tests) | 2026-04-18 | d112ab9 | [260418-vcg-fix-frame-v2-pin-release-and-udl-condens](./quick/260418-vcg-fix-frame-v2-pin-release-and-udl-condens/) |
+| 260418-vxi | Add diagnostic JS error banner to frame2d and truss2d UIs (Safari-visible without DevTools; wraps 6 entry points in try/catch) | 2026-04-18 | 7d09d66 | [260418-vxi-add-error-banner-to-uis-for-diagnostic-v](./quick/260418-vxi-add-error-banner-to-uis-for-diagnostic-v/) |
 
 ### Blockers/Concerns
 
