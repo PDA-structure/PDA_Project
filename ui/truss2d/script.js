@@ -98,6 +98,7 @@ function setMode(m) {
 
 // ── Canvas click ──────────────────────────────────────────────────────────
 canvas.addEventListener('click', e => {
+  try {
   let { x: px, y: py } = toWorld(e.clientX, e.clientY);
 
   if (mode === 'node') {
@@ -183,6 +184,10 @@ canvas.addEventListener('click', e => {
 
   updateSaveButtonState();
   draw();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 });
 
 // ── History ───────────────────────────────────────────────────────────────
@@ -334,6 +339,7 @@ function setStatus(msg, isError = false) {
 
 // ── Draw ──────────────────────────────────────────────────────────────────
 function draw() {
+  try {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
@@ -345,6 +351,10 @@ function draw() {
   if (document.getElementById('chkLoads')?.checked) drawLoads();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 }
 
 function drawGrid() {
@@ -615,6 +625,7 @@ function drawLoads() {
 }
 
 function drawDeflected() {
+  try {
   const scale = parseFloat(document.getElementById('inputScale').value) || 100;
   const UG = results.UG;
 
@@ -645,6 +656,10 @@ function drawDeflected() {
   });
 
   ctx.setLineDash([]);
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 }
 
 // ── Deflected shape toggle ────────────────────────────────────────────────
@@ -695,7 +710,14 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mouseup',    () => { isPanning = false; });
 canvas.addEventListener('mouseleave', () => { isPanning = false; });
 
-document.getElementById('inputScale').addEventListener('input', draw);
+document.getElementById('inputScale').addEventListener('input', function () {
+  try {
+    draw();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
+});
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Save / Load model (Phase 3 interchange format) ────────────────────────
@@ -705,6 +727,7 @@ function updateSaveButtonState() {
 }
 
 function saveModel() {
+  try {
   if (nodes.length === 0) return;
 
   // Solve payload — mirror solve() so file is directly POST-able to /solve/truss2d
@@ -772,6 +795,10 @@ function saveModel() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 }
 
 function triggerLoad() {
@@ -779,6 +806,7 @@ function triggerLoad() {
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e) {
+  try {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -840,6 +868,10 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     e.target.value = '';
   };
   reader.readAsText(file);
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 });
 
 // ── Results tables ────────────────────────────────────────────────────────

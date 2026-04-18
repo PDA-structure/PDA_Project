@@ -103,6 +103,7 @@ function setMode(m) {
 
 // ── Canvas click ──────────────────────────────────────────────────────────
 canvas.addEventListener('click', e => {
+  try {
   if (isPanning) return;
   let { x: px, y: py } = toWorld(e.clientX, e.clientY);
 
@@ -275,6 +276,10 @@ canvas.addEventListener('click', e => {
 
   updateSaveButtonState();
   draw();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 });
 
 // ── History ───────────────────────────────────────────────────────────────
@@ -478,6 +483,7 @@ function clearDiagramState() {
 }
 
 function draw() {
+  try {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
@@ -497,6 +503,10 @@ function draw() {
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
     drawNodeLabels();
+  }
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
   }
 }
 
@@ -876,6 +886,7 @@ function labelText(text, x, y, color) {
 // For UDL members, adds the quartic particular-solution correction so midspan
 // deflection is exact rather than the 80%-accurate cubic approximation.
 function drawDeflected() {
+  try {
   const scale = parseFloat(document.getElementById('inputScale').value) || 100;
   const E = parseFloat(document.getElementById('inputE').value) * 1e9;
   const I = parseFloat(document.getElementById('inputI').value) * 1e-8;
@@ -943,6 +954,10 @@ function drawDeflected() {
   ctx.setLineDash([]);
   if (maxTransverse > 1e-8) {
     labelText('δ=' + (maxTransverse * 1000).toFixed(3) + ' mm', maxLX, maxLY - 12, '#e65100');
+  }
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
   }
 }
 
@@ -1145,7 +1160,14 @@ document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
-document.getElementById('inputScale').addEventListener('input', draw);
+document.getElementById('inputScale').addEventListener('input', function () {
+  try {
+    draw();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
+});
 document.getElementById('inputDiagramScale').addEventListener('input', draw);
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
@@ -1188,6 +1210,7 @@ function updateSaveButtonState() {
 }
 
 function saveModel() {
+  try {
   if (nodes.length === 0) return;
 
   // ── Solve payload: mirror exactly the same logic as solve() to produce
@@ -1309,6 +1332,10 @@ function saveModel() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 }
 
 function triggerLoad() {
@@ -1316,6 +1343,7 @@ function triggerLoad() {
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e) {
+  try {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -1405,6 +1433,10 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     e.target.value = '';
   };
   reader.readAsText(file);
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
 });
 
 function renderResults(res) {
