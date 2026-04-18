@@ -1,3 +1,44 @@
+// ── Error banner (diagnostic) ─────────────────────────────────────────────
+function showError(msg, source, lineno, colno, error) {
+  var banner = document.getElementById('errorBanner');
+  var text   = document.getElementById('errorBannerText');
+  if (!banner || !text) return;
+  var shortSource = '';
+  if (source) {
+    var parts = String(source).split('/');
+    shortSource = ' (' + parts[parts.length - 1] + ':' + (lineno || '?') + ':' + (colno || '?') + ')';
+  }
+  var stack = '';
+  if (error && error.stack) {
+    stack = '\n' + String(error.stack).split('\n').slice(0, 3).join('\n');
+  }
+  text.textContent = String(msg) + shortSource + stack;
+  banner.style.display = 'block';
+}
+
+window.addEventListener('error', function (e) {
+  showError(e.message, e.filename, e.lineno, e.colno, e.error);
+});
+window.addEventListener('unhandledrejection', function (e) {
+  var reasonMsg = 'Unhandled promise rejection: ';
+  if (e.reason && e.reason.message) {
+    reasonMsg += e.reason.message;
+  } else {
+    reasonMsg += String(e.reason);
+  }
+  showError(reasonMsg, '', 0, 0, e.reason);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  var closeBtn = document.getElementById('errorBannerClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function () {
+      var banner = document.getElementById('errorBanner');
+      if (banner) banner.style.display = 'none';
+    });
+  }
+});
+
 const API_URL = 'http://localhost:8000';
 
 const canvas = document.getElementById('canvas');
