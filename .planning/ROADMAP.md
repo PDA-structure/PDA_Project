@@ -50,7 +50,13 @@ Full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   3. A Tekla Structural Designer Excel export can be converted to the canonical JSON schema and solved via the API
   4. A Revit PyRevit script exports the analytical model to the canonical JSON schema
   5. The interchange format is documented and usable as a communication tool (paste JSON into conversation for debugging/verification)
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Save/Load JSON in frame2d and truss2d UIs + test fixtures
+- [ ] 03-02-PLAN.md — Integration tests for interchange format round-trip
+- [ ] 03-03-PLAN.md — Tekla Excel converter CLI + Revit PyRevit exporter
+
 **UI hint**: yes
 
 ### Phase 4: Grillage Solver
@@ -132,7 +138,7 @@ Full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 |-------|-----------|----------------|--------|-----------|
 | 1. Trust and Production Hardening | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 2. Model Evolution and UX Polish | v1.0 | 3/3 | Complete | 2026-04-18 |
-| 3. Interchange Format and External Inputs | v1.1 | 0/TBD | Not started | - |
+| 3. Interchange Format and External Inputs | v1.1 | 0/3 | Planning | - |
 | 4. Grillage Solver | v1.1 | 0/TBD | Not started | - |
 | 5. 3D Truss Solver | v2.0 | 0/TBD | Not started | - |
 | 6. 3D Frame Solver | v2.0 | 0/TBD | Not started | - |
