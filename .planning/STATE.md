@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: 2D Frame Hardening + Revit-as-UI (MVP)
-status: roadmap_ready
-stopped_at: Roadmap created — Phase 4 ready to plan
-last_updated: "2026-04-19T12:30:00.000Z"
-last_activity: 2026-04-19
+milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
+status: Roadmap ready — begin with `/gsd-plan-phase 4`
+stopped_at: Phase 4 context gathered
+last_updated: "2026-04-19T14:40:27.855Z"
+last_activity: 2026-04-19 — Roadmap created for v1.2 (Phases 4, 5, 6)
 progress:
-  total_phases: 3
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 0
 ---
 
 # Project State
@@ -46,6 +45,7 @@ Last activity: 2026-04-19 — Roadmap created for v1.2 (Phases 4, 5, 6)
 ### Pending Todos
 
 4 pending — Run `/gsd-check-todos` to review.
+
 - **[high]** Multi-member frame solver test coverage (2026-04-19) — absorbed into v1.2 Phase 4 (HARDEN-01)
 
 ### Deferred Items
@@ -83,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-19
-Stopped at: v1.2 roadmap created — Phases 4, 5, 6 defined. 15/15 requirements mapped.
+Last session: 2026-04-19T14:40:27.850Z
+Stopped at: Phase 4 context gathered
 Resume: `/gsd-plan-phase 4` to begin 2D Frame Solver + UI Hardening
