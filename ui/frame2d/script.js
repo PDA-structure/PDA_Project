@@ -61,11 +61,13 @@ let currentMemberStart = null;
 
 let nodes      = [];   // { id, x, y, realX, realY }
 let members    = [];   // { id, start, end, type:'beam'|'bar', pinLeft, pinRight, udl }
-let supports   = [];   // { nodeId, type:'fixed'|'pinned'|'rollerX'|'rollerY' }
+let supports   = [];   // classic: { nodeId, type:'fixed'|'pinned'|'rollerX'|'rollerY' }
+                       // spring:  { nodeId, type:'spring', Kx, Ky, Ktheta }  (K in UI units: kN/m, kN·m/rad; null = free)
 let nodeLoads  = [];   // { nodeId, direction:'x'|'y'|'moment', magnitude }
 let history    = [];
 let results    = null;
 let _udlActiveMemberIdx = null;
+let _springActiveNodeId = null;
 
 // ── View transform (zoom / pan) ───────────────────────────────────────────
 let view = { scale: 1, tx: 0, ty: 0 };
@@ -85,6 +87,7 @@ const MODE_LABELS = {
   node: 'Add Node', member: 'Add Member',
   fixed: 'Fixed Support', pinned: 'Pinned Support',
   rollerX: 'Roller (X fixed)', rollerY: 'Roller (Y fixed)',
+  spring: 'Spring Support',
   loadX: 'Force X', loadY: 'Force Y', loadMoment: 'Moment',
   udl: 'UDL on Member',
   toggleBar: 'Toggle Beam / Bar',
@@ -151,6 +154,21 @@ canvas.addEventListener('click', e => {
       supports = supports.filter(s => s.nodeId !== n.id); // one support per node
       supports.push({ nodeId: n.id, type: mode });
       results = null;
+    }
+
+  // ---- Spring support (elastic) ----
+  } else if (mode === 'spring') {
+    const n = findNodeAt(px, py);
+    if (n) {
+      _springActiveNodeId = n.id;
+      // D-06: pre-fill from existing spring at this node if present (editable)
+      const existing = supports.find(s => s.nodeId === n.id && s.type === 'spring');
+      document.getElementById('springPanelTitle').textContent = 'Spring Support — Node ' + (n.id + 1);
+      document.getElementById('springKx').value     = existing && existing.Kx     != null ? existing.Kx     : '';
+      document.getElementById('springKy').value     = existing && existing.Ky     != null ? existing.Ky     : '';
+      document.getElementById('springKtheta').value = existing && existing.Ktheta != null ? existing.Ktheta : '';
+      document.getElementById('springPanel').style.display = 'block';
+      document.getElementById('springKx').focus();
     }
 
   // ---- Node loads ----
@@ -314,6 +332,9 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.getElementById('udlPanel').style.display = 'none';
     _udlActiveMemberIdx = null;
+    const sp = document.getElementById('springPanel');
+    if (sp) sp.style.display = 'none';
+    _springActiveNodeId = null;
   }
 });
 
@@ -322,13 +343,58 @@ function resetAll() {
   nodes = []; members = []; supports = []; nodeLoads = [];
   origin = null; currentMemberStart = null; results = null; history = [];
   _udlActiveMemberIdx = null;
+  _springActiveNodeId = null;
   view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
   document.getElementById('udlPanel').style.display = 'none';
+  const sp = document.getElementById('springPanel');
+  if (sp) sp.style.display = 'none';
   setStatus('');
   setMode('node');
   updateSaveButtonState();
   draw();
+}
+
+// ── Spring support modal: apply / cancel ─────────────────────────────────
+function applySpringSupport() {
+  try {
+    if (_springActiveNodeId === null) return;
+    const kxRaw     = document.getElementById('springKx').value.trim();
+    const kyRaw     = document.getElementById('springKy').value.trim();
+    const kthetaRaw = document.getElementById('springKtheta').value.trim();
+    const Kx     = kxRaw     === '' ? null : parseFloat(kxRaw);
+    const Ky     = kyRaw     === '' ? null : parseFloat(kyRaw);
+    const Ktheta = kthetaRaw === '' ? null : parseFloat(kthetaRaw);
+    // D-06: at least one non-blank value required — all-blank = cancel
+    if (Kx == null && Ky == null && Ktheta == null) {
+      cancelSpringSupport();
+      return;
+    }
+    // Validate any non-null value is a positive finite number
+    for (const v of [Kx, Ky, Ktheta]) {
+      if (v != null && (isNaN(v) || !isFinite(v) || v <= 0)) {
+        alert('Spring stiffness must be a positive number. Blank = free.');
+        return;
+      }
+    }
+    saveHistory();
+    // D-05: spring REPLACES any classic support at this node
+    supports = supports.filter(s => s.nodeId !== _springActiveNodeId);
+    supports.push({ nodeId: _springActiveNodeId, type: 'spring', Kx, Ky, Ktheta });
+    document.getElementById('springPanel').style.display = 'none';
+    _springActiveNodeId = null;
+    results = null;
+    updateSaveButtonState();
+    draw();
+  } catch (err) {
+    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
+    throw err;
+  }
+}
+
+function cancelSpringSupport() {
+  document.getElementById('springPanel').style.display = 'none';
+  _springActiveNodeId = null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -375,6 +441,22 @@ function reindexMembers() {
   members.forEach((m, i) => { m.id = i; });
 }
 
+// ── Springs: shared payload builder for solve() and saveModel() ──────────
+// D-09: flatten supports[].type==='spring' into 1-based springDoF indices
+// with SI-unit K values (kN/m → N/m ×1e3; kN·m/rad → N·m/rad ×1e3).
+function computeSpringPayload() {
+  const springDoF = [];
+  const springStiffness = [];
+  supports.forEach(s => {
+    if (s.type !== 'spring') return;
+    const base = s.nodeId * 3 + 1;  // 1-based, matches classic-support indexing
+    if (s.Kx     != null) { springDoF.push(base);     springStiffness.push(s.Kx     * 1e3); }  // kN/m → N/m
+    if (s.Ky     != null) { springDoF.push(base + 1); springStiffness.push(s.Ky     * 1e3); }  // kN/m → N/m
+    if (s.Ktheta != null) { springDoF.push(base + 2); springStiffness.push(s.Ktheta * 1e3); }  // kN·m/rad → N·m/rad
+  });
+  return { springDoF, springStiffness };
+}
+
 // ── Solve ─────────────────────────────────────────────────────────────────
 async function solve() {
   if (nodes.length < 2)    return setStatus('Need at least 2 nodes.', true);
@@ -407,6 +489,7 @@ async function solve() {
     if (s.type === 'pinned')  restrainedDoF.push(base, base+1);
     if (s.type === 'rollerX') restrainedDoF.push(base);
     if (s.type === 'rollerY') restrainedDoF.push(base+1);
+    // s.type === 'spring' → no classic restraint added; handled by springDoF/springStiffness below
   });
 
   // forceVector — flat, length = 3 * nNodes
@@ -434,6 +517,9 @@ async function solve() {
   const beamPinLeft  = members.map((m,i) => m.pinLeft          ? i+1 : null).filter(Boolean);
   const beamPinRight = members.map((m,i) => m.pinRight         ? i+1 : null).filter(Boolean);
 
+  // Springs — D-09: flatten supports[type==='spring'] into SI-unit springDoF + springStiffness
+  const { springDoF, springStiffness } = computeSpringPayload();
+
   const payload = {
     solver: 'frame_v2',
     nodes:   nodes.map(n => [n.realX, n.realY]),
@@ -442,7 +528,7 @@ async function solve() {
     E, I, A,
     bars, beamPinLeft, beamPinRight,
     restrainedDoF,
-    pinDoF: [], springDoF: [], springStiffness: [],
+    pinDoF: [], springDoF, springStiffness,
     udl_x: members.map(m => m.udl_x !== null ? m.udl_x : 0),
   };
 
@@ -630,6 +716,7 @@ function drawSupports() {
     else if (s.type === 'pinned')  drawPin(n.x, n.y);
     else if (s.type === 'rollerY') drawRollerH(n.x, n.y);
     else if (s.type === 'rollerX') drawRollerV(n.x, n.y);
+    else if (s.type === 'spring')  drawSpring(n.x, n.y, s.Kx, s.Ky, s.Ktheta);
     ctx.restore();
   });
 }
@@ -684,6 +771,77 @@ function drawRollerV(x, y) {
   const wl = wx - r - 2*sc;
   ctx.beginPath(); ctx.moveTo(wl, y - hh - 3*sc); ctx.lineTo(wl, y + hh + 3*sc); ctx.stroke();
   drawHatch(y - hh - 3*sc, y + hh + 3*sc, wl, 'V');
+}
+
+// D-07: coil glyph per active spring axis (Kx / Ky / Kθ), with value tag label.
+// Horizontal coil on -X side for Kx, vertical coil below node for Ky,
+// rotational spiral arc around node for Kθ.
+function drawSpring(x, y, Kx, Ky, Ktheta) {
+  const sc = getSymbolScale();
+  ctx.save();
+  ctx.strokeStyle = '#6a1b9a'; ctx.fillStyle = '#6a1b9a'; ctx.lineWidth = 1.5;
+
+  // Horizontal coil on -X side of node for Kx
+  if (Kx != null) {
+    const coilLen = 22 * sc, zigs = 4, amp = 3 * sc;
+    const x0 = x - 2, xEnd = x0 - coilLen;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    for (let i = 1; i <= zigs; i++) {
+      const xi = x0 - (coilLen * i / zigs);
+      const yi = y + (i % 2 === 0 ? 0 : amp * (i % 4 < 2 ? 1 : -1));
+      ctx.lineTo(xi, yi);
+    }
+    ctx.lineTo(xEnd, y);
+    ctx.stroke();
+    // Small fixed hatch (anchored wall) at the far end
+    ctx.beginPath();
+    ctx.moveTo(xEnd, y - 6*sc);
+    ctx.lineTo(xEnd, y + 6*sc);
+    ctx.stroke();
+  }
+
+  // Vertical coil below node for Ky
+  if (Ky != null) {
+    const coilLen = 22 * sc, zigs = 4, amp = 3 * sc;
+    const y0 = y + 2, yEnd = y0 + coilLen;
+    ctx.beginPath();
+    ctx.moveTo(x, y0);
+    for (let i = 1; i <= zigs; i++) {
+      const yi = y0 + (coilLen * i / zigs);
+      const xi = x + (i % 2 === 0 ? 0 : amp * (i % 4 < 2 ? 1 : -1));
+      ctx.lineTo(xi, yi);
+    }
+    ctx.lineTo(x, yEnd);
+    ctx.stroke();
+    // Small fixed hatch (anchored ground) at the far end
+    ctx.beginPath();
+    ctx.moveTo(x - 6*sc, yEnd);
+    ctx.lineTo(x + 6*sc, yEnd);
+    ctx.stroke();
+  }
+
+  // Rotational spring: small open spiral arc around node
+  if (Ktheta != null) {
+    const r = 9 * sc;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 1.8);
+    ctx.stroke();
+  }
+
+  // Value tag label
+  const labelParts = [];
+  if (Kx     != null) labelParts.push('Kx=' + Kx + ' kN/m');
+  if (Ky     != null) labelParts.push('Ky=' + Ky + ' kN/m');
+  if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + ' kN·m/rad');
+  if (labelParts.length) {
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#6a1b9a';
+    ctx.fillText(labelParts.join(' · '), x + 10 * sc, y - 10 * sc);
+  }
+
+  ctx.restore();
 }
 
 function drawHatch(from, to, base, dir) {
@@ -1238,7 +1396,11 @@ function saveModel() {
     if (s.type === 'pinned')  restrainedDoF.push(base, base+1);
     if (s.type === 'rollerX') restrainedDoF.push(base);
     if (s.type === 'rollerY') restrainedDoF.push(base+1);
+    // s.type === 'spring' → no classic restraint; handled by springDoF/springStiffness below
   });
+
+  // Springs — D-09: flatten supports[type==='spring'] into SI-unit springDoF + springStiffness
+  const { springDoF, springStiffness } = computeSpringPayload();
 
   // forceVector — flat, length = 3 * nNodes
   const forceVector = new Array(nodes.length * 3).fill(0);
@@ -1265,10 +1427,16 @@ function saveModel() {
   const beamPinLeft  = members.map((m,i) => m.pinLeft        ? i+1 : null).filter(Boolean);
   const beamPinRight = members.map((m,i) => m.pinRight       ? i+1 : null).filter(Boolean);
 
-  // ── Canvas state per D-04 schema ────────────────────────────────────────
-  // supports as OBJECT keyed by nodeId string (not array) — per D-04
+  // ── Canvas state per D-04 / D-08 schema ─────────────────────────────────
+  // supports as OBJECT keyed by nodeId string (not array):
+  //   classic (D-04) → string ('fixed'|'pinned'|'rollerX'|'rollerY')
+  //   spring  (D-08) → object { type:'spring', Kx, Ky, Ktheta } in UI units (kN/m, kN·m/rad)
   const canvasSupports = supports.reduce((obj, s) => {
-    obj[String(s.nodeId)] = s.type;
+    if (s.type === 'spring') {
+      obj[String(s.nodeId)] = { type: 'spring', Kx: s.Kx, Ky: s.Ky, Ktheta: s.Ktheta };
+    } else {
+      obj[String(s.nodeId)] = s.type;
+    }
     return obj;
   }, {});
 
@@ -1301,7 +1469,7 @@ function saveModel() {
     E, I, A,
     bars, beamPinLeft, beamPinRight,
     restrainedDoF,
-    pinDoF: [], springDoF: [], springStiffness: [],
+    pinDoF: [], springDoF, springStiffness,
     udl_x: members.map(m => m.udl_x !== null ? m.udl_x : 0),
     // Canvas state — D-02/D-04 shape
     canvas: {
@@ -1376,12 +1544,27 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     nodes     = data.canvas && data.canvas.nodes ? data.canvas.nodes : [];
     members   = data.canvas && data.canvas.members ? data.canvas.members : [];
 
-    // D-04: supports is an object keyed by nodeId — convert back to array
+    // D-04 / D-08: supports is an object keyed by nodeId; value is either
+    //   string  → classic support ('fixed'|'pinned'|'rollerX'|'rollerY')
+    //   object  → spring { type:'spring', Kx, Ky, Ktheta }   (K in UI units kN/m, kN·m/rad)
     const sObj = (data.canvas && data.canvas.supports) || {};
-    supports = Object.entries(sObj).map(([nodeId, type]) => ({
-      nodeId: parseInt(nodeId, 10),
-      type: type,
-    }));
+    supports = Object.entries(sObj).map(([nodeId, val]) => {
+      const nId = parseInt(nodeId, 10);
+      if (typeof val === 'string') {
+        return { nodeId: nId, type: val };
+      }
+      if (val && typeof val === 'object' && val.type === 'spring') {
+        return {
+          nodeId: nId,
+          type: 'spring',
+          Kx:     val.Kx     != null ? val.Kx     : null,
+          Ky:     val.Ky     != null ? val.Ky     : null,
+          Ktheta: val.Ktheta != null ? val.Ktheta : null,
+        };
+      }
+      console.warn('Unknown support form for node', nId, val);
+      return null;
+    }).filter(Boolean);
 
     nodeLoads = (data.canvas && data.canvas.nodeLoads) ? data.canvas.nodeLoads : [];
 

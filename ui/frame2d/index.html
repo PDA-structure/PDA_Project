@@ -49,6 +49,11 @@
           🛞 Roller
           <span class="support-tag">↕ free &nbsp;|&nbsp; X fixed</span>
         </button>
+        <button class="tool-btn support-btn" data-mode="spring" onclick="setMode('spring')"
+          title="Elastic spring support — specify stiffness Kx, Ky, Kθ (blank = free)">
+          〰 Spring
+          <span class="support-tag">Kx | Ky | Kθ</span>
+        </button>
       </section>
 
       <section class="panel-section">
@@ -247,6 +252,30 @@
       <button id="udlClearBtn" style="font-size:11px; padding:4px 10px;">Clear</button>
       <button id="udlCancelBtn" style="font-size:11px; padding:4px 10px;">Cancel</button>
       <button id="udlApplyBtn" style="font-size:11px; padding:4px 10px; background:#1565c0; color:#fff; border:none; border-radius:3px;">Apply</button>
+    </div>
+  </div>
+
+  <!-- Spring support floating panel -->
+  <div id="springPanel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+       background:#fff; border:1px solid #ce93d8; border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,.18);
+       padding:16px 20px; z-index:200; min-width:260px; font-family:inherit;">
+    <div style="font-weight:600; margin-bottom:6px; font-size:13px;" id="springPanelTitle">Spring Support — Node ?</div>
+    <p class="hint" style="font-size:11px; color:#555; margin:0 0 10px 0;">Enter stiffness values. Blank = that DOF is free. At least one value required.</p>
+    <label style="display:block; margin-bottom:6px; font-size:12px;">
+      K<sub>x</sub> (kN/m)
+      <input type="number" id="springKx" step="any" placeholder="e.g. 10000" style="width:100%; margin-top:3px; padding:3px 5px; font-size:12px; box-sizing:border-box;">
+    </label>
+    <label style="display:block; margin-bottom:6px; font-size:12px;">
+      K<sub>y</sub> (kN/m)
+      <input type="number" id="springKy" step="any" placeholder="e.g. 10000" style="width:100%; margin-top:3px; padding:3px 5px; font-size:12px; box-sizing:border-box;">
+    </label>
+    <label style="display:block; margin-bottom:10px; font-size:12px;">
+      K<sub>θ</sub> (kN·m/rad)
+      <input type="number" id="springKtheta" step="any" placeholder="e.g. 5000" style="width:100%; margin-top:3px; padding:3px 5px; font-size:12px; box-sizing:border-box;">
+    </label>
+    <div class="panel-actions" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" id="springCancelBtn" onclick="cancelSpringSupport()" style="font-size:11px; padding:4px 10px;">Cancel</button>
+      <button type="button" id="springApplyBtn" onclick="applySpringSupport()" style="font-size:11px; padding:4px 10px; background:#6a1b9a; color:#fff; border:none; border-radius:3px;">Apply</button>
     </div>
   </div>
 
