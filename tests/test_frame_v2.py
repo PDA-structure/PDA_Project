@@ -594,3 +594,155 @@ def test_multi_member_pin_release_shared_node():
     # Each support carries half the total load (symmetric structure + symmetric UDL)
     assert R1 == pytest.approx(total_load / 2, rel=1e-5)
     assert R3 == pytest.approx(total_load / 2, rel=1e-5)
+
+
+# ---------------------------------------------------------------------------
+# Case 13: Portal frame + UDL on beam, pinned column bases (TRUST-13)
+#
+# Nodes: 1(0,0) pin, 2(0,3), 3(4,3), 4(4,0) pin
+# Members: m1[1,2] left column, m2[2,3] beam, m3[3,4] right column
+# UDL w=10000 N/m only on beam (member 2) downward.
+#
+# Symmetric structure + symmetric loading → equal vertical reactions at
+# pinned bases: Ry_1 = Ry_4 = wL_beam/2. Horizontal reactions equal and
+# opposite (thrust). Joints 2 and 3 have no releases → moment continuity:
+# m1.Mj + m2.Mi = 0 and m2.Mj + m3.Mi = 0 (no external moment at joints).
+# ---------------------------------------------------------------------------
+def test_trust_13_portal_frame_udl():
+    """TRUST-13: Portal frame with pinned column bases + UDL on beam;
+    asserts ΣFx, ΣFy, and ΣM at joints 2 and 3."""
+    w = 10000.0
+    L_beam = 4.0
+    H = 3.0
+
+    enf = -w * L_beam / 2
+    enm_i = w * L_beam**2 / 12
+    enm_j = -w * L_beam**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [0.0, H], [L_beam, H], [L_beam, 0.0]],
+        members=[[1, 2], [2, 3], [3, 4]],
+        ENForces=[[0.0, 0.0], [enf, enf], [0.0, 0.0]],
+        ENMoments=[[0.0, 0.0], [enm_i, enm_j], [0.0, 0.0]],
+        force_vector=[0.0] * 12,
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 10, 11],  # pinned bases at nodes 1 and 4 (Ux,Uy only)
+    )
+    s.solve_structure()
+
+    # Vertical reactions at pinned bases (node 1 DOF 2 → row 1; node 4 DOF 11 → row 10)
+    assert s.FG[1, 0] == pytest.approx(w * L_beam / 2, rel=1e-5)
+    assert s.FG[10, 0] == pytest.approx(w * L_beam / 2, rel=1e-5)
+    # Global horizontal equilibrium: ΣFx = 0 (no horizontal applied)
+    assert np.isclose(s.FG[0, 0] + s.FG[9, 0], 0.0, atol=1e-4)
+    # Global vertical equilibrium: ΣFy = total UDL
+    assert np.isclose(s.FG[1, 0] + s.FG[10, 0], w * L_beam, atol=1e-4)
+    # Moment equilibrium at joint 2 (no release, no external moment): m1.Mj + m2.Mi = 0
+    assert s.mbrMoments[1, 0] == pytest.approx(-s.mbrMoments[0, 1], abs=1e-4)
+    # Moment equilibrium at joint 3: m2.Mj + m3.Mi = 0
+    assert s.mbrMoments[1, 1] == pytest.approx(-s.mbrMoments[2, 0], abs=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Case 14: Two-span continuous beam with beamPinRight on span 1 + UDL on
+#          span 1 only (TRUST-14)
+#
+# Generalises the 260418-vcg regression to a multi-span asymmetric loading
+# scenario. See TRUST-12 (tests/test_frame_v2.py:546) for the symmetric
+# both-spans-loaded analog.
+#
+# Nodes: 1(0,0) fixed, 2(L,0) free interior, 3(2L,0) fixed; L_span=4m
+# Members: m1[1,2] beamPinRight=[1] + UDL w, m2[2,3] standard beam, NO UDL
+# pinDoF=[] — theta at node 2 is active (m2 provides rotational stiffness).
+# ---------------------------------------------------------------------------
+def test_trust_14_two_span_pin_release_udl_span1_only():
+    """TRUST-14: Two-span continuous beam with beamPinRight on span 1 +
+    UDL on span 1 only. Generalizes the 260418-vcg regression to a
+    multi-span setup; see TRUST-12 (tests/test_frame_v2.py:546) for the
+    symmetric both-spans-loaded analog."""
+    w = 10000.0
+    L_span = 4.0
+
+    enf = -w * L_span / 2
+    enm_i = w * L_span**2 / 12
+    enm_j = -w * L_span**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_span, 0.0], [2 * L_span, 0.0]],
+        members=[[1, 2], [2, 3]],
+        ENForces=[[enf, enf], [0.0, 0.0]],
+        ENMoments=[[enm_i, enm_j], [0.0, 0.0]],
+        force_vector=[0.0] * 9,
+        E=E, I=I, A=A,
+        beamPinRight=[1],
+        restrainedDoF=[1, 2, 3, 7, 8, 9],  # nodes 1 and 3 fully fixed
+    )
+    s.solve_structure()
+
+    # m1.Mj = 0 at released j-end (node 2)
+    assert s.mbrMoments[0, 1] == pytest.approx(0.0, abs=1e-4)
+    # Moment equilibrium at shared node 2: Mj_m1 + Mi_m2 = 0; with Mj_m1=0, Mi_m2=0
+    assert np.isclose(s.mbrMoments[0, 1] + s.mbrMoments[1, 0], 0.0, atol=1e-4)
+    assert s.mbrMoments[1, 0] == pytest.approx(0.0, abs=1e-4)
+    # Vertical equilibrium: total load on span 1 only = w*L_span
+    total_load = w * L_span
+    assert np.isclose(s.FG[1, 0] + s.FG[7, 0], total_load, atol=1e-4)
+    # Fixed-base hogging moment on span 1 (m1.Mi) must be strongly negative
+    assert s.mbrMoments[0, 0] < -1.0
+
+
+# ---------------------------------------------------------------------------
+# Case 15: Mixed beamPinLeft on span 2 + beamPinRight on span 1 at shared
+#          interior node 2 (TRUST-15)
+#
+# Edge case for solve_member_actions when BOTH members at a shared node
+# have released θ — each span behaves as a cantilever against its far-end
+# fixed support (there is no rotational coupling through node 2).
+# ---------------------------------------------------------------------------
+def test_trust_15_mixed_pin_release_shared_node():
+    """TRUST-15: Mixed beamPinLeft on span 2 + beamPinRight on span 1 at
+    shared interior node 2. Edge case for solve_member_actions back-solve
+    when BOTH members at a node have released θ — each span behaves as a
+    cantilever against its far-end fixed support."""
+    w = 10000.0
+    L_span = 4.0
+
+    enf = -w * L_span / 2
+    enm_i = w * L_span**2 / 12
+    enm_j = -w * L_span**2 / 12
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_span, 0.0], [2 * L_span, 0.0]],
+        members=[[1, 2], [2, 3]],
+        ENForces=[[enf, enf], [enf, enf]],
+        ENMoments=[[enm_i, enm_j], [enm_i, enm_j]],
+        force_vector=[0.0] * 9,
+        E=E, I=I, A=A,
+        beamPinLeft=[2],
+        beamPinRight=[1],
+        restrainedDoF=[1, 2, 3, 7, 8, 9],  # nodes 1 and 3 fully fixed
+        # pinDoF must include theta at node 2 (DOF 6) because BOTH members
+        # release their θ at this shared node — no rotational stiffness
+        # remains at node 2 once both elements are condensed, so DOF 6 must
+        # be excluded from the reduced system (mirrors TRUST-11 pattern
+        # where both ends of a single member were released).
+        pinDoF=[6],
+    )
+    s.solve_structure()
+
+    # Both released ends at node 2 have zero moment
+    assert s.mbrMoments[0, 1] == pytest.approx(0.0, abs=1e-4)   # m1 beamPinRight
+    assert s.mbrMoments[1, 0] == pytest.approx(0.0, abs=1e-4)   # m2 beamPinLeft
+
+    # Each span is a cantilever: fixed at far end, free at node 2, UDL w
+    # Analytical moment at fixed end: magnitude w*L²/2 (sign per solver convention
+    # mirrors TRUST-12: m1.Mi negative at node 1, m2.Mj positive at node 3).
+    assert s.mbrMoments[0, 0] == pytest.approx(-w * L_span**2 / 2, rel=1e-5)
+    assert s.mbrMoments[1, 1] == pytest.approx(w * L_span**2 / 2, rel=1e-5)
+
+    # Each cantilever carries its own span's UDL
+    assert np.isclose(s.FG[1, 0] + s.FG[7, 0], 2 * w * L_span, atol=1e-4)
+
+    # Pure bending (no axial in horizontal cantilever under transverse UDL)
+    assert s.mbrForces[0] == pytest.approx(0.0, abs=1e-4)
+    assert s.mbrForces[1] == pytest.approx(0.0, abs=1e-4)
