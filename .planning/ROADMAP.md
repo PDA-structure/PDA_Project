@@ -118,7 +118,12 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
   1. Portal frame, two-span continuous beam, and mixed pin-release + UDL cases all solve with correct equilibrium at shared nodes and released ends, verified by pytest assertions
   2. Engineer can place a spring support (Kx, Ky, or Kθ) at any node in the frame2d UI, and the solver uses it correctly — spring reaction appears in results
   3. Running the frame2d UI through five canonical cases (cantilever, simple beam, portal frame, continuous beam with pin release, spring-support beam) produces results that match hand-calculation or established reference values
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Multi-member frame tests TRUST-13..17 (HARDEN-01)
+- [ ] 04-02-PLAN.md — frame2d UI spring support tool (HARDEN-02)
+- [ ] 04-03-PLAN.md — UAT fixtures + harness (HARDEN-03)
 
 ### Phase 5: Revit Tier 1 — Geometry Exporter
 
@@ -156,7 +161,7 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 | 1. Trust and Production Hardening | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 2. Model Evolution and UX Polish | v1.0 | 3/3 | Complete | 2026-04-18 |
 | 3. Interchange Format and External Inputs | v1.1 | 3/3 | Complete | 2026-04-19 |
-| 4. 2D Frame Solver + UI Hardening | v1.2 | 0/TBD | Not started | - |
+| 4. 2D Frame Solver + UI Hardening | v1.2 | 0/3 | Not started | - |
 | 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/TBD | Not started | - |
 | 6. Revit Tier 2 — Analytical Exporter Hardening | v1.2 | 0/TBD | Not started | - |
 | 7. Grillage Solver | v1.3 | 0/TBD | Not started | - |
