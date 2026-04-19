@@ -43,7 +43,8 @@ Progress: [██████████] 100% (v1.0 complete)
 
 ### Pending Todos
 
-Run `/gsd-check-todos` to review pending todos.
+4 pending — Run `/gsd-check-todos` to review.
+- **[high]** Multi-member frame solver test coverage (2026-04-19)
 
 ### Deferred Items
 
