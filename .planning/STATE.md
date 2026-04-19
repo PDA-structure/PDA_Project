@@ -4,14 +4,14 @@ milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
 status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-04-19T17:30:00.000Z"
-last_activity: 2026-04-19 -- Phase 04 PAUSED mid-UAT on Plan 04-02 (steps 1-7 of 11 passed; awaiting steps 8-11 save/load/backward-compat/console)
+last_updated: "2026-04-19T18:05:00.000Z"
+last_activity: 2026-04-19 -- Phase 04 Wave 1 COMPLETE (04-01 + 04-02 merged on main, all 46 tests pass). PAUSED before Wave 2 (Plan 04-03 UAT harness — fixture authoring is significant manual work).
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 6
+  completed_plans: 2
+  percent: 13
 ---
 
 # Project State
@@ -25,24 +25,23 @@ See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 ## Current Position
 
-Phase: 04 (2d-frame-solver-ui-hardening) — EXECUTING (PAUSED mid-UAT)
-Plan: 2 of 3 in progress (04-02 frame2d UI spring support — checkpoint)
-Status: Plan 04-01 complete on main (3 commits). Plan 04-02 has 2 commits in worktree `worktree-agent-a9aa7f7f`, awaiting human UAT steps 8-11. Plan 04-03 queued.
-Last activity: 2026-04-19 -- Phase 04 PAUSED mid-checkpoint on Plan 04-02
+Phase: 04 (2d-frame-solver-ui-hardening) — EXECUTING (Wave 1 done, paused before Wave 2)
+Plan: 3 of 3 queued (04-03 UAT harness — fixture authoring)
+Status: Plans 04-01 and 04-02 COMPLETE on main. All 46 tests pass post-merge. Plan 04-03 queued.
+Last activity: 2026-04-19 -- Wave 1 complete; user paused before 04-03 fixture-authoring (significant manual UI work)
 
-## Resume instructions (Phase 04 mid-UAT)
+## Resume instructions (Phase 04 before Wave 2)
 
-User paused mid-UAT verification of Plan 04-02 (frame2d UI spring support). Status:
-- 04-01: COMPLETE on main (commits 38e56a1, e1d9ad7, 9bd8a86) — all 20 frame_v2 tests pass
-- 04-02: 2 commits in worktree `/Users/catrinevans/Documents/pda_project/.claude/worktrees/agent-a9aa7f7f` (fff1e78, 8d45270). UAT steps 1-7 of 11 passed (Spring button renders, modal works, blank cancel, single-axis spring, replaces classic support, edit pre-fill, solve correct: reaction=10kN, Uy=-0.01m). REMAINING: steps 8 (save JSON), 9 (load round-trip), 10 (Phase 3 backward compat), 11 (console clean).
-- 04-03: queued, depends on 04-02 merge
+User completed Wave 1 of Phase 04 and paused before Wave 2. Status:
+- 04-01: COMPLETE on main (commits 38e56a1, e1d9ad7, 9bd8a86) — TRUST-13..17 multi-member tests
+- 04-02: COMPLETE on main (commits fff1e78, 8d45270, merge 11aa8bd, summary 2a8475e) — frame2d UI Spring support, all 11 UAT steps approved by human
+- 04-03: QUEUED — UAT harness; Task 1 is human-action checkpoint requiring user to build 5 canonical structures via the frame2d UI Save button (cantilever, simple_beam, portal_frame, continuous_pin_release, spring_support_beam) — estimated 25-40 min of manual UI work; Tasks 2 (write pytest harness) and 3 (fix any bug + regression test) are auto
 
 To resume:
-1. User restarts both terminals: `cd /Users/catrinevans/Documents/pda_project && uvicorn api_server.app:app --reload` AND `cd /Users/catrinevans/Documents/pda_project/.claude/worktrees/agent-a9aa7f7f && python3 -m http.server 8001`
-2. User reopens http://localhost:8001/ui/frame2d/index.html (hard refresh ⌘+Opt+E then ⌘+R if cache)
-3. User runs through steps 8-11 (see plan file `.planning/phases/04-2d-frame-solver-ui-hardening/04-02-frame2d-ui-spring-support-PLAN.md` `<how-to-verify>` block in task 3)
-4. On approval, orchestrator: merges worktree-agent-a9aa7f7f to main, runs post-merge pytest gate, writes 04-02 SUMMARY.md, then spawns Plan 04-03 (UAT harness) executor
-5. After 04-03: code-review → regression gate → verifier agent → roadmap update → phase complete
+1. Start API server: `cd /Users/catrinevans/Documents/pda_project && uvicorn api_server.app:app --reload`
+2. Open frame2d UI (now on main, no worktree needed): serve from main repo or open `ui/frame2d/index.html` directly
+3. Re-run `/gsd-execute-phase 4` — orchestrator will skip 04-01 and 04-02 (SUMMARY.md exists for both), spawn 04-03 executor which will pause at Task 1 with the 5-fixture authoring checklist
+4. Note: `workflow.auto_advance` is true — after Phase 04 verifies, will chain into Phase 05 (Revit Tier 1 work in sibling repo). Tell Claude before approving Phase 04 verifier if you want to stop here.
 
 ## Accumulated Context
 
