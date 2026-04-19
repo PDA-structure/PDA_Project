@@ -198,3 +198,17 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
 
 /* ── Download link ────────────────────────────────────────── */
 .download-link { font-size: 12px; }
+
+/* ── Spring support modal ─────────────────────────────────── */
+#springPanel label { display:block; margin: 6px 0; font-size: 12px; color: #333; }
+#springPanel input[type="number"] {
+  width: 100%;
+  margin-top: 3px;
+  padding: 3px 5px;
+  font-size: 12px;
+  box-sizing: border-box;
+  border: 1px solid #ce93d8;
+  border-radius: 3px;
+}
+#springPanel .hint { font-size: 11px; color: #555; margin: 0 0 8px 0; }
+#springPanel .panel-actions { margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end; }
