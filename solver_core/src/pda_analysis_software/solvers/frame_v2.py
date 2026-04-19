@@ -458,6 +458,26 @@ class BeamBarStructure_v2:
 
     # ---------- member actions ----------
     def solve_member_actions(self):
+        """Recover per-member forces, shears, and moments from the global displacement vector.
+
+        For members with rotational releases (beamPinLeft / beamPinRight) the released end
+        rotation stored in UG is the global node rotation set by OTHER members attached at
+        that node (via condensed assembly). It is NOT this member's own end rotation.
+        Using it directly in ``f_local = Kl @ u_local`` contaminates all force components.
+
+        Fix: back-solve the member's own released rotation from the stiffness-only condensation
+        relation (load effects are handled separately by
+        ``remove_equivalent_nodal_actions_from_member_actions``):
+
+            K_ba @ u_a + K_bb @ u_b = 0  =>  u_b = -K_bb^{-1} K_ba u_a
+
+        where u_a is the vector of the member's 5 kept local DOFs (obtained from UG via T)
+        and u_b is the unknown released rotation. The corrected u_b replaces the contaminated
+        value in u_local before applying the full 6x6 Kl. ENA effects are not included in
+        the back-solve because ``remove_equivalent_nodal_actions_from_member_actions``
+        subtracts the condensed ENA (not the original) afterwards, and the two must stay
+        consistent: stiffness-based u_b + condensed-ENA subtraction = correct result.
+        """
         if self.UG is None:
             raise ValueError("Global displacement UG not available. Solve reactions first.")
 
@@ -487,7 +507,41 @@ class BeamBarStructure_v2:
 
             dof6 = [3 * i, 3 * i + 1, 3 * i + 2, 3 * j, 3 * j + 1, 3 * j + 2]
             u_global = self.UG[dof6, 0].reshape(6, 1)
-            u_local = T @ u_global
+            u_local = T @ u_global  # (6,1): [Ux_i, Uy_i, θ_i, Ux_j, Uy_j, θ_j] in local frame
+
+            rel_i = m in self.beamPinLeft
+            rel_j = m in self.beamPinRight
+
+            if rel_i or rel_j:
+                # Identify which local DOF index is released: 2 (θ_i) or 5 (θ_j)
+                release_dofs = []
+                if rel_i:
+                    release_dofs.append(2)
+                if rel_j:
+                    release_dofs.append(5)
+                keep = [k for k in range(6) if k not in release_dofs]
+
+                # Sub-blocks of local stiffness for stiffness-only back-substitution.
+                # Do NOT include ENA in this back-solve: ENA effects are handled
+                # consistently by remove_equivalent_nodal_actions_from_member_actions,
+                # which subtracts the condensed ENA from the raw stiffness result.
+                Kba = Kl[np.ix_(release_dofs, keep)]
+                Kbb = Kl[np.ix_(release_dofs, release_dofs)]
+
+                try:
+                    Kbb_inv = np.linalg.inv(Kbb)
+                except np.linalg.LinAlgError:
+                    Kbb_inv = np.linalg.pinv(Kbb)
+
+                # u_a: kept DOFs in local frame (from global UG — correct for all members)
+                u_a = u_local[keep, :]
+
+                # Back-solve this member's own released end rotation (stiffness only)
+                u_b = -Kbb_inv @ (Kba @ u_a)
+
+                # Reconstruct u_local with the member's own released rotation
+                for idx, rdof in enumerate(release_dofs):
+                    u_local[rdof, 0] = u_b[idx, 0]
 
             f_local = Kl @ u_local  # [Nx_i, Vy_i, Mi, Nx_j, Vy_j, Mj]
 
@@ -497,9 +551,11 @@ class BeamBarStructure_v2:
             Mi = float(f_local[2, 0])
             Mj = float(f_local[5, 0])
 
-            if m in self.beamPinLeft:
+            # Released end moment is zero by construction; enforce explicitly to
+            # eliminate floating-point residual before ENA subtraction.
+            if rel_i:
                 Mi = 0.0
-            if m in self.beamPinRight:
+            if rel_j:
                 Mj = 0.0
 
             self.mbrShears[e, 0] = Vy_i
@@ -572,6 +628,3 @@ class BeamBarStructure_v2:
     def solve(self):
         self.solve_structure()
         return self
-
-
-

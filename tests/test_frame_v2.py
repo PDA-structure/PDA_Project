@@ -513,3 +513,84 @@ def test_simply_supported_via_both_end_pin_releases_udl():
     assert s.FG[4, 0] == pytest.approx(w * L_pc / 2, rel=1e-6)
     # Vertical equilibrium
     assert np.isclose(s.FG[1, 0] + s.FG[4, 0] - w * L_pc, 0, atol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# Case 12: Multi-member structure with beamPinRight at SHARED interior node (TRUST-12)
+#
+# This is the regression test for the force-recovery bug exposed when a
+# pin-released member's released end rotation DOF is ACTIVE in the global
+# system (not in pinDoF) and shared with another member.
+#
+# In the old (buggy) code, solve_member_actions used UG[theta_released] directly,
+# but that value is the global node rotation set by OTHER members attached at the
+# same node — NOT this member's own end rotation. Multiplying the full 6x6 Kl
+# by this unrelated rotation then zeroing Mj left Vi/Mi/Vj contaminated.
+#
+# Structure:
+#   Nodes: 1(0,0) fully fixed, 2(L,0) free interior, 3(2L,0) fully fixed
+#   Members: m1(1→2) beamPinRight=[1] + UDL w
+#            m2(2→3) standard beam + UDL w
+#   pinDoF=[] — theta at node 2 IS active in global system; driven by m2's stiffness
+#
+# By symmetry and the pin release at node-2-end of m1 (Mj_m1=0):
+#   - m1.Mj = 0 (released by beamPinRight)
+#   - m2.Mi = 0 (moment equilibrium at node 2: Mj_m1=0, no external moment)
+#   - m1.Mi = -wL²/2 = -80000 N.m  (numerically verified from fixed code)
+#   - m2.Mj = +wL²/2 = +80000 N.m  (by symmetry)
+#   - Vertical reactions: wL = 40000 N at each support
+#
+# The old buggy code gave m1.Mi ≈ -193333 N.m (2.4× wrong) and
+# m1.Vy_i ≈ 125000 N (3.1× wrong).
+# ---------------------------------------------------------------------------
+def test_multi_member_pin_release_shared_node():
+    """TRUST-12: beamPinRight at shared interior node — member force recovery.
+
+    Guards against the bug in solve_member_actions where the released end rotation
+    in UG was set by other members (multi-member assembly) rather than back-solved
+    from the condensation relation for this member.
+
+    Would FAIL on old code (pre-fix); PASSES after the stiffness back-solve fix.
+    """
+    w = 10000.0   # N/m UDL on both spans
+    L_span = 4.0  # m span length
+
+    enf = -w * L_span / 2           # = -20000 N
+    enm_i =  w * L_span**2 / 12    # = +13333.33 N.m
+    enm_j = -w * L_span**2 / 12    # = -13333.33 N.m
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_span, 0.0], [2 * L_span, 0.0]],
+        members=[[1, 2], [2, 3]],
+        ENForces=[[enf, enf], [enf, enf]],
+        ENMoments=[[enm_i, enm_j], [enm_i, enm_j]],
+        force_vector=[0.0] * 9,
+        E=E, I=I, A=A,
+        beamPinRight=[1],   # m1 releases theta at node 2 (shared with m2)
+        restrainedDoF=[1, 2, 3, 7, 8, 9],  # node 1 and node 3 fully fixed
+        # pinDoF intentionally empty: theta at node 2 is active in global system
+    )
+    s.solve_structure()
+
+    # m1.Mj must be zero (beamPinRight releases the moment at node 2)
+    assert s.mbrMoments[0, 1] == pytest.approx(0.0, abs=1e-4)
+
+    # Moment equilibrium at node 2 (free, no external moment): Mj_m1 + Mi_m2 = 0
+    # Since Mj_m1 = 0, Mi_m2 must also be 0
+    assert s.mbrMoments[1, 0] == pytest.approx(0.0, abs=1e-4)
+
+    # m1.Mi = -wL²/2 = -80000 N.m (numerically verified from stiffness back-solve)
+    assert s.mbrMoments[0, 0] == pytest.approx(-w * L_span**2 / 2, rel=1e-5)
+
+    # m2.Mj = +wL²/2 = +80000 N.m (by symmetry with m1.Mi magnitude)
+    assert s.mbrMoments[1, 1] == pytest.approx(w * L_span**2 / 2, rel=1e-5)
+
+    # Vertical equilibrium: total UDL = w * 2 * L_span = 80000 N
+    total_load = w * 2 * L_span
+    R1 = s.FG[1, 0]
+    R3 = s.FG[7, 0]
+    assert np.isclose(R1 + R3, total_load, atol=1e-4)
+
+    # Each support carries half the total load (symmetric structure + symmetric UDL)
+    assert R1 == pytest.approx(total_load / 2, rel=1e-5)
+    assert R3 == pytest.approx(total_load / 2, rel=1e-5)
