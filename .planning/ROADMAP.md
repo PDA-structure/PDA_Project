@@ -3,9 +3,11 @@
 ## Milestones
 
 - ✅ **v1.0 — 2D Solver Foundation** — Phases 1–2 (shipped 2026-04-18)
-- 🚧 **v1.1 — Interchange and Grillage** — Phases 3–4 (in progress)
-- 📋 **v2.0 — 3D Solvers** — Phases 5–6 (planned)
-- 📋 **v3.0 — Advanced Solvers** — Phases 7–10 (planned)
+- ✅ **v1.1 — Interchange and Grillage (Partial)** — Phase 3 (shipped 2026-04-19; Phase 4 Grillage deferred)
+- 🚧 **v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)** — Phases 4–6 (active)
+- 📋 **v1.3 — Grillage + Revit Results-Import** — TBD phases (planned)
+- 📋 **v1.4 — 3D Solvers** — TBD phases (planned)
+- 📋 **v2.0+ — Advanced Solvers (Dynamics, Plate, Continuum, Cablenet)** — TBD phases (planned)
 
 ## Phases
 
@@ -14,122 +16,137 @@
 
 - [x] **Phase 1: Trust and Production Hardening** (3/3 plans) — completed 2026-04-11
   - HTTP 422 on unstable structures, print removal, 15 analytical tests, BMD/SFD canvas rendering, member stress output
-- [x] **Phase 2: Model Evolution and UX Polish** (3/3 plans) — completed 2026-04-18 *(directory: 03-model-evolution-and-ux-polish)*
+- [x] **Phase 2: Model Evolution and UX Polish** (3/3 plans) — completed 2026-04-18
   - Per-member E/I/A, section property calculator, JSON result export, node label overlay, symbol size scaler
 
 Full archive: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 </details>
 
-### 🚧 v1.1 — Interchange and Grillage
+<details>
+<summary>✅ v1.1 — Interchange and Grillage Partial (Phase 3) — SHIPPED 2026-04-19</summary>
 
-- [ ] **Phase 3: Interchange Format and External Inputs** — Save/load JSON in browser UIs, Tekla Structural Designer Excel import, Revit PyRevit export, canonical solver JSON schema
-- [ ] **Phase 4: Grillage Solver** — Add /solve/grillage endpoint with torsional stiffness and analytical tests
+- [x] **Phase 3: Interchange Format and External Inputs** (3/3 plans) — completed 2026-04-19
+  - Canonical JSON schema, save/load in both browser UIs, Tekla Excel converter, Revit PyRevit exporter, FastAPI integration tests
 
-### 📋 v2.0 — 3D Solvers
+Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 
-- [ ] **Phase 5: 3D Truss Solver** — Add working /solve/truss3d endpoint with full analytical test coverage
-- [ ] **Phase 6: 3D Frame Solver** — Add /solve/frame3d endpoint, 6 DOF/node, full 3D transformation matrices, Blender add-on UI
+</details>
 
-### 📋 v3.0 — Advanced Solvers
+### 🚧 v1.2 — 2D Frame Hardening + Revit-as-UI (MVP) (Active)
 
-- [ ] **Phase 7: Structural Dynamics** — Modal analysis, natural frequencies, time-history response
-- [ ] **Phase 8: Plate and Shell Structures** — 2D FEM plate/shell elements, membrane + bending
-- [ ] **Phase 9: Continuum Structures (FEM)** — General 2D/3D continuum elements, stress fields
-- [ ] **Phase 10: Non-linear Cablenet Structures** — Geometric non-linearity, tension-only members, iterative solver
+**Milestone Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path with a geometry-exporter button and a hardened analytical-model exporter in the sibling `CustomRevitExtension` repo.
+
+- [ ] **Phase 4: 2D Frame Solver + UI Hardening** — Multi-member test coverage, spring supports in frame2d UI, UAT pass across canonical case types
+- [ ] **Phase 5: Revit Tier 1 — Geometry Exporter** — pyRevit button exports drafting-view detail lines as canonical PDA JSON; loads in browser UI
+- [ ] **Phase 6: Revit Tier 2 — Analytical Exporter Hardening** — Hardened exporter with Revit 2025 compat, supports/loads/validation, production location; legacy exporter retired
+
+### 📋 v1.3 — Grillage + Revit Results-Import (Planned)
+
+- [ ] **Phase 7: Grillage Solver** — /solve/grillage endpoint, torsional stiffness, analytical tests (was original v1.1 Phase 4)
+- [ ] **Phase 8: Revit Results-Import** — pyRevit button reads solver output JSON and annotates the Revit analytical model
+
+### 📋 v1.4 — 3D Solvers (Planned)
+
+- [ ] **Phase 9: 3D Truss Solver** — /solve/truss3d endpoint, direction-cosine transformation, 3 DOF/node, analytical tests
+- [ ] **Phase 10: 3D Frame Solver** — /solve/frame3d endpoint, 6 DOF/node, Blender add-on UI
+
+### 📋 v2.0+ — Advanced Solvers (Planned)
+
+- [ ] **Phase 11: Structural Dynamics** — Modal analysis, natural frequencies, time-history response
+- [ ] **Phase 12: Plate and Shell Structures** — 2D FEM plate/shell elements, membrane + bending
+- [ ] **Phase 13: Continuum Structures (FEM)** — General 2D/3D continuum elements, stress fields
+- [ ] **Phase 14: Non-linear Cablenet Structures** — Geometric non-linearity, tension-only members, iterative solver
 
 ## Phase Details
 
-### Phase 3: Interchange Format and External Inputs
+<details>
+<summary>✅ Phase 1: Trust and Production Hardening — COMPLETE 2026-04-11</summary>
+
+**Goal**: The 2D truss and frame solvers are trusted, production-hardened, and fully covered by analytical tests
+**Depends on**: Nothing (first phase)
+**Requirements**: TRUST-01..TRUST-08 (v1.0)
+**Success Criteria** (what must be TRUE):
+  1. Unstable structures return HTTP 422, not HTTP 500
+  2. No print() or summarize_results() calls exist in solver_core computation path
+  3. 15+ passing tests including equilibrium assertions on every test
+  4. BMD and SFD render correctly on the frame2d canvas
+  5. Member stress (F/A) appears in results
+**Plans**: 3 plans — all complete
+
+</details>
+
+<details>
+<summary>✅ Phase 2: Model Evolution and UX Polish — COMPLETE 2026-04-18</summary>
+
+**Goal**: Engineers can set per-member properties, compute section geometry, export results, and use improved UI controls in the frame2d browser tool
+**Depends on**: Phase 1
+**Requirements**: UX-01..UX-07 (v1.0)
+**Success Criteria** (what must be TRUE):
+  1. Per-member E/I/A can be set on individual members without breaking existing scalar API
+  2. Section property calculator (rectangle, circle, I-section) computes and populates E/I/A live
+  3. JSON result export produces a timestamped download in both UIs
+  4. Node label / DOF overlay toggles on and off in frame2d
+  5. Horizontal UDL applies correct direction-cosine decomposition on inclined members
+**Plans**: 3 plans — all complete
+
+</details>
+
+<details>
+<summary>✅ Phase 3: Interchange Format and External Inputs — COMPLETE 2026-04-19</summary>
+
 **Goal**: Engineers can save and load structures from the browser UI; external tools (Tekla Structural Designer, Revit) can export to the same canonical JSON schema; the interchange format enables 3D solver testing before any 3D UI is built
 **Depends on**: Phase 2
-**Requirements**: INTERCHANGE-01, INTERCHANGE-02, INTERCHANGE-03, INTERCHANGE-04, INTERCHANGE-05
+**Requirements**: INTERCHANGE-01..05 (v1.1)
 **Success Criteria** (what must be TRUE):
-  1. Saving a structure from frame2d or truss2d produces a JSON file that can be reloaded and solved without re-entering any data
-  2. The saved JSON schema matches the solver API input format exactly (nodes, members, restrainedDoF, forceVector, member properties)
-  3. A Tekla Structural Designer Excel export can be converted to the canonical JSON schema and solved via the API
-  4. A Revit PyRevit script exports the analytical model to the canonical JSON schema
-  5. The interchange format is documented and usable as a communication tool (paste JSON into conversation for debugging/verification)
-**Plans:** 3 plans
+  1. Saving a structure from frame2d or truss2d produces a JSON file that reloads and solves without re-entering any data
+  2. The saved JSON schema matches the solver API input format exactly
+  3. A Tekla Structural Designer Excel export converts to canonical JSON and solves via the API
+  4. A Revit PyRevit script exports the analytical model to canonical JSON
+  5. FastAPI integration tests cover round-trip from file → API → verified results
+**Plans**: 3 plans — all complete
 
-Plans:
-- [x] 03-01-PLAN.md — Save/Load JSON in frame2d and truss2d UIs + test fixtures
-- [x] 03-02-PLAN.md — Integration tests for interchange format round-trip
-- [x] 03-03-PLAN.md — Tekla Excel converter CLI + Revit PyRevit exporter
+</details>
 
+### Phase 4: 2D Frame Solver + UI Hardening
+
+**Goal**: The 2D frame solver and UI are reliable across the full range of common structural topologies — multi-member frames, spring supports, pin releases, and UDL combinations — verified by test coverage and direct UAT
+**Depends on**: Phase 3
+**Repo**: `pda_project`
+**Requirements**: HARDEN-01, HARDEN-02, HARDEN-03
+**Success Criteria** (what must be TRUE):
+  1. Portal frame, two-span continuous beam, and mixed pin-release + UDL cases all solve with correct equilibrium at shared nodes and released ends, verified by pytest assertions
+  2. Engineer can place a spring support (Kx, Ky, or Kθ) at any node in the frame2d UI, and the solver uses it correctly — spring reaction appears in results
+  3. Running the frame2d UI through five canonical cases (cantilever, simple beam, portal frame, continuous beam with pin release, spring-support beam) produces results that match hand-calculation or established reference values
+**Plans**: TBD
+
+### Phase 5: Revit Tier 1 — Geometry Exporter
+
+**Goal**: An engineer with any 2D structural layout drawn as detail lines in a Revit drafting view can export it as canonical PDA JSON with one button click, then open the JSON in the frame2d browser UI, add supports and loads, and solve
+**Depends on**: Phase 4
+**Repo**: `CustomRevitExtension` (sibling repo at `/Users/catrinevans/Documents/CustomRevitExtension/`)
+**Requirements**: REVIT-T1-01, REVIT-T1-02, REVIT-T1-03, REVIT-T1-04, REVIT-T1-05
+**Success Criteria** (what must be TRUE):
+  1. A pyRevit button in the Analytical panel exports the active drafting view's detail lines as canonical PDA JSON in a single click
+  2. The button refuses to run (with a clear "2D TRUSSES AND 2D FRAMES ONLY" warning) if the active view is not a drafting view
+  3. Coincident endpoints within 1 mm tolerance are merged into a single node; the resulting connectivity is correct for a simple portal frame test case
+  4. Exported coordinates are in metres rounded to 4 decimal places (Revit feet converted at ×0.3048), with Z dropped
+  5. The exported JSON file opens in the frame2d browser UI and solves successfully after the engineer adds supports and a load
+**Plans**: TBD
 **UI hint**: yes
 
-### Phase 4: Grillage Solver
-**Goal**: Engineers can submit grillage (bridge deck / floor system) problems to a /solve/grillage endpoint and receive accurate results including torsional effects
-**Depends on**: Phase 2
-**Requirements**: GRILLAGE-01, GRILLAGE-02, GRILLAGE-03, GRILLAGE-04, GRILLAGE-05
-**Success Criteria** (what must be TRUE):
-  1. POST /solve/grillage returns correct results for a simple two-member grillage with a central point load (hand-verifiable equilibrium)
-  2. GrillageModel2D accepts per-member E, I, A, J, and G — torsional stiffness GJ is applied per member
-  3. test_grillage.py contains 3+ passing tests including equilibrium verification and a torsion check
-**Plans**: TBD
+### Phase 6: Revit Tier 2 — Analytical Exporter Hardening
 
-### Phase 5: 3D Truss Solver
-**Goal**: Engineers can submit 3D truss problems to a /solve/truss3d endpoint and receive accurate displacement, reaction, and member force results — including structures with vertical members
-**Depends on**: Phase 3 (interchange format enables file-based testing before 3D UI exists)
-**Requirements**: TRUSS3D-01, TRUSS3D-02, TRUSS3D-03, TRUSS3D-04, TRUSS3D-05, TRUSS3D-06, TRUSS3D-07
-**Success Criteria** (what must be TRUE):
-  1. POST /solve/truss3d returns correct displacements and member forces for a hand-verifiable single inclined 3D bar
-  2. POST /solve/truss3d handles a structure containing a vertical member without producing NaN in results
-  3. test_truss3d.py contains 5+ passing tests including a 3D tetrahedron truss and multi-point load case
-  4. Every test_truss3d.py test asserts stiffness matrix symmetry (np.allclose(K, K.T)) and global equilibrium
-**Plans**: TBD
-**UI note**: Blender add-on (Phase 6 onwards); no browser canvas UI planned for 3D
-
-### Phase 6: 3D Frame Solver
-**Goal**: Engineers can submit 3D frame problems to a /solve/frame3d endpoint with full 6-DOF-per-node behaviour; Blender add-on provides the primary UI for modelling and visualising results
+**Goal**: The analytical-model exporter works across Revit 2023, 2024, and 2025 and produces a complete canonical JSON including supports, loads, and section properties — living at its permanent production location in CustomRevitExtension — while the legacy exporter in pda_project is retired
 **Depends on**: Phase 5
-**Requirements**: TBD
+**Repo**: `CustomRevitExtension` (primary); `pda_project` (retire legacy file)
+**Requirements**: REVIT-T2-01, REVIT-T2-02, REVIT-T2-03, REVIT-T2-04, REVIT-T2-05, REVIT-T2-06, REVIT-T2-07
 **Success Criteria** (what must be TRUE):
-  1. POST /solve/frame3d returns correct displacements and member forces for a hand-verifiable 3D portal frame
-  2. test_frame3d.py contains 5+ passing tests including equilibrium verification
-  3. A Blender add-on panel allows modelling nodes/members, setting supports/loads, calling solver_core directly, and viewing deflected shape and force diagrams in the 3D viewport
-**Plans**: TBD
-**UI note**: Blender add-on — imports solver_core directly via bpy, no HTTP needed for desktop use
-
-### Phase 7: Structural Dynamics
-**Goal**: Engineers can compute natural frequencies, mode shapes, and time-history responses for 2D frame structures; framework extends to 3D once validated
-**Depends on**: Phase 2 (2D frame solver), Phase 6 for 3D extension
-**Requirements**: TBD
-**Success Criteria** (what must be TRUE):
-  1. A dynamics solver returns correct natural frequencies for a hand-verifiable single-storey frame
-  2. Mode shapes are normalised and can be visualised as animated deflected shapes in the Blender add-on
-  3. test_dynamics.py contains 3+ passing tests with analytical verification
-**Plans**: TBD
-
-### Phase 8: Plate and Shell Structures
-**Goal**: Engineers can model and solve plate/shell structures using 2D FEM elements with both membrane and bending behaviour
-**Depends on**: Phase 6
-**Requirements**: TBD
-**Success Criteria** (what must be TRUE):
-  1. POST /solve/plate returns correct deflections for a simply-supported rectangular plate under uniform pressure (Navier series solution)
-  2. test_plate.py contains 3+ passing tests including equilibrium and symmetry checks
-  3. Blender add-on supports plate/shell geometry input and result visualisation
-**Plans**: TBD
-
-### Phase 9: Continuum Structures (FEM)
-**Goal**: Engineers can model and solve general 2D/3D continuum structures using standard FEM elements; stress and strain fields are available in results
-**Depends on**: Phase 8
-**Requirements**: TBD
-**Success Criteria** (what must be TRUE):
-  1. POST /solve/continuum2d returns correct stress fields for a plane-stress patch test
-  2. test_continuum.py contains 3+ passing tests including the patch test and equilibrium verification
-  3. Blender add-on supports mesh input and stress/strain contour visualisation
-**Plans**: TBD
-
-### Phase 10: Non-linear Cablenet Structures
-**Goal**: Engineers can model and solve tension-only cablenet structures with geometric non-linearity using an iterative solver
-**Depends on**: Phase 5 (3D truss patterns), largely standalone
-**Requirements**: TBD
-**Success Criteria** (what must be TRUE):
-  1. POST /solve/cablenet returns correct equilibrium geometry for a hand-verifiable two-cable problem
-  2. Iterative solver converges within a documented tolerance; non-convergence returns HTTP 422
-  3. test_cablenet.py contains 3+ passing tests including a symmetry check and a load-step convergence test
+  1. The exporter runs without error in Revit 2023, 2024, and 2025 — tested against each version's API surface
+  2. The exported JSON contains correct restrainedDoF derived from the analytical model's support restraints (fixed, pinned, roller)
+  3. Point loads and UDLs from the analytical model appear as correct forceVector, ENForces, and ENMoments in the exported JSON
+  4. Per-member E, I, and A values are populated from Revit member types in the exported JSON
+  5. The button lives at `Analytical.panel/StructuralAnalyticalModel.pushbutton/` and the legacy `pda_project/pyrevit_exporters/export_to_pda.py` is replaced by a README pointer to its new location
 **Plans**: TBD
 
 ## Progress
@@ -138,14 +155,18 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1. Trust and Production Hardening | v1.0 | 3/3 | Complete | 2026-04-11 |
 | 2. Model Evolution and UX Polish | v1.0 | 3/3 | Complete | 2026-04-18 |
-| 3. Interchange Format and External Inputs | v1.1 | 0/3 | Planning | - |
-| 4. Grillage Solver | v1.1 | 0/TBD | Not started | - |
-| 5. 3D Truss Solver | v2.0 | 0/TBD | Not started | - |
-| 6. 3D Frame Solver | v2.0 | 0/TBD | Not started | - |
-| 7. Structural Dynamics | v3.0 | 0/TBD | Not started | - |
-| 8. Plate and Shell Structures | v3.0 | 0/TBD | Not started | - |
-| 9. Continuum Structures (FEM) | v3.0 | 0/TBD | Not started | - |
-| 10. Non-linear Cablenet Structures | v3.0 | 0/TBD | Not started | - |
+| 3. Interchange Format and External Inputs | v1.1 | 3/3 | Complete | 2026-04-19 |
+| 4. 2D Frame Solver + UI Hardening | v1.2 | 0/TBD | Not started | - |
+| 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/TBD | Not started | - |
+| 6. Revit Tier 2 — Analytical Exporter Hardening | v1.2 | 0/TBD | Not started | - |
+| 7. Grillage Solver | v1.3 | 0/TBD | Not started | - |
+| 8. Revit Results-Import | v1.3 | 0/TBD | Not started | - |
+| 9. 3D Truss Solver | v1.4 | 0/TBD | Not started | - |
+| 10. 3D Frame Solver | v1.4 | 0/TBD | Not started | - |
+| 11. Structural Dynamics | v2.0+ | 0/TBD | Not started | - |
+| 12. Plate and Shell Structures | v2.0+ | 0/TBD | Not started | - |
+| 13. Continuum Structures (FEM) | v2.0+ | 0/TBD | Not started | - |
+| 14. Non-linear Cablenet Structures | v2.0+ | 0/TBD | Not started | - |
 
 ## Backlog
 

@@ -47,20 +47,20 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HARDEN-01 | TBD | Active |
-| HARDEN-02 | TBD | Active |
-| HARDEN-03 | TBD | Active |
-| REVIT-T1-01 | TBD | Active |
-| REVIT-T1-02 | TBD | Active |
-| REVIT-T1-03 | TBD | Active |
-| REVIT-T1-04 | TBD | Active |
-| REVIT-T1-05 | TBD | Active |
-| REVIT-T2-01 | TBD | Active |
-| REVIT-T2-02 | TBD | Active |
-| REVIT-T2-03 | TBD | Active |
-| REVIT-T2-04 | TBD | Active |
-| REVIT-T2-05 | TBD | Active |
-| REVIT-T2-06 | TBD | Active |
-| REVIT-T2-07 | TBD | Active |
+| HARDEN-01 | Phase 4 | Active |
+| HARDEN-02 | Phase 4 | Active |
+| HARDEN-03 | Phase 4 | Active |
+| REVIT-T1-01 | Phase 5 | Active |
+| REVIT-T1-02 | Phase 5 | Active |
+| REVIT-T1-03 | Phase 5 | Active |
+| REVIT-T1-04 | Phase 5 | Active |
+| REVIT-T1-05 | Phase 5 | Active |
+| REVIT-T2-01 | Phase 6 | Active |
+| REVIT-T2-02 | Phase 6 | Active |
+| REVIT-T2-03 | Phase 6 | Active |
+| REVIT-T2-04 | Phase 6 | Active |
+| REVIT-T2-05 | Phase 6 | Active |
+| REVIT-T2-06 | Phase 6 | Active |
+| REVIT-T2-07 | Phase 6 | Active |
 
-_Phase mapping filled in after roadmap creation._
+_Phase mapping filled in 2026-04-19 after roadmap creation._
