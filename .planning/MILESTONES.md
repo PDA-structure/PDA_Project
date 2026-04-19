@@ -36,3 +36,40 @@ Trusted, production-ready 2D structural analysis platform. Engineers can model 2
 - [v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md) — requirements with final status
 
 ---
+
+## v1.1 — Interchange and Grillage (Partial)
+
+**Shipped Partial:** 2026-04-19
+**Phases:** 3 (1 phase complete, Phase 4 Grillage deferred)
+**Git range:** 2ef243f → 2dc028b
+
+### Delivered
+
+Canonical JSON interchange format across browser UIs, external importers, and the solver API. Engineers can save/load structures in both frame2d and truss2d UIs and round-trip through the solver without re-entering data. External importers built for Tekla Structural Designer (Excel) and Revit 2023+ (PyRevit).
+
+### Key Accomplishments
+
+1. Canonical JSON schema v1.0 — same shape for save, load, and solver API input
+2. Frame2D and Truss2D UIs: Save/Load JSON buttons with full canvas state round-trip
+3. FastAPI TestClient integration suite with canonical D-04 fixtures (8 tests, analytical checks)
+4. Tekla Structural Designer Excel → canonical JSON CLI converter
+5. Revit 2023+ PyRevit exporter (feet→metres, analytical model based)
+6. Frame_v2 pin-release bug fixes (single-member ENA condensation + multi-member force recovery) — regressions caught via TRUST-09/10/11/12
+7. Diagnostic JS error banner added to both UIs (Safari-visible without DevTools)
+
+### Deferred
+
+- **Phase 4: Grillage Solver** — moved to v1.3+ after pivot to 2D frame hardening + Revit-as-UI
+
+### Stats
+
+- Phases shipped: 1 (Phase 3) | Plans: 3 | Quick tasks: 3
+- Tests: 37 passing (v1.0: 15 → v1.1: 37; +8 interchange, +9 Tekla converter, +5 pin-release regressions)
+- Timeline: 2026-04-18 → 2026-04-19
+
+### Archive
+
+- [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) — phase details including deferred Grillage
+- [v1.1-REQUIREMENTS.md](milestones/v1.1-REQUIREMENTS.md) — shipped + deferred requirements
+
+---

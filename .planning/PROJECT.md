@@ -12,12 +12,23 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 - FastAPI server with /health, /solve/truss2d, /solve/frame2d
 - Browser UIs for both solvers: node/member drawing, supports, loads, UDL (vertical + horizontal), per-member E/I/A, section calculator, BMD/SFD/deformed shape, result export
 
-**Phase 3 complete:** Interchange Format and External Inputs (2026-04-18)
+**Shipped Partial:** v1.1 — Interchange and Grillage (2026-04-19, Phase 3 only; Grillage deferred to v1.3+)
 
 - Canonical JSON schema v1.0 for both solvers — save and reload from browser UI without re-entering data
 - Tekla Structural Designer Excel CLI converter (`converters/tekla_to_pda.py`) with editable COLUMN_MAP
 - Revit PyRevit exporter (`pyrevit_exporters/export_to_pda.py`) for Revit 2023+ analytical models
-- 37/37 pytest tests passing (8 interchange round-trip + 9 Tekla converter + 20 existing solver tests)
+- 41/41 pytest tests passing (includes pin-release regressions TRUST-09/10/11/12)
+
+## Current Milestone: v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)
+
+**Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path by shipping a geometry-exporter button plus a hardened analytical-model exporter in the sibling `CustomRevitExtension` pyRevit repo.
+
+**Target features:**
+- Multi-member frame solver test coverage (portal frame, continuous beams, mixed pin-releases)
+- Spring supports end-to-end (solver back-end exists; add to frame2d UI)
+- User-directed bug sweep of the 2D frame solver/UI
+- Revit Tier 1 — Geometry Exporter button (drafting-view detail lines → canonical JSON)
+- Revit Tier 2 — Analytical Exporter hardened (fix for Revit 2025, supports/loads/validation, proper production home)
 
 ## Core Value
 
@@ -48,13 +59,15 @@ Engineers can define a structure, solve it, and get accurate displacement, react
 - ✓ Node label / DOF overlay toggle in frame2d UI — v1.0
 - ✓ Horizontal UDL support with direction-cosine decomposition — v1.0
 
-### Active (next milestone)
+### Active (v1.2 — 2D Frame Hardening + Revit-as-UI)
 
-- ✓ Canonical interchange format (save/load JSON in browser UIs) — validated in Phase 3
-- ✓ Tekla Structural Designer Excel import → canonical JSON schema — validated in Phase 3
-- ✓ Revit PyRevit export → canonical JSON schema — validated in Phase 3
-- ✓ Interchange format documented as communication/debugging tool — validated in Phase 3
-- [ ] Grillage solver (/solve/grillage, torsional stiffness, analytical tests)
+To be populated via REQUIREMENTS.md for v1.2. Covers solver hardening (multi-member tests, spring supports, bug sweep) and Revit-as-UI (Tier 1 geometry exporter + Tier 2 analytical exporter hardening).
+
+### Deferred to v1.3+
+
+- [ ] Grillage solver (/solve/grillage, torsional stiffness, analytical tests) — original v1.1 Phase 4, deferred after pivot
+- [ ] Revit results-import button (read solver JSON, annotate model)
+- [ ] 3D truss / 3D frame solvers
 
 ### Out of Scope
 
@@ -118,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after Phase 3 completion*
+*Last updated: 2026-04-19 — v1.1 closed partial, v1.2 started (2D Frame Hardening + Revit-as-UI)*
