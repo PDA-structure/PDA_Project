@@ -746,3 +746,119 @@ def test_trust_15_mixed_pin_release_shared_node():
     # Pure bending (no axial in horizontal cantilever under transverse UDL)
     assert s.mbrForces[0] == pytest.approx(0.0, abs=1e-4)
     assert s.mbrForces[1] == pytest.approx(0.0, abs=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Case 16: Simply-supported beam with Ky spring at one end, end-to-end
+#          through FrameV2Adapter (TRUST-16)
+#
+# End-to-end test for the spring support backend through FrameV2Adapter —
+# covers HARDEN-02 at the solver/adapter level (independent of any UI work).
+# springDoF and springStiffness flow: FrameModel2D → FrameV2Adapter →
+# BeamBarStructure_v2.add_spring_stiffnesses (frame_v2.py:411).
+#
+# Nodes: 1(0,0), 2(4,0); member [1,2]; no UDL.
+# Support: node 1 pinned (Ux,Uy). Node 2 has a vertical Ky spring on DOF 5.
+# Load: -P downward at node 2 (DOF 5 → forceVector index 4).
+# With load directly over the spring, pin carries no vertical; spring
+# compresses δ = P/Ky and reacts K·δ = P.
+# ---------------------------------------------------------------------------
+def test_trust_16_simply_supported_spring_support():
+    """TRUST-16: Simply-supported beam with Ky vertical spring at node 2;
+    pin at node 1. End-to-end test through FrameV2Adapter — covers
+    HARDEN-02 at the solver/adapter level. Spring compresses δ = P/K
+    under tip load; reaction at spring = K·δ = P."""
+    P = 10_000.0
+    K_y = 1_000_000.0   # 1 MN/m vertical soil-pad spring
+    L_beam = 4.0
+
+    force_vector_flat = np.zeros(6)
+    force_vector_flat[4] = -P   # Uy at node 2 → DOF 5 → index 4
+
+    model = FrameModel2D(
+        nodes=np.array([[0.0, 0.0], [L_beam, 0.0]], float),
+        members=np.array([[1, 2]], int),
+        ENForces=np.array([[0.0, 0.0]], float),
+        ENMoments=np.array([[0.0, 0.0]], float),
+        forceVector=force_vector_flat.reshape(-1, 1),
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2],
+        springDoF=[5],
+        springStiffness=[K_y],
+    )
+    adapter = FrameV2Adapter(model)
+    result = adapter.solve()
+
+    # Confirm adapter dispatched through frame_v2
+    assert result.solver == "frame_v2"
+    # Spring deflection: δ = -P/Ky (downward → negative Uy)
+    assert result.UG[4, 0] == pytest.approx(-P / K_y, rel=1e-5)
+    # Spring reaction magnitude: |K·δ| = P — verified directly from the
+    # spring constitutive relation (K * Uy) rather than from FG, which at a
+    # free DOF equals the applied load by equilibrium (Kp @ UG = f_ext).
+    spring_reaction_force = -K_y * result.UG[4, 0]   # upward reaction magnitude
+    assert spring_reaction_force == pytest.approx(P, rel=1e-5)
+    # At the free DOF 5, FG = applied load (-P by construction of force_vector)
+    assert result.FG[4, 0] == pytest.approx(-P, rel=1e-5)
+    # Pin at node 1 carries no vertical load (applied load is directly over
+    # the spring) — the pin reaction equals zero applied force at its DOFs,
+    # and the vertical spring reaction equals the full applied load P.
+    assert result.FG[1, 0] == pytest.approx(0.0, abs=1e-4)
+    # Global vertical equilibrium: spring reaction (upward) + pin reaction
+    # (zero) = total applied downward load P.
+    assert np.isclose(spring_reaction_force + result.FG[1, 0], P, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Case 17: Three-node beam — fixed at node 1, pinned (propped) at node 2,
+#          free at node 3 with tip load P downward (TRUST-17)
+#
+# Tests multi-member moment transfer and propped cantilever + overhang
+# interaction. Hand-calc: m2 is a cantilever overhang — m2.Mj=0 at the
+# free tip and m2.Mi = -P·L at node 2 by overhang equilibrium (moment at
+# the support end of a tip-loaded overhang). ΣM at node 2 (no external
+# moment, θ continuous, no release) gives m1.Mj = +P·L. m1 is a propped
+# cantilever under the applied moment transferred from the overhang.
+# ---------------------------------------------------------------------------
+def test_trust_17_cantilever_plus_propped_cantilever():
+    """TRUST-17: Three-node beam — fixed at node 1, pinned (propped) at
+    node 2, free at node 3 with tip load P downward. Tests multi-member
+    moment transfer and propped cantilever + overhang interaction.
+    Hand-calc: m2 is a cantilever overhang — m2.Mj=0 at free tip,
+    m2.Mi = -P*L at node 2 by overhang equilibrium. ΣM at node 2 (no
+    external moment, θ continuous) gives m1.Mj = +P*L. m1 is a propped
+    cantilever under the applied moment m1.Mj transferred from the
+    overhang."""
+    P = 5_000.0
+    L_span = 2.0
+
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L_span, 0.0], [2 * L_span, 0.0]],
+        members=[[1, 2], [2, 3]],
+        ENForces=[[0.0, 0.0], [0.0, 0.0]],
+        ENMoments=[[0.0, 0.0], [0.0, 0.0]],
+        force_vector=[0, 0, 0, 0, 0, 0, 0, -P, 0],   # DOF 8 at node 3 = index 7
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 3, 4, 5],   # node 1 fixed + node 2 pinned (θ free)
+    )
+    s.solve_structure()
+
+    # m2 free tip: Mj = 0
+    assert s.mbrMoments[1, 1] == pytest.approx(0.0, abs=1e-4)
+    # Overhang equilibrium at node 2: m2.Mi = -P*L
+    assert s.mbrMoments[1, 0] == pytest.approx(-P * L_span, rel=1e-5)
+    # ΣM at node 2 (no external moment, θ continuous): m1.Mj + m2.Mi = 0
+    assert np.isclose(s.mbrMoments[0, 1] + s.mbrMoments[1, 0], 0.0, atol=1e-4)
+    # m1.Mj = +P*L by ΣM at node 2
+    assert s.mbrMoments[0, 1] == pytest.approx(+P * L_span, rel=1e-5)
+    # m1 is a propped cantilever (fixed at node 1, pinned at node 2) with an
+    # applied end moment m1.Mj = +P*L at the pinned end. Standard carryover
+    # factor for a prismatic beam from a pinned end to a fixed end is 1/2
+    # (same sign in the solver's 3-DoF frame convention — see TRUST-10 where
+    # the fixed j-end positive moment appears in response to the propped i-end
+    # pin release), giving m1.Mi = +P*L/2.
+    assert s.mbrMoments[0, 0] == pytest.approx(+P * L_span / 2, rel=1e-5)
+    # Global vertical equilibrium: ΣFy = applied load
+    assert np.isclose(s.FG[1, 0] + s.FG[4, 0], P, atol=1e-4)
+    # No horizontal reaction (no horizontal load)
+    assert np.isclose(s.FG[0, 0], 0.0, atol=1e-4)
