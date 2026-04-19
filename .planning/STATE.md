@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: Roadmap ready — begin with `/gsd-plan-phase 4`
+status: executing
 stopped_at: Phase 4 context gathered
-last_updated: "2026-04-19T14:40:27.855Z"
-last_activity: 2026-04-19 — Roadmap created for v1.2 (Phases 4, 5, 6)
+last_updated: "2026-04-19T17:30:00.000Z"
+last_activity: 2026-04-19 -- Phase 04 PAUSED mid-UAT on Plan 04-02 (steps 1-7 of 11 passed; awaiting steps 8-11 save/load/backward-compat/console)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 6
 ---
 
 # Project State
@@ -20,14 +21,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)
+**Current focus:** Phase 04 — 2d-frame-solver-ui-hardening
 
 ## Current Position
 
-Phase: Phase 4 — 2D Frame Solver + UI Hardening (not started)
-Plan: —
-Status: Roadmap ready — begin with `/gsd-plan-phase 4`
-Last activity: 2026-04-19 — Roadmap created for v1.2 (Phases 4, 5, 6)
+Phase: 04 (2d-frame-solver-ui-hardening) — EXECUTING (PAUSED mid-UAT)
+Plan: 2 of 3 in progress (04-02 frame2d UI spring support — checkpoint)
+Status: Plan 04-01 complete on main (3 commits). Plan 04-02 has 2 commits in worktree `worktree-agent-a9aa7f7f`, awaiting human UAT steps 8-11. Plan 04-03 queued.
+Last activity: 2026-04-19 -- Phase 04 PAUSED mid-checkpoint on Plan 04-02
+
+## Resume instructions (Phase 04 mid-UAT)
+
+User paused mid-UAT verification of Plan 04-02 (frame2d UI spring support). Status:
+- 04-01: COMPLETE on main (commits 38e56a1, e1d9ad7, 9bd8a86) — all 20 frame_v2 tests pass
+- 04-02: 2 commits in worktree `/Users/catrinevans/Documents/pda_project/.claude/worktrees/agent-a9aa7f7f` (fff1e78, 8d45270). UAT steps 1-7 of 11 passed (Spring button renders, modal works, blank cancel, single-axis spring, replaces classic support, edit pre-fill, solve correct: reaction=10kN, Uy=-0.01m). REMAINING: steps 8 (save JSON), 9 (load round-trip), 10 (Phase 3 backward compat), 11 (console clean).
+- 04-03: queued, depends on 04-02 merge
+
+To resume:
+1. User restarts both terminals: `cd /Users/catrinevans/Documents/pda_project && uvicorn api_server.app:app --reload` AND `cd /Users/catrinevans/Documents/pda_project/.claude/worktrees/agent-a9aa7f7f && python3 -m http.server 8001`
+2. User reopens http://localhost:8001/ui/frame2d/index.html (hard refresh ⌘+Opt+E then ⌘+R if cache)
+3. User runs through steps 8-11 (see plan file `.planning/phases/04-2d-frame-solver-ui-hardening/04-02-frame2d-ui-spring-support-PLAN.md` `<how-to-verify>` block in task 3)
+4. On approval, orchestrator: merges worktree-agent-a9aa7f7f to main, runs post-merge pytest gate, writes 04-02 SUMMARY.md, then spawns Plan 04-03 (UAT harness) executor
+5. After 04-03: code-review → regression gate → verifier agent → roadmap update → phase complete
 
 ## Accumulated Context
 
