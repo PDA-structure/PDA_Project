@@ -137,7 +137,13 @@ Plans:
   3. Coincident endpoints within 1 mm tolerance are merged into a single node; the resulting connectivity is correct for a simple portal frame test case
   4. Exported coordinates are in metres rounded to 4 decimal places (Revit feet converted at ×0.3048), with Z dropped
   5. The exported JSON file opens in the frame2d browser UI and solves successfully after the engineer adds supports and a load
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Pushbutton bundle scaffold + view-type guard + 2D-only session warning + detail-line collector (REVIT-T1-02)
+- [ ] 05-02-PLAN.md — Geometry pipeline: feet→metres + 4dp rounding + 1mm endpoint merge + T-junction split + mid-span crossing detection + lexicographic sort (REVIT-T1-03, REVIT-T1-04)
+- [ ] 05-03-PLAN.md — JSON emit (canvas round-trip contract) + save dialog + success TaskDialog (REVIT-T1-01, REVIT-T1-04)
+- [ ] 05-04-PLAN.md — Human UAT: 6 fixtures in live Revit + frame2d UI round-trip verification (REVIT-T1-01, REVIT-T1-02, REVIT-T1-03, REVIT-T1-05)
 **UI hint**: yes
 
 ### Phase 6: Revit Tier 2 — Analytical Exporter Hardening
@@ -162,7 +168,7 @@ Plans:
 | 2. Model Evolution and UX Polish | v1.0 | 3/3 | Complete | 2026-04-18 |
 | 3. Interchange Format and External Inputs | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 4. 2D Frame Solver + UI Hardening | v1.2 | 0/3 | Not started | - |
-| 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/TBD | Not started | - |
+| 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/4 | Not started | - |
 | 6. Revit Tier 2 — Analytical Exporter Hardening | v1.2 | 0/TBD | Not started | - |
 | 7. Grillage Solver | v1.3 | 0/TBD | Not started | - |
 | 8. Revit Results-Import | v1.3 | 0/TBD | Not started | - |
