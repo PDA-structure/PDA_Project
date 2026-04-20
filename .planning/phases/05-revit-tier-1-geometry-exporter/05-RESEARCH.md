@@ -1003,27 +1003,31 @@ Most project hard rules apply to `solver_core/` and do NOT apply to the sibling 
 
 **Canvas pixel coordinates note:** A2 can be reclassified to verified once the plan includes a smoke test that loads the exported file into frame2d and visually confirms the canvas is populated. This smoke test is REVIT-T1-05's acceptance step.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Button icon asset.** The existing `Loads.pushbutton/icon.png`, `Supports.pushbutton/icon.png`, and `StructuralAnalyticalModel.pushbutton/icon.png` are all 569-byte PNGs — likely placeholder/default icons. Should the new `ExportToPDA.pushbutton/icon.png` match these (use the same icon) or be custom?
    - **What we know:** existing icons are small 32x32 PNGs (569 bytes suggests minimal).
    - **What's unclear:** whether the user wants a distinct icon for this new button.
    - **Recommendation:** **Copy one of the existing 569-byte icons to start.** The planner can add an optional polish task at the end to design a distinct icon, but functional shipping doesn't require it. The button's tooltip (via `bundle.yaml`) will disambiguate.
+   - **RESOLVED:** plan 05-01 Task 1 copies `Loads.pushbutton/icon.png` (569-byte placeholder) into `ExportToPDA.pushbutton/icon.png` as the starting icon. A custom icon is an optional post-phase polish item.
 
 2. **`forms.save_file` vs `FileSaveDialog` — which does the extension team prefer?**
    - **What we know:** legacy exporter uses `forms.save_file`. Raw `FileSaveDialog` is more control but more boilerplate.
    - **What's unclear:** user preference (no decision recorded in CONTEXT).
    - **Recommendation:** use `forms.save_file`. Claude's Discretion per CONTEXT covers this.
+   - **RESOLVED:** plan 05-03 Task 2 wires `pyrevit.forms.save_file(file_ext='json', default_name=...)` per Claude's Discretion. No raw `FileSaveDialog` usage.
 
 3. **Does the sibling repo need its own GSD workflow file?**
    - **What we know:** `pda_project/CLAUDE.md` has GSD workflow enforcement; the sibling repo does not (checked during research — no `CLAUDE.md` at sibling repo root).
    - **What's unclear:** whether the planner should add one for Phase 5's Revit-side commits.
    - **Recommendation:** out of Phase 5 scope. Planner can note this as a backlog item. Commits in the sibling repo for Phase 5 just follow normal git hygiene.
+   - **RESOLVED:** out of scope for Phase 5. Tracked as a deferred idea in milestone context (add a sibling-repo `CLAUDE.md`/GSD setup as a future workflow-hardening phase). Phase 5 commits in `CustomRevitExtension/` follow normal git hygiene only.
 
 4. **How are pyRevit `lib/Snippets/*.py` modules importable from a pushbutton script?**
    - **What we know:** pyRevit automatically adds each extension's `lib/` folder to `sys.path` at startup. So `from _units_conversion import convert_internal_units` should work. [ASSUMED but consistent with pyRevit docs.]
    - **What's unclear:** whether `lib/Snippets/` (the subfolder) is also on `sys.path`, or just `lib/`.
    - **Recommendation:** plan should include a smoke-test task: "Drop a `print()` at top of script.py importing `_units_conversion` — run the button once and confirm no ImportError." If Snippets/ is not auto-pathed, add `sys.path.insert(0, os.path.join(<ext_root>, 'lib', 'Snippets'))` before the import. Small risk; easily fixed.
+   - **RESOLVED:** plan 05-01 Task 2 adds an explicit `sys.path.insert(0, <extension_lib_snippets_path>)` guard at the top of `script.py`, computed dynamically from `os.path.dirname(__file__)` + `../../../../../lib/Snippets`. The guard runs BEFORE `from _units_conversion import ...` and `from _selection_func import ...`, so the imports succeed regardless of whether pyRevit's default `sys.path` behaviour exposes `lib/Snippets/` directly or only `lib/`. An acceptance_criterion greps for `sys.path.insert` in the emitted script to verify the guard landed.
 
 ## Sources
 
