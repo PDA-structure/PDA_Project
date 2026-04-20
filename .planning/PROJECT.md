@@ -19,6 +19,15 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 - Revit PyRevit exporter (`pyrevit_exporters/export_to_pda.py`) for Revit 2023+ analytical models
 - 41/41 pytest tests passing (includes pin-release regressions TRUST-09/10/11/12)
 
+**In Progress:** v1.2 — 2D Frame Hardening + Revit-as-UI (MVP) — Phase 4 complete 2026-04-20
+
+- Phase 4 (2D Frame Solver + UI Hardening) complete — HARDEN-01/02/03 satisfied
+  - Multi-member frame test coverage (TRUST-13..17)
+  - Spring supports (Kx, Ky, Kθ) in frame2d UI with modal UX + canonical JSON schema
+  - UAT harness: 5 canonical fixtures + pytest harness, 2 D-14 bugs fixed in-phase
+  - 53/53 tests passing; solver_core untouched
+- Phases 5–6 remaining: Revit Tier 1 (geometry exporter) and Tier 2 (analytical exporter hardening) in sibling `CustomRevitExtension` repo
+
 ## Current Milestone: v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)
 
 **Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path by shipping a geometry-exporter button plus a hardened analytical-model exporter in the sibling `CustomRevitExtension` pyRevit repo.
@@ -58,10 +67,13 @@ Engineers can define a structure, solve it, and get accurate displacement, react
 - ✓ JSON result export (timestamped download link) in both UIs — v1.0
 - ✓ Node label / DOF overlay toggle in frame2d UI — v1.0
 - ✓ Horizontal UDL support with direction-cosine decomposition — v1.0
+- ✓ Multi-member frame solver test coverage (portal frame, two-span continuous beam with pin release, mixed pin-left/right, Ky spring via adapter, propped cantilever) with equilibrium assertions at shared/released nodes (HARDEN-01) — Phase 4 (v1.2)
+- ✓ Spring supports (Kx, Ky, Kθ) end-to-end in the frame2d UI with modal UX, coil glyph rendering, D-05 replacement semantics, D-08 object-form JSON, Phase 3 backward-compatible Load (HARDEN-02) — Phase 4 (v1.2)
+- ✓ Canonical UAT harness: 5 human-authored fixtures (cantilever, simple beam UDL, portal frame, continuous + pin release, spring-support) + pytest harness through /solve/frame2d TestClient with hand-calc asserts; two D-14 bugs surfaced and fixed in-phase (API `frame2d` alias, resetAll isPanning leak) (HARDEN-03) — Phase 4 (v1.2)
 
 ### Active (v1.2 — 2D Frame Hardening + Revit-as-UI)
 
-To be populated via REQUIREMENTS.md for v1.2. Covers solver hardening (multi-member tests, spring supports, bug sweep) and Revit-as-UI (Tier 1 geometry exporter + Tier 2 analytical exporter hardening).
+Phase 4 (Solver Hardening) complete. Remaining active work: Revit-as-UI (Tier 1 geometry exporter + Tier 2 analytical exporter hardening) in sibling `CustomRevitExtension` repo.
 
 ### Deferred to v1.3+
 
@@ -131,4 +143,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-19 — v1.1 closed partial, v1.2 started (2D Frame Hardening + Revit-as-UI)*
+*Last updated: 2026-04-20 — Phase 4 (2D Frame Solver + UI Hardening) complete; HARDEN-01/02/03 validated*
