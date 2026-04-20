@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "solver": "frame2d",
+  "nodes": [
+    [
+      0,
+      0
+    ],
+    [
+      4,
+      0
+    ]
+  ],
+  "members": [
+    [
+      1,
+      2
+    ]
+  ],
+  "ENForces": [
+    [
+      0,
+      0
+    ]
+  ],
+  "ENMoments": [
+    [
+      0,
+      0
+    ]
+  ],
+  "forceVector": [
+    0,
+    0,
+    0,
+    0,
+    -10000,
+    0
+  ],
+  "E": 200000000000,
+  "I": 0.0001,
+  "A": 0.01,
+  "bars": [],
+  "beamPinLeft": [],
+  "beamPinRight": [],
+  "restrainedDoF": [
+    1,
+    2
+  ],
+  "pinDoF": [],
+  "springDoF": [
+    5
+  ],
+  "springStiffness": [
+    1000000
+  ],
+  "udl_x": [
+    0
+  ],
+  "canvas": {
+    "origin": {
+      "x": 240,
+      "y": 340
+    },
+    "nodes": [
+      {
+        "id": 0,
+        "x": 240,
+        "y": 340,
+        "realX": 0,
+        "realY": 0
+      },
+      {
+        "id": 1,
+        "x": 320,
+        "y": 340,
+        "realX": 4,
+        "realY": 0
+      }
+    ],
+    "members": [
+      {
+        "id": 0,
+        "start": 0,
+        "end": 1,
+        "type": "beam",
+        "pinLeft": false,
+        "pinRight": false,
+        "udl": null,
+        "udl_x": null,
+        "E_override": null,
+        "I_override": null,
+        "A_override": null
+      }
+    ],
+    "supports": {
+      "0": "pinned",
+      "1": {
+        "type": "spring",
+        "Kx": null,
+        "Ky": 1000,
+        "Ktheta": null
+      }
+    },
+    "nodeLoads": [
+      {
+        "nodeId": 1,
+        "direction": "y",
+        "magnitude": -10000
+      }
+    ],
+    "udl": [],
+    "memberOverrides": {}
+  }
+}

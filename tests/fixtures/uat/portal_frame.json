@@ -1,0 +1,188 @@
+{
+  "schema_version": "1.0",
+  "solver": "frame2d",
+  "nodes": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      3
+    ],
+    [
+      4,
+      3
+    ],
+    [
+      4,
+      0
+    ]
+  ],
+  "members": [
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      3,
+      4
+    ]
+  ],
+  "ENForces": [
+    [
+      0,
+      0
+    ],
+    [
+      -20000,
+      -20000
+    ],
+    [
+      0,
+      0
+    ]
+  ],
+  "ENMoments": [
+    [
+      0,
+      0
+    ],
+    [
+      13333.333333333334,
+      -13333.333333333334
+    ],
+    [
+      0,
+      0
+    ]
+  ],
+  "forceVector": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "E": 200000000000,
+  "I": 0.0001,
+  "A": 0.01,
+  "bars": [],
+  "beamPinLeft": [],
+  "beamPinRight": [],
+  "restrainedDoF": [
+    1,
+    2,
+    10,
+    11
+  ],
+  "pinDoF": [],
+  "springDoF": [],
+  "springStiffness": [],
+  "udl_x": [
+    0,
+    0,
+    0
+  ],
+  "canvas": {
+    "origin": {
+      "x": 180,
+      "y": 320
+    },
+    "nodes": [
+      {
+        "id": 0,
+        "x": 180,
+        "y": 320,
+        "realX": 0,
+        "realY": 0
+      },
+      {
+        "id": 1,
+        "x": 180,
+        "y": 260,
+        "realX": 0,
+        "realY": 3
+      },
+      {
+        "id": 2,
+        "x": 260,
+        "y": 260,
+        "realX": 4,
+        "realY": 3
+      },
+      {
+        "id": 3,
+        "x": 260,
+        "y": 320,
+        "realX": 4,
+        "realY": 0
+      }
+    ],
+    "members": [
+      {
+        "id": 0,
+        "start": 0,
+        "end": 1,
+        "type": "beam",
+        "pinLeft": false,
+        "pinRight": false,
+        "udl": null,
+        "udl_x": null,
+        "E_override": null,
+        "I_override": null,
+        "A_override": null
+      },
+      {
+        "id": 1,
+        "start": 1,
+        "end": 2,
+        "type": "beam",
+        "pinLeft": false,
+        "pinRight": false,
+        "udl": 10000,
+        "udl_x": null,
+        "E_override": null,
+        "I_override": null,
+        "A_override": null
+      },
+      {
+        "id": 2,
+        "start": 2,
+        "end": 3,
+        "type": "beam",
+        "pinLeft": false,
+        "pinRight": false,
+        "udl": null,
+        "udl_x": null,
+        "E_override": null,
+        "I_override": null,
+        "A_override": null
+      }
+    ],
+    "supports": {
+      "0": "pinned",
+      "3": "pinned"
+    },
+    "nodeLoads": [],
+    "udl": [
+      {
+        "memberId": 1,
+        "wy": 10000,
+        "wx": 0
+      }
+    ],
+    "memberOverrides": {}
+  }
+}

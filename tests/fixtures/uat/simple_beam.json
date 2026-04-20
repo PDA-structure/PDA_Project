@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.0",
+  "solver": "frame2d",
+  "nodes": [
+    [
+      0,
+      0
+    ],
+    [
+      4,
+      0
+    ]
+  ],
+  "members": [
+    [
+      1,
+      2
+    ]
+  ],
+  "ENForces": [
+    [
+      -20000,
+      -20000
+    ]
+  ],
+  "ENMoments": [
+    [
+      13333.333333333334,
+      -13333.333333333334
+    ]
+  ],
+  "forceVector": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "E": 200000000000,
+  "I": 0.0001,
+  "A": 0.01,
+  "bars": [],
+  "beamPinLeft": [],
+  "beamPinRight": [],
+  "restrainedDoF": [
+    1,
+    2,
+    5
+  ],
+  "pinDoF": [],
+  "springDoF": [],
+  "springStiffness": [],
+  "udl_x": [
+    0
+  ],
+  "canvas": {
+    "origin": {
+      "x": 200,
+      "y": 300
+    },
+    "nodes": [
+      {
+        "id": 0,
+        "x": 200,
+        "y": 300,
+        "realX": 0,
+        "realY": 0
+      },
+      {
+        "id": 1,
+        "x": 280,
+        "y": 300,
+        "realX": 4,
+        "realY": 0
+      }
+    ],
+    "members": [
+      {
+        "id": 0,
+        "start": 0,
+        "end": 1,
+        "type": "beam",
+        "pinLeft": false,
+        "pinRight": false,
+        "udl": 10000,
+        "udl_x": null,
+        "E_override": null,
+        "I_override": null,
+        "A_override": null
+      }
+    ],
+    "supports": {
+      "0": "pinned",
+      "1": "rollerY"
+    },
+    "nodeLoads": [],
+    "udl": [
+      {
+        "memberId": 0,
+        "wy": 10000,
+        "wx": 0
+      }
+    ],
+    "memberOverrides": {}
+  }
+}
