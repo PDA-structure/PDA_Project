@@ -10,7 +10,7 @@
 
 - [ ] **HARDEN-01**: Frame solver test suite covers multi-member topologies — portal frame, two-span continuous beam with shared interior node, and mixed pinLeft/pinRight with UDL — all with equilibrium assertions at shared nodes and released ends
 - [ ] **HARDEN-02**: User can place translational (Kx, Ky) and rotational (Kθ) spring supports at nodes in the frame2d UI and solve structures using them (solver already consumes `springDoF` / `springStiffness`)
-- [ ] **HARDEN-03**: Interactive UAT pass covering cantilever, simple beam, portal frame, continuous beam with pin release, and spring-support cases produces expected results in the frame2d UI
+- [x] **HARDEN-03**: Interactive UAT pass covering cantilever, simple beam, portal frame, continuous beam with pin release, and spring-support cases produces expected results in the frame2d UI
 
 ### Revit Tier 1 — Geometry Exporter (REVIT-T1)
 
