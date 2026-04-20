@@ -1,8 +1,9 @@
 ---
 phase: 04-2d-frame-solver-ui-hardening
 verified: 2026-04-20T19:00:00Z
-status: human_needed
-score: 22/22 automated must-haves verified
+human_approved: 2026-04-20T19:25:00Z
+status: passed
+score: 22/22 automated must-haves verified; 2/2 human UAT items approved
 requirements_verified: [HARDEN-01, HARDEN-02, HARDEN-03]
 must_haves_passed: 22
 must_haves_total: 22
