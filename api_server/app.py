@@ -33,6 +33,13 @@ async def runtime_error_handler(request: Request, exc: RuntimeError):
 # ---- register solvers once ----
 engine = AnalysisEngine()
 engine.register("frame_v2", lambda model: FrameV2Adapter(model))
+# D-14 bug fix (Phase 04 Plan 03, UAT-surfaced): accept "frame2d" as an alias
+# for the "frame_v2" engine. The UI's Save button writes `solver: "frame2d"` as
+# a file-routing key (see ui/frame2d/script.js:1463 saveModel). Before this
+# fix, POSTing an unmodified saved JSON returned HTTP 500 via
+# `ValueError: Unknown solver 'frame2d'` from the engine registry. Registering
+# both keys to the same adapter lets callers use either name interchangeably.
+engine.register("frame2d", lambda model: FrameV2Adapter(model))
 engine.register("truss2d", lambda model: Truss2DAdapter(model))
 
 

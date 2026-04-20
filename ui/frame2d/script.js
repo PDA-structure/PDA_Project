@@ -345,10 +345,32 @@ function resetAll() {
   _udlActiveMemberIdx = null;
   _springActiveNodeId = null;
   view = { scale: 1, tx: 0, ty: 0 };
+  // D-14 (Phase 04 Plan 03 bug fix — UAT authoring surfaced a
+  // reproducible state-leak after Reset All where subsequent canvas
+  // clicks silently failed to add supports or UDLs). The middle-mouse
+  // pan state (isPanning + pan anchor helpers) was not being cleared on
+  // reset; if `isPanning` was stuck `true` (e.g. a middle-drag that
+  // released outside the canvas bounds, or a browser that failed to
+  // fire mouseup), every subsequent canvas click returned early at the
+  // `if (isPanning) return;` guard in the click handler — matching the
+  // user-reported symptom exactly ("UDL doesn't render after clicking
+  // the member", "supports don't register after Reset All", recovered
+  // only by a hard page reload).
+  //
+  // Additionally clear the results-download blob URL, any stale canvas
+  // diagram checkboxes' UI state, and re-run clearDiagramState() so
+  // a post-reset canvas exactly matches a fresh-load canvas.
+  isPanning = false;
+  panStartX = 0; panStartY = 0; panStartTx = 0; panStartTy = 0;
+  if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
   document.getElementById('resultsPanel').style.display = 'none';
   document.getElementById('udlPanel').style.display = 'none';
   const sp = document.getElementById('springPanel');
   if (sp) sp.style.display = 'none';
+  // Clear any download link left inside the results panel
+  const existingDl = document.querySelector('.download-link');
+  if (existingDl) existingDl.remove();
+  clearDiagramState();
   setStatus('');
   setMode('node');
   updateSaveButtonState();

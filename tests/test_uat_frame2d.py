@@ -343,3 +343,76 @@ def test_uat_spring_support_beam(client: TestClient) -> None:
 
     # Member axial force zero (load is perpendicular to axial direction).
     assert res["member_forces"][0] == pytest.approx(0.0, abs=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Regression tests (D-14 — bugs surfaced during UAT authoring)
+# ---------------------------------------------------------------------------
+
+def test_regression_solver_key_frame2d_alias_accepted(client: TestClient) -> None:
+    """Regression (UAT-surfaced bug, D-14): the API accepts ``solver: "frame2d"``
+    as an alias for the ``frame_v2`` engine.
+
+    **Symptom found during Task 1/Task 2 UAT authoring:**
+        The frame2d UI's Save button writes ``solver: "frame2d"`` at the top
+        level of the saved JSON (see ``ui/frame2d/script.js:1463``) — this is
+        a file-routing key identifying which UI a file belongs to, distinct
+        from the inner engine name. Before this fix, POSTing an unmodified
+        saved fixture to ``/solve/frame2d`` returned HTTP 500 with
+        ``ValueError: Unknown solver 'frame2d'`` from the AnalysisEngine
+        registry (only ``frame_v2`` and ``truss2d`` were registered).
+
+        Callers had to manually swap ``"frame2d"`` → ``"frame_v2"`` before
+        POSTing, which is brittle — any UAT user loading their saved file
+        via scripting or future integration would hit the same HTTP 500.
+
+    **Fix:** ``api_server/app.py`` now registers ``"frame2d"`` as a second
+    name for the ``FrameV2Adapter`` factory, making both routing keys
+    interchangeable. See commit trail for this plan.
+
+    **Regression:** POST a fixture with the raw saved ``"solver": "frame2d"``
+    value (no swap) and assert HTTP 200 + correct cantilever tip deflection.
+    Would FAIL before the fix with HTTP 500.
+    """
+    with (FIXTURES_DIR / "cantilever.json").open() as fh:
+        payload = json.load(fh)
+    # Do NOT swap the solver key — this is the bug-reproducer condition.
+    assert payload["solver"] == "frame2d", (
+        "Fixture precondition: saved file must still use file-routing key "
+        "\"frame2d\" for this regression to be meaningful"
+    )
+    payload.pop("schema_version", None)
+    payload.pop("canvas", None)
+
+    response = client.post("/solve/frame2d", json=payload)
+    assert response.status_code == 200, (
+        f"Pre-fix regression: HTTP {response.status_code} on "
+        f"solver=\"frame2d\"; response: {response.text[:400]}"
+    )
+
+    # Result should match the cantilever ground-truth (closed-form PL^3/3EI).
+    res = response.json()
+    assert res["UG"][4] == pytest.approx(-1.6667e-4, rel=1e-4)
+    assert res["FG"][1] == pytest.approx(10000.0, rel=1e-5)
+    # solver field in response is whatever name was dispatched — either key
+    # should work and both route to the same adapter.
+    assert res["solver"] in ("frame2d", "frame_v2"), (
+        f"Unexpected solver name in response: {res['solver']!r}"
+    )
+
+
+def test_regression_health_lists_frame2d_alias(client: TestClient) -> None:
+    """Regression companion (D-14): ``/health`` advertises both routing keys.
+
+    After registering ``"frame2d"`` as an alias, ``engine.available_solvers()``
+    should include both names. This guards against an accidental removal of
+    the alias in a future refactor — a drop of ``"frame2d"`` from
+    ``/health`` would immediately fail this test.
+    """
+    response = client.get("/health")
+    assert response.status_code == 200
+    solvers = response.json().get("solvers", [])
+    assert "frame_v2" in solvers
+    assert "frame2d" in solvers, (
+        f"/health should list both frame_v2 and frame2d; got {solvers}"
+    )
