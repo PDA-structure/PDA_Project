@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: executing
+status: completed
 stopped_at: Phase 4 context gathered
-last_updated: "2026-04-19T18:05:00.000Z"
-last_activity: 2026-04-19 -- Phase 04 Wave 1 COMPLETE (04-01 + 04-02 merged on main, all 46 tests pass). PAUSED before Wave 2 (Plan 04-03 UAT harness — fixture authoring is significant manual work).
+last_updated: "2026-04-20T18:21:18.752Z"
+last_activity: 2026-04-20
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 13
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -25,19 +25,21 @@ See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 ## Current Position
 
-Phase: 04 (2d-frame-solver-ui-hardening) — EXECUTING (Wave 1 done, paused before Wave 2)
-Plan: 3 of 3 queued (04-03 UAT harness — fixture authoring)
+Phase: 04
+Plan: Not started
 Status: Plans 04-01 and 04-02 COMPLETE on main. All 46 tests pass post-merge. Plan 04-03 queued.
-Last activity: 2026-04-19 -- Wave 1 complete; user paused before 04-03 fixture-authoring (significant manual UI work)
+Last activity: 2026-04-20
 
 ## Resume instructions (Phase 04 before Wave 2)
 
 User completed Wave 1 of Phase 04 and paused before Wave 2. Status:
+
 - 04-01: COMPLETE on main (commits 38e56a1, e1d9ad7, 9bd8a86) — TRUST-13..17 multi-member tests
 - 04-02: COMPLETE on main (commits fff1e78, 8d45270, merge 11aa8bd, summary 2a8475e) — frame2d UI Spring support, all 11 UAT steps approved by human
 - 04-03: QUEUED — UAT harness; Task 1 is human-action checkpoint requiring user to build 5 canonical structures via the frame2d UI Save button (cantilever, simple_beam, portal_frame, continuous_pin_release, spring_support_beam) — estimated 25-40 min of manual UI work; Tasks 2 (write pytest harness) and 3 (fix any bug + regression test) are auto
 
 To resume:
+
 1. Start API server: `cd /Users/catrinevans/Documents/pda_project && uvicorn api_server.app:app --reload`
 2. Open frame2d UI (now on main, no worktree needed): serve from main repo or open `ui/frame2d/index.html` directly
 3. Re-run `/gsd-execute-phase 4` — orchestrator will skip 04-01 and 04-02 (SUMMARY.md exists for both), spawn 04-03 executor which will pause at Task 1 with the 5-fixture authoring checklist

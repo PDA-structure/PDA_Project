@@ -1,14 +1,14 @@
 ---
-status: partial
+status: resolved
 phase: 04-2d-frame-solver-ui-hardening
 source: [04-VERIFICATION.md]
 started: 2026-04-20T19:10:00Z
-updated: 2026-04-20T19:10:00Z
+updated: 2026-04-20T19:25:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing of Reset All pan-state fix]
+[all tests approved]
 
 ## Tests
 
@@ -23,7 +23,7 @@ steps: |
   6. Click Pin Support → click one of the dots → a pin glyph must appear immediately
   7. Click Solve → reactions include the pinned support
 fix_location: ui/frame2d/script.js:363-364 (resetAll)
-result: [pending]
+result: approved-2026-04-20
 
 ### 2. Spring UI end-to-end 11-step UAT (from Plan 04-02 Task 3)
 expected: All 11 steps in 04-02-PLAN.md <how-to-verify> pass — Spring button render, modal open/cancel/apply, single-axis Ky spring coil, spring replaces classic support (D-05), edit pre-fill, δ=P/K and reaction=K·δ, Save D-08 schema, Load round-trip, Phase 3 backward compatibility, zero console errors.
@@ -33,9 +33,9 @@ result: approved-2026-04-19
 ## Summary
 
 total: 2
-passed: 1
+passed: 2
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 

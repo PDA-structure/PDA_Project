@@ -37,7 +37,7 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 
 **Milestone Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path with a geometry-exporter button and a hardened analytical-model exporter in the sibling `CustomRevitExtension` repo.
 
-- [ ] **Phase 4: 2D Frame Solver + UI Hardening** — Multi-member test coverage, spring supports in frame2d UI, UAT pass across canonical case types
+- [x] **Phase 4: 2D Frame Solver + UI Hardening** (3/3 plans) — completed 2026-04-20
 - [ ] **Phase 5: Revit Tier 1 — Geometry Exporter** — pyRevit button exports drafting-view detail lines as canonical PDA JSON; loads in browser UI
 - [ ] **Phase 6: Revit Tier 2 — Analytical Exporter Hardening** — Hardened exporter with Revit 2025 compat, supports/loads/validation, production location; legacy exporter retired
 
@@ -121,9 +121,9 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Multi-member frame tests TRUST-13..17 (HARDEN-01)
-- [ ] 04-02-PLAN.md — frame2d UI spring support tool (HARDEN-02)
-- [ ] 04-03-PLAN.md — UAT fixtures + harness (HARDEN-03)
+- [x] 04-01-PLAN.md — Multi-member frame tests TRUST-13..17 (HARDEN-01)
+- [x] 04-02-PLAN.md — frame2d UI spring support tool (HARDEN-02)
+- [x] 04-03-PLAN.md — UAT fixtures + harness (HARDEN-03)
 
 ### Phase 5: Revit Tier 1 — Geometry Exporter
 

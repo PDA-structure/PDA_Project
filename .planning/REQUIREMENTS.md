@@ -8,8 +8,8 @@
 
 ### Solver Hardening (HARDEN)
 
-- [ ] **HARDEN-01**: Frame solver test suite covers multi-member topologies — portal frame, two-span continuous beam with shared interior node, and mixed pinLeft/pinRight with UDL — all with equilibrium assertions at shared nodes and released ends
-- [ ] **HARDEN-02**: User can place translational (Kx, Ky) and rotational (Kθ) spring supports at nodes in the frame2d UI and solve structures using them (solver already consumes `springDoF` / `springStiffness`)
+- [x] **HARDEN-01**: Frame solver test suite covers multi-member topologies — portal frame, two-span continuous beam with shared interior node, and mixed pinLeft/pinRight with UDL — all with equilibrium assertions at shared nodes and released ends
+- [x] **HARDEN-02**: User can place translational (Kx, Ky) and rotational (Kθ) spring supports at nodes in the frame2d UI and solve structures using them (solver already consumes `springDoF` / `springStiffness`)
 - [x] **HARDEN-03**: Interactive UAT pass covering cantilever, simple beam, portal frame, continuous beam with pin release, and spring-support cases produces expected results in the frame2d UI
 
 ### Revit Tier 1 — Geometry Exporter (REVIT-T1)
@@ -47,9 +47,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HARDEN-01 | Phase 4 | Active |
-| HARDEN-02 | Phase 4 | Active |
-| HARDEN-03 | Phase 4 | Active |
+| HARDEN-01 | Phase 4 | Complete |
+| HARDEN-02 | Phase 4 | Complete |
+| HARDEN-03 | Phase 4 | Complete |
 | REVIT-T1-01 | Phase 5 | Active |
 | REVIT-T1-02 | Phase 5 | Active |
 | REVIT-T1-03 | Phase 5 | Active |
