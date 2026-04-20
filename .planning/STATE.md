@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: completed
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-20T18:21:18.752Z"
-last_activity: 2026-04-20
+status: executing
+stopped_at: Phase 5 planned, ready to execute
+last_updated: "2026-04-20T22:12:58.589Z"
+last_activity: 2026-04-20 -- Phase 05 planning complete
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 1
-  total_plans: 3
+  total_plans: 7
   completed_plans: 3
-  percent: 100
+  percent: 43
 ---
 
 # Project State
@@ -21,29 +21,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 04 — 2d-frame-solver-ui-hardening
+**Current focus:** Phase 05 — Revit Tier 1 Geometry Exporter (code in sibling repo `CustomRevitExtension`)
 
 ## Current Position
 
-Phase: 04
-Plan: Not started
-Status: Plans 04-01 and 04-02 COMPLETE on main. All 46 tests pass post-merge. Plan 04-03 queued.
-Last activity: 2026-04-20
+Phase: 05
+Plan: Not started (4 plans ready)
+Status: Ready to execute
+Last activity: 2026-04-20 -- Phase 05 planning complete (checker passed iteration 2)
 
-## Resume instructions (Phase 04 before Wave 2)
+## Resume instructions (Phase 05 execute)
 
-User completed Wave 1 of Phase 04 and paused before Wave 2. Status:
+Phase 04 COMPLETE (verified + committed, see commits 05bd4be, b5b7630, c5ec9cd).
 
-- 04-01: COMPLETE on main (commits 38e56a1, e1d9ad7, 9bd8a86) — TRUST-13..17 multi-member tests
-- 04-02: COMPLETE on main (commits fff1e78, 8d45270, merge 11aa8bd, summary 2a8475e) — frame2d UI Spring support, all 11 UAT steps approved by human
-- 04-03: QUEUED — UAT harness; Task 1 is human-action checkpoint requiring user to build 5 canonical structures via the frame2d UI Save button (cantilever, simple_beam, portal_frame, continuous_pin_release, spring_support_beam) — estimated 25-40 min of manual UI work; Tasks 2 (write pytest harness) and 3 (fix any bug + regression test) are auto
+Phase 05 plans in `.planning/phases/05-revit-tier-1-geometry-exporter/`:
+- 05-01: bundle scaffold + view-type guard + once-per-session 2D-only warning + detail-line collector
+- 05-02: geometry pipeline (feet→m, 4dp round, 1mm merge, T-split, crossings, lex sort)
+- 05-03: JSON emit (flat + canvas round-trip), filename sanitise, save dialog, success TaskDialog
+- 05-04: HUMAN-UAT (6 live fixtures in Revit + frame2d round-trip)
 
-To resume:
+Research + context resolved, all 16 CONTEXT decisions (D-01..D-16) mapped to tasks. All REVIT-T1-01..05 requirements covered. Checker passed on iteration 2 after one revision cycle.
 
-1. Start API server: `cd /Users/catrinevans/Documents/pda_project && uvicorn api_server.app:app --reload`
-2. Open frame2d UI (now on main, no worktree needed): serve from main repo or open `ui/frame2d/index.html` directly
-3. Re-run `/gsd-execute-phase 4` — orchestrator will skip 04-01 and 04-02 (SUMMARY.md exists for both), spawn 04-03 executor which will pause at Task 1 with the 5-fixture authoring checklist
-4. Note: `workflow.auto_advance` is true — after Phase 04 verifies, will chain into Phase 05 (Revit Tier 1 work in sibling repo). Tell Claude before approving Phase 04 verifier if you want to stop here.
+Code lives in sibling repo `/Users/catrinevans/Documents/CustomRevitExtension/` — plans use absolute paths for sibling-repo files so executor knows to commit there.
+
+To execute:
+
+1. `/clear` to free context
+2. `/gsd-execute-phase 5` — will run waves 1→2→3 auto, pause at wave 4 (05-04 human-action checkpoint) for live Revit UAT
+3. Plan 05-04 requires Revit 2023–2025 open with a drafting view containing test geometry
 
 ## Accumulated Context
 
@@ -99,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-19T14:40:27.850Z
-Stopped at: Phase 4 context gathered
-Resume: `/gsd-plan-phase 4` to begin 2D Frame Solver + UI Hardening
+Last session: 2026-04-20T22:12:58.589Z
+Stopped at: Phase 5 planned and verified, ready to execute
+Resume: `/clear` then `/gsd-execute-phase 5` — runs waves 1→3 auto, pauses at wave 4 human UAT in Revit
