@@ -8,7 +8,9 @@ revit_version: <2023 | 2024 | 2025 — fill in>
 pyrevit_version: <fill in from Revit → pyRevit tab → About>
 status: pending   # → passed | passed-with-bugs | failed
 known_bugs:
-  - "Plan 05-01 sys.path guard had off-by-one (5 hops, should be 4) — fixed in commit a5e9221 before UAT proceeded; retest confirms button now loads"
+  - "Plan 05-01 sys.path guard had off-by-one (5 hops, should be 4) — fixed in commit a5e9221; retest PASSED (button loads)"
+  - "Plan 05-01 session flag used setattr on __revit__.Application which raises AttributeError in modern Revit/IronPython — fixed in commit e61ba08 (switched to pyrevit.script.set_envvar/get_envvar); retest F2 PASSED"
+  - "Plan 05-02 float coords serialised with IronPython 2.7 json repr noise (e.g. 1.2567999999999999 instead of 1.2568) even though round(x,4) was applied — fixed in commit 6c37327 (added _q4 helper doing float('%.4f' % x) round-trip at every coord write path); retest F3 PASSED"
 ---
 
 # Phase 5 Human UAT — Revit Tier 1 Geometry Exporter
@@ -20,28 +22,28 @@ known_bugs:
 ## Fixture Results
 
 ### F1 — Non-drafting view guard (REVIT-T1-02 view-type refusal)
-- Outcome: <PASS | FAIL | SKIP>
-- Verdict: <PASS | FAIL>
-- Observed dialog title: <...>
-- Observed dialog message: <...>
-- Notes: <...>
+- Outcome: PASS
+- Verdict: PASS
+- Observed dialog title: "PDA Export" (as expected)
+- Observed dialog message: view-type refusal message shown as expected
+- Notes: worked first try on floor plan; no file written, no crash
 
 ### F2 — First-click 2D-only warning + session persistence (REVIT-T1-02)
-- Outcome: <PASS | FAIL | SKIP>
-- Verdict: <PASS | FAIL>
-- Warning banner text: <PASS | FAIL>
-- Session-flag persistence across second click: <PASS | FAIL>
-- D-04 empty-view dialog: <PASS | FAIL>
-- Notes: <...>
+- Outcome: PASS (after fix e61ba08)
+- Verdict: PASS
+- Warning banner text: PASS
+- Session-flag persistence across second click: PASS
+- D-04 empty-view dialog: PASS
+- Notes: initial run raised AttributeError on Application when checkbox ticked. Root cause: setattr on .NET Application is rejected by modern Revit/IronPython. Fix switched to pyrevit.script.set/get_envvar. Retest all paths PASS.
 
 ### F3 — Single-line export (REVIT-T1-01, REVIT-T1-04)
-- Outcome: <PASS | FAIL | SKIP>
-- Verdict: <PASS | FAIL>
-- Success dialog counts: expected 2 nodes / 1 members — <observed>
-- JSON shape manual inspection: <PASS | FAIL>
-- REVIT-T1-04 4-dp metres + no-Z inspection: <PASS | FAIL>
-- Exported file: <absolute path — optionally copy to .planning/phases/05-.../fixtures/>
-- Notes: <...>
+- Outcome: PASS (after fix 6c37327)
+- Verdict: PASS
+- Success dialog counts: expected 2 nodes / 1 members — observed 2 nodes, 1 members
+- JSON shape manual inspection: PASS
+- REVIT-T1-04 4-dp metres + no-Z inspection: PASS (after _q4 fix; initial export had trailing noise like 1.2567999999999999, retest shows clean 1.2568; no z/Z anywhere)
+- Exported file: /Users/catrinevans/Downloads/PDA_UAT_1_pda.json (initial noisy version archived in phase fixtures if needed); retest produced clean JSON
+- Notes: initial export revealed IronPython 2.7 json serialiser emits full-precision repr. Fix added _q4 helper applying "%.4f" % x round-trip at every coord write path. Retest clean.
 
 ### F4 — Portal frame + endpoint merge (REVIT-T1-03)
 - Outcome: <PASS | FAIL | SKIP>
