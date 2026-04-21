@@ -141,7 +141,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Pushbutton bundle scaffold + view-type guard + 2D-only session warning + detail-line collector (REVIT-T1-02)
-- [ ] 05-02-PLAN.md — Geometry pipeline: feet→metres + 4dp rounding + 1mm endpoint merge + T-junction split + mid-span crossing detection + lexicographic sort (REVIT-T1-03, REVIT-T1-04)
+- [x] 05-02-PLAN.md — Geometry pipeline: feet→metres + 4dp rounding + 1mm endpoint merge + T-junction split + mid-span crossing detection + lexicographic sort (REVIT-T1-03, REVIT-T1-04)
 - [ ] 05-03-PLAN.md — JSON emit (canvas round-trip contract) + save dialog + success TaskDialog (REVIT-T1-01, REVIT-T1-04)
 - [ ] 05-04-PLAN.md — Human UAT: 6 fixtures in live Revit + frame2d UI round-trip verification (REVIT-T1-01, REVIT-T1-02, REVIT-T1-03, REVIT-T1-05)
 **UI hint**: yes

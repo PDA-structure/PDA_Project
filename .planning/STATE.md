@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
 status: executing
-stopped_at: Completed 05-01-PLAN.md — ExportToPDA pushbutton scaffold; ready for 05-02 (geometry pipeline)
-last_updated: "2026-04-21T16:40:52.863Z"
+stopped_at: Completed 05-02-PLAN.md — geometry pipeline wired into ExportToPDA/main(); ready for 05-03 (JSON emit)
+last_updated: "2026-04-21T16:48:25.658Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
-  percent: 57
+  completed_plans: 5
+  percent: 71
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 ## Current Position
 
 Phase: 05 (revit-tier-1-geometry-exporter) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-21
 
@@ -64,6 +64,7 @@ To execute:
 - Phase numbering continues from v1.1 (v1.2 uses Phases 4, 5, 6)
 - Phase 4 repo: pda_project. Phase 5 repo: CustomRevitExtension. Phase 6 repo: CustomRevitExtension (primary) + pda_project (retire legacy file)
 - [Phase 05]: Phase 5 Plan 1: ExportToPDA.pushbutton scaffold created in sibling CustomRevitExtension repo (commits 94a2c8f + 58c059d). REVIT-T1-02 delivered: ViewDrafting guard + once-per-session 2D-only TaskDialog via __revit__.Application._pda_export_warning_shown + detail-line collector with D-03 selection override wired to lib/Snippets/_selection_func.get_selected_elements([DetailLine]).
+- [Phase 05-revit-tier-1-geometry-exporter]: Phase 5 Plan 2: Geometry pipeline added to ExportToPDA/script.py in sibling CustomRevitExtension repo (commits 0ae500a, 66f012a, 359862b). REVIT-T1-03 (1mm Chebyshev merge) + REVIT-T1-04 (feet→m via convert_internal_units, 4dp rounded, Z dropped) delivered. D-05 T-split + D-06 crossing-warn + D-08 lexicographic sort all wired into main(). script.py: 156→352 lines.
 
 ### Pending Todos
 
@@ -106,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-21T16:40:52.858Z
-Stopped at: Completed 05-01-PLAN.md — ExportToPDA pushbutton scaffold; ready for 05-02 (geometry pipeline)
+Last session: 2026-04-21T16:48:25.653Z
+Stopped at: Completed 05-02-PLAN.md — geometry pipeline wired into ExportToPDA/main(); ready for 05-03 (JSON emit)
 Resume: `/clear` then `/gsd-execute-phase 5` — runs waves 1→3 auto, pauses at wave 4 human UAT in Revit
