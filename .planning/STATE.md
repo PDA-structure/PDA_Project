@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
 status: executing
-stopped_at: Phase 5 planned, ready to execute
-last_updated: "2026-04-20T22:12:58.589Z"
-last_activity: 2026-04-20 -- Phase 05 planning complete
+stopped_at: Completed 05-01-PLAN.md — ExportToPDA pushbutton scaffold; ready for 05-02 (geometry pipeline)
+last_updated: "2026-04-21T16:40:52.863Z"
+last_activity: 2026-04-21
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
-  percent: 43
+  completed_plans: 4
+  percent: 57
 ---
 
 # Project State
@@ -21,20 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 05 — Revit Tier 1 Geometry Exporter (code in sibling repo `CustomRevitExtension`)
+**Current focus:** Phase 05 — revit-tier-1-geometry-exporter
 
 ## Current Position
 
-Phase: 05
-Plan: Not started (4 plans ready)
+Phase: 05 (revit-tier-1-geometry-exporter) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-04-20 -- Phase 05 planning complete (checker passed iteration 2)
+Last activity: 2026-04-21
 
 ## Resume instructions (Phase 05 execute)
 
 Phase 04 COMPLETE (verified + committed, see commits 05bd4be, b5b7630, c5ec9cd).
 
 Phase 05 plans in `.planning/phases/05-revit-tier-1-geometry-exporter/`:
+
 - 05-01: bundle scaffold + view-type guard + once-per-session 2D-only warning + detail-line collector
 - 05-02: geometry pipeline (feet→m, 4dp round, 1mm merge, T-split, crossings, lex sort)
 - 05-03: JSON emit (flat + canvas round-trip), filename sanitise, save dialog, success TaskDialog
@@ -62,6 +63,7 @@ To execute:
 - Tier 2 Revit exporter: fix AnalyticalMember-based script for Revit 2025 + extend with supports/loads/validation + retire legacy pda_project/pyrevit_exporters/export_to_pda.py
 - Phase numbering continues from v1.1 (v1.2 uses Phases 4, 5, 6)
 - Phase 4 repo: pda_project. Phase 5 repo: CustomRevitExtension. Phase 6 repo: CustomRevitExtension (primary) + pda_project (retire legacy file)
+- [Phase 05]: Phase 5 Plan 1: ExportToPDA.pushbutton scaffold created in sibling CustomRevitExtension repo (commits 94a2c8f + 58c059d). REVIT-T1-02 delivered: ViewDrafting guard + once-per-session 2D-only TaskDialog via __revit__.Application._pda_export_warning_shown + detail-line collector with D-03 selection override wired to lib/Snippets/_selection_func.get_selected_elements([DetailLine]).
 
 ### Pending Todos
 
@@ -104,6 +106,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-20T22:12:58.589Z
-Stopped at: Phase 5 planned and verified, ready to execute
+Last session: 2026-04-21T16:40:52.858Z
+Stopped at: Completed 05-01-PLAN.md — ExportToPDA pushbutton scaffold; ready for 05-02 (geometry pipeline)
 Resume: `/clear` then `/gsd-execute-phase 5` — runs waves 1→3 auto, pauses at wave 4 human UAT in Revit
