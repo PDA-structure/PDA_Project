@@ -14,7 +14,7 @@
 
 ### Revit Tier 1 — Geometry Exporter (REVIT-T1)
 
-- [ ] **REVIT-T1-01**: A pyRevit button in `CustomRevitExtension` `Analytical.panel` exports detail lines from the active drafting view as canonical PDA JSON (nodes, members, default E/I/A; supports/loads empty)
+- [x] **REVIT-T1-01**: A pyRevit button in `CustomRevitExtension` `Analytical.panel` exports detail lines from the active drafting view as canonical PDA JSON (nodes, members, default E/I/A; supports/loads empty)
 - [x] **REVIT-T1-02**: Button shows a "2D TRUSSES AND 2D FRAMES ONLY" warning before running and refuses to run unless the active view is a drafting view
 - [x] **REVIT-T1-03**: Endpoint coordinates within 1mm tolerance are merged into a single node (structural connectivity preserved)
 - [x] **REVIT-T1-04**: Coordinates are converted Revit-feet → metres (×0.3048), rounded to 4 decimals; Z is dropped (XY plane only)
