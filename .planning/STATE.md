@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: executing
-stopped_at: Completed 05-03-PLAN.md — ExportToPDA button feature-complete; plan 05-04 human UAT ready (portal-frame fixture generated)
-last_updated: "2026-04-21T21:18:14.149Z"
-last_activity: 2026-04-21
+status: between-phases
+stopped_at: Phase 5 complete (verifier PASS 5/5; all REVIT-T1-01..05 delivered; HUMAN-UAT round-trip passed). Next: Phase 6 Revit Tier 2 Analytical Exporter Hardening.
+last_updated: "2026-04-21T22:00:00.000Z"
+last_activity: 2026-04-21 — Phase 05 complete (4/4 plans; 3 runtime bugs fixed in-session)
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 3
+  total_plans: 11
+  completed_plans: 11
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 05 — revit-tier-1-geometry-exporter
+**Current focus:** Phase 06 — Revit Tier 2 Analytical Exporter Hardening (planning not yet started)
 
 ## Current Position
 
-Phase: 05
+Phase: 06 (next — Revit Tier 2)
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-21
+Status: Between phases — Phase 5 verified complete, Phase 6 awaiting discuss/plan
+Last activity: 2026-04-21 — Phase 05 closed (verifier PASS, HUMAN-UAT round-trip passed, 3 runtime bugs fixed in-session)
 
 ## Resume instructions (Phase 05 execute)
 

@@ -38,7 +38,7 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 **Milestone Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path with a geometry-exporter button and a hardened analytical-model exporter in the sibling `CustomRevitExtension` repo.
 
 - [x] **Phase 4: 2D Frame Solver + UI Hardening** (3/3 plans) — completed 2026-04-20
-- [ ] **Phase 5: Revit Tier 1 — Geometry Exporter** — pyRevit button exports drafting-view detail lines as canonical PDA JSON; loads in browser UI
+- [x] **Phase 5: Revit Tier 1 — Geometry Exporter** (4/4 plans) — completed 2026-04-21
 - [ ] **Phase 6: Revit Tier 2 — Analytical Exporter Hardening** — Hardened exporter with Revit 2025 compat, supports/loads/validation, production location; legacy exporter retired
 
 ### 📋 v1.3 — Grillage + Revit Results-Import (Planned)
