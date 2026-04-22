@@ -226,3 +226,15 @@ Plans:
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.5: frame_v2 — Handle Pure-Bar Joints in Mixed Beam/Bar Models (BACKLOG)
+
+**Goal:** `frame_v2` solves hybrid beam+bar models (e.g. Pratt/Warren-style trusses with a continuous beam chord) without returning HTTP 422 at joints where every incident member is a bar. Detect pure-bar joints during assembly in `frame_v2.assemble_primary_stiffness_matrix` and either eliminate the θ DOF from those nodes or implicitly restrain it, removing the singularity in `Ks` caused by bars contributing stiffness only to Ux/Uy (`frame_v2.py:309-324`). Also addresses a secondary finding: `apply_equivalent_nodal_actions` silently drops UDL applied to bars (`frame_v2.py:376`).
+**Context:** Identified 2026-04-22 while testing a mixed beam/bar truss in the frame2d UI (pinned at both top-chord ends, UDL on top chord beams, bottom chord + diagonals as bars). Solver returned 422 because nodes N2 and N4 had only bar members — zero θ stiffness → singular Ks. Model was structurally valid; failure is a formulation limitation, not a bug. Workaround exists (Kθ spring ~1e-3 at pure-bar joints), but the tool should handle this natively since mixing beams + bars is the stated purpose of `frame_v2`. Promoted from todo `2026-04-22-frame2d-pure-bar-joint-instability.md`. Test model at `~/Downloads/frame2d-model-2026-04-22T06-14-49.json`. Includes UI cues (canvas warning for joints with zero rotational stiffness; descriptive error message replacing generic "Structure is unstable"; flag dropped UDL on bar members).
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
