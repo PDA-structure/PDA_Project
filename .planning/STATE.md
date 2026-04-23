@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 Phase: 06 (next — Revit Tier 2)
 Plan: Not started
 Status: Between phases — Phase 5 verified complete, Phase 6 awaiting discuss/plan
-Last activity: 2026-04-21 — Phase 05 closed (verifier PASS, HUMAN-UAT round-trip passed, 3 runtime bugs fixed in-session)
+Last activity: 2026-04-23 — Quick task 260423-a0q built (ExportToPDA_Truss pyRevit pushbutton, sibling-repo commit 95d6748); HUMAN-UAT pending
 
 ## Resume instructions (Phase 05 execute)
 
@@ -95,6 +95,12 @@ To execute:
 |---|-------------|------|--------|-----------|
 | 260418-vcg | Fix frame_v2 pin-release + UDL condensation bug (add shared `_condensed_ena_local` helper + TRUST-09/10/11 regression tests) | 2026-04-18 | d112ab9 | [260418-vcg-fix-frame-v2-pin-release-and-udl-condens](./quick/260418-vcg-fix-frame-v2-pin-release-and-udl-condens/) |
 | 260418-vxi | Add diagnostic JS error banner to frame2d and truss2d UIs (Safari-visible without DevTools; wraps 6 entry points in try/catch) | 2026-04-18 | 7d09d66 | [260418-vxi-add-error-banner-to-uis-for-diagnostic-v](./quick/260418-vxi-add-error-banner-to-uis-for-diagnostic-v/) |
+
+### Quick Tasks Completed (v1.2)
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260423-a0q | Add pyRevit `ExportToPDA_Truss` pushbutton — clones Phase 5 frame2d exporter and emits truss2d-schema JSON (sibling CustomRevitExtension repo). _Awaiting HUMAN-UAT round-trip in Revit._ | 2026-04-23 | 95d6748 (CustomRevitExtension) | [260423-a0q-add-pyrevit-pushbutton-to-export-draftin](./quick/260423-a0q-add-pyrevit-pushbutton-to-export-draftin/) |
 
 ### Debug Sessions Resolved
 
