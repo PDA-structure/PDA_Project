@@ -24,14 +24,19 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 
 </details>
 
-## Next Milestone Goals (v1.3 — TBD)
+## Current Milestone: v1.3 — Revit Tier 2 + Results-Import + Grillage
 
-Carried into v1.3:
-- **Grillage Solver** — `/solve/grillage` endpoint, torsional stiffness, analytical tests (was original v1.1 Phase 4)
-- **Revit Results-Import** — pyRevit button reads solver output JSON and annotates the Revit analytical model
-- **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — rescoped from v1.2: Revit 2023/24/25 compat, supports/loads/section-property extraction, view-plane projection, production-path migration to `Analytical.panel/StructuralAnalyticalModel.pushbutton/`, legacy retirement
+**Goal:** Close out the v1.2 carry-overs — harden the Revit Tier 2 analytical-model exporter (rescoped from v1.2 with full Revit 2023/24/25 risk picture), give engineers a results-import path back into Revit, and ship the long-deferred grillage solver.
 
-Run `/gsd-new-milestone` to define v1.3 scope and requirements.
+**Target features (in priority order):**
+1. **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — Revit 2023/24/25 compat, supports/loads/section-property extraction from analytical model, view-plane projection from active plan/elevation/section view, production-path migration to `Analytical.panel/StructuralAnalyticalModel.pushbutton/`, legacy retirement
+2. **Revit Results-Import** — pyRevit button reads solver output JSON and annotates the Revit analytical model
+3. **Grillage Solver** — `/solve/grillage` endpoint, torsional stiffness, analytical tests (was original v1.1 Phase 4)
+
+**Key context:**
+- All three features are carry-overs from earlier milestones — no greenfield scope
+- Revit work continues in sibling `CustomRevitExtension` repo (pyRevit, IronPython 2.7); Windows host uses manual-copy deployment
+- Grillage builds on the existing solver_core layered pipeline — should follow the `frame_v2` solver pattern + reuse the snapshot-regression gate from v1.2 (D-16)
 
 ## Core Value
 
@@ -86,15 +91,12 @@ Engineers can define a structure (in browser or via Revit pushbutton), solve it,
 - ✓ frame2d UI replaces "Structure is unstable" with cause-aware diagnostics + canvas highlights (PUREBAR-04)
 - ✓ Regression test using captured failing fixture (PUREBAR-05)
 
-### Active
+### Active (v1.3 — Revit Tier 2 + Results-Import + Grillage)
 
-(None — v1.2 shipped. Run `/gsd-new-milestone` to define v1.3 scope.)
+Requirements being defined this milestone. See `.planning/REQUIREMENTS.md` once defined.
 
-### Deferred to v1.3+
+### Deferred to v1.4+
 
-- [ ] Grillage solver (/solve/grillage, torsional stiffness, analytical tests) — original v1.1 Phase 4
-- [ ] Revit results-import button (read solver JSON, annotate model)
-- [ ] Revit Tier 2 — Analytical Exporter Hardening (REVIT-T2-01..07)
 - [ ] 3D truss / 3D frame solvers (v1.4)
 
 ### Out of Scope
@@ -170,4 +172,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-26 after v1.2 milestone (2D Frame Hardening + Revit-as-UI MVP shipped). 13/13 v1.2 requirements validated. Tier 2 Revit + Grillage carried to v1.3.*
+*Last updated: 2026-04-26 — v1.3 milestone started (Revit Tier 2 + Results-Import + Grillage). v1.2 shipped.*

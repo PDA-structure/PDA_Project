@@ -1,39 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: shipped
-stopped_at: v1.2 milestone complete; ready for /gsd-new-milestone
-last_updated: "2026-04-26T19:55:00.000Z"
+milestone: v1.3
+milestone_name: — Revit Tier 2 + Results-Import + Grillage
+status: defining_requirements
+stopped_at: v1.3 milestone started; running research → requirements → roadmap
+last_updated: "2026-04-26T20:05:00.000Z"
 last_activity: 2026-04-26
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-26 — v1.2 milestone shipped)
+See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 
 **Core value:** Engineers can define a structure (in browser or via Revit pushbutton), solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Planning next milestone (v1.3 — Grillage + Revit Results-Import + Tier 2)
+**Current focus:** v1.3 — Revit Tier 2 + Results-Import + Grillage (defining requirements)
 
 ## Current Position
 
-Milestone: v1.2 SHIPPED 2026-04-26
-Phase: none active
-Status: between milestones
-Last activity: 2026-04-26
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-26 — Milestone v1.3 started
 
 ## Resume instructions (next session)
 
-1. `/gsd-new-milestone` — define v1.3 scope (questioning → research → requirements → roadmap)
-2. v1.3 carry-overs already known: Grillage solver, Revit Results-Import, Revit Tier 2 Analytical Exporter Hardening (REVIT-T2-01..07)
+1. If REQUIREMENTS.md exists: `/gsd-discuss-phase 7` to start Phase 7 (or whichever number the roadmap assigns)
+2. If REQUIREMENTS.md missing: re-run `/gsd-new-milestone` to resume from research
 
 ## Accumulated Context
 
