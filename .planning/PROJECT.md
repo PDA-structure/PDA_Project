@@ -19,14 +19,17 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 - Revit PyRevit exporter (`pyrevit_exporters/export_to_pda.py`) for Revit 2023+ analytical models
 - 41/41 pytest tests passing (includes pin-release regressions TRUST-09/10/11/12)
 
-**In Progress:** v1.2 — 2D Frame Hardening + Revit-as-UI (MVP) — Phase 4 complete 2026-04-20
+**Shipped:** v1.2 — 2D Frame Hardening + Revit-as-UI (MVP) — All phases complete 2026-04-26
 
-- Phase 4 (2D Frame Solver + UI Hardening) complete — HARDEN-01/02/03 satisfied
-  - Multi-member frame test coverage (TRUST-13..17)
-  - Spring supports (Kx, Ky, Kθ) in frame2d UI with modal UX + canonical JSON schema
-  - UAT harness: 5 canonical fixtures + pytest harness, 2 D-14 bugs fixed in-phase
-  - 53/53 tests passing; solver_core untouched
-- Phases 5–6 remaining: Revit Tier 1 (geometry exporter) and Tier 2 (analytical exporter hardening) in sibling `CustomRevitExtension` repo
+- Phase 4 (2D Frame Solver + UI Hardening) complete 2026-04-20 — HARDEN-01/02/03 satisfied
+- Phase 5 (Revit Tier 1 — Geometry Exporter) complete 2026-04-21 — REVIT-T1-01..05 satisfied (sibling `CustomRevitExtension` repo)
+- Phase 6 (frame_v2 — Pure-Bar Joint Robustness) complete 2026-04-26 — PUREBAR-01..05 satisfied
+  - Pure-bar joint detection in `frame_v2.assemble_primary_stiffness_matrix` + θ-DOF auto-restraint via union into existing extraction pipeline
+  - `SolverDiagnosticError` typed exception + adapter UDL-on-bar rejection + structured 422 payload `{detail, cause, offending_nodes, offending_members}` (backward-compatible flat fallback)
+  - frame2d UI: pre-solve scan with red-dot highlights for pure-bar joints, blocking banner for UDL-on-bar, structured-422 parsing for cause-driven diagnostics
+  - 61/61 tests passing — TRUST-18 (clean Pratt analytical), TRUST-19 (captured fixture replay), TRUST-20/20b/20c (UDL-on-bar adapter + API + backward compat), UI contract tests
+  - Snapshot regression infrastructure: 35+ baseline JSONs + pytest plugin enforcing byte-identical FEM outputs across all pre-existing tests (D-16 user constraint)
+  - Tier 2 Revit analytical exporter rescoped to v1.3 (2026-04-26 audit reroute)
 
 ## Current Milestone: v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)
 
@@ -143,4 +146,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 — Phase 4 (2D Frame Solver + UI Hardening) complete; HARDEN-01/02/03 validated*
+*Last updated: 2026-04-26 — Phase 6 (frame_v2 Pure-Bar Joint Robustness) complete; PUREBAR-01..05 validated; v1.2 milestone shipped (Revit Tier 2 deferred to v1.3)*
