@@ -11,6 +11,7 @@ from pda_analysis_software.models.frame2d_model import FrameModel2D
 from pda_analysis_software.models.truss2d_model import TrussModel2D
 from pda_analysis_software.adapters.frame_adapters import FrameV2Adapter
 from pda_analysis_software.adapters.truss_adapters import Truss2DAdapter
+from pda_analysis_software.errors import SolverDiagnosticError
 
 app = FastAPI(title="PDA Analysis Software API")
 
@@ -24,6 +25,25 @@ app.add_middleware(
 
 @app.exception_handler(RuntimeError)
 async def runtime_error_handler(request: Request, exc: RuntimeError):
+    # Phase 6 D-09 / D-13: if the exception is a SolverDiagnosticError
+    # (or any RuntimeError subclass that exposes the structured attrs),
+    # surface a structured 422 payload. Otherwise fall back to the flat
+    # legacy payload — backward-compatible with all existing UI readers
+    # that only inspect `detail`.
+    if isinstance(exc, SolverDiagnosticError) or hasattr(exc, "cause"):
+        return JSONResponse(
+            status_code=422,
+            content={
+                "detail": getattr(exc, "detail", str(exc)),
+                "cause": getattr(exc, "cause", None),
+                "offending_nodes": list(
+                    getattr(exc, "offending_nodes", []) or []
+                ),
+                "offending_members": list(
+                    getattr(exc, "offending_members", []) or []
+                ),
+            },
+        )
     return JSONResponse(
         status_code=422,
         content={"detail": "structure is unstable or under-restrained"},

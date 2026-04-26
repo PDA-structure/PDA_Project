@@ -3,6 +3,7 @@ from pda_analysis_software.results.results import AnalysisResult
 from pda_analysis_software.models.frame2d_model import FrameModel2D
 
 from pda_analysis_software.solvers.frame_v2 import BeamBarStructure_v2
+from pda_analysis_software.errors import SolverDiagnosticError
 # If you want v1 too:
 #from pda_analysis_software.solvers.frame_v1_legacy import BeamBarStructure
 #from pda_analysis_software.solvers.truss2d import Truss
@@ -31,6 +32,33 @@ class FrameV2Adapter:
             raise ValueError(f"E/I list length must equal n_members={n}")
         if A_list is not None and len(A_list) != n:
             raise ValueError(f"A list length must equal n_members={n}")
+
+        # Phase 6 PUREBAR-03 (D-06): reject UDL applied to bar members.
+        # Bars are axial-only; equivalent nodal moments / transverse forces
+        # cannot be applied. Pre-fix behaviour silently dropped them in
+        # frame_v2.apply_equivalent_nodal_actions; we now reject loudly at
+        # the adapter so the user gets actionable feedback rather than
+        # a wrong-but-plausible result.
+        udl_on_bar: list[int] = []
+        for m in (self.model.bars or []):    # m is 1-based
+            e = m - 1
+            if e < 0 or e >= n:
+                continue
+            if (
+                np.any(self.model.ENForces[e] != 0.0)
+                or np.any(self.model.ENMoments[e] != 0.0)
+            ):
+                udl_on_bar.append(int(m))
+        if udl_on_bar:
+            raise SolverDiagnosticError(
+                detail=(
+                    f"UDL applied to bar member(s) {udl_on_bar} — "
+                    f"bars are axial-only. Change the member type to "
+                    f"'beam' or remove the UDL."
+                ),
+                cause="udl_on_bar",
+                offending_members=udl_on_bar,
+            )
 
         s = BeamBarStructure_v2(
             nodes=self.model.nodes,
