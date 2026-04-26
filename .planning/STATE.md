@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: between-phases
-stopped_at: Phase 5 complete (verifier PASS 5/5; all REVIT-T1-01..05 delivered; HUMAN-UAT round-trip passed). Next: Phase 6 Revit Tier 2 Analytical Exporter Hardening.
-last_updated: "2026-04-21T22:00:00.000Z"
-last_activity: 2026-04-21 — Phase 05 complete (4/4 plans; 3 runtime bugs fixed in-session)
+status: scope-decision-pending
+stopped_at: Phase 6 context gathered (autonomous completion delegated by user 2026-04-26); ready for /gsd-plan-phase 6
+last_updated: "2026-04-26T10:38:35.964Z"
+last_activity: 2026-04-24 — /gsd-audit-milestone v1.2 → gaps_found (8/15 requirements). pyRevit truss pushbutton HUMAN-UAT passed via raw.githubusercontent.com manual copy. Debug session `truss-json-solver-mismatch` resolved. Both repos (pda_project, CustomRevitExtension) pushed to origin/main.
 progress:
-  total_phases: 6
-  completed_phases: 3
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 7
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -21,35 +21,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 06 — Revit Tier 2 Analytical Exporter Hardening (planning not yet started)
+**Current focus:** v1.2 milestone audit returned `gaps_found` — Phase 6 (Revit Tier 2 Analytical Exporter Hardening) never started. Awaiting scope decision before next work routes.
 
 ## Current Position
 
-Phase: 06 (next — Revit Tier 2)
-Plan: Not started
-Status: Between phases — Phase 5 verified complete, Phase 6 awaiting discuss/plan
-Last activity: 2026-04-23 — Quick task 260423-a0q built (ExportToPDA_Truss pyRevit pushbutton, sibling-repo commit 95d6748); HUMAN-UAT pending
+Phase: between phases (v1.2 milestone audit complete, Phase 6 orphaned)
+Plan: N/A
+Status: scope-decision-pending
+Last activity: 2026-04-24 — /gsd-audit-milestone v1.2 → gaps_found (8/15 requirements). pyRevit truss pushbutton HUMAN-UAT passed via raw.githubusercontent.com manual copy. Debug session `truss-json-solver-mismatch` resolved. Both repos (pda_project, CustomRevitExtension) pushed to origin/main.
 
-## Resume instructions (Phase 05 execute)
+## Resume instructions (next session)
 
-Phase 04 COMPLETE (verified + committed, see commits 05bd4be, b5b7630, c5ec9cd).
-
-Phase 05 plans in `.planning/phases/05-revit-tier-1-geometry-exporter/`:
-
-- 05-01: bundle scaffold + view-type guard + once-per-session 2D-only warning + detail-line collector
-- 05-02: geometry pipeline (feet→m, 4dp round, 1mm merge, T-split, crossings, lex sort)
-- 05-03: JSON emit (flat + canvas round-trip), filename sanitise, save dialog, success TaskDialog
-- 05-04: HUMAN-UAT (6 live fixtures in Revit + frame2d round-trip)
-
-Research + context resolved, all 16 CONTEXT decisions (D-01..D-16) mapped to tasks. All REVIT-T1-01..05 requirements covered. Checker passed on iteration 2 after one revision cycle.
-
-Code lives in sibling repo `/Users/catrinevans/Documents/CustomRevitExtension/` — plans use absolute paths for sibling-repo files so executor knows to commit there.
-
-To execute:
-
-1. `/clear` to free context
-2. `/gsd-execute-phase 5` — will run waves 1→2→3 auto, pause at wave 4 (05-04 human-action checkpoint) for live Revit UAT
-3. Plan 05-04 requires Revit 2023–2025 open with a drafting view containing test geometry
+1. `/gsd-progress` — surfaces audit report and current routing options.
+2. Read `.planning/v1.2-MILESTONE-AUDIT.md` — three resolution paths spelled out:
+   - **Option A — plan Phase 6 properly:** `/gsd-plan-milestone-gaps`
+   - **Option B — rescope Tier 2 to v1.3:** edit `.planning/REQUIREMENTS.md` + `.planning/ROADMAP.md` moving REVIT-T2-01..07 into v1.3 deferred section, then re-run `/gsd-audit-milestone` (should pass).
+   - **Option C — hybrid:** minimal Phase 6 with REVIT-T2-02 (production path migration) + REVIT-T2-07 (legacy retirement); defer T2-01/03/04/05/06 to v1.3.
+3. Decision owner: user. AI can't pick between A/B/C — depends on whether Revit Tier 2 analytical extractor is MVP-critical for real engineer workflows now.
+4. Minor tech debt to clean up whenever convenient: `REQUIREMENTS.md` line 21 — REVIT-T1-05 checkbox still `[ ]` despite verification PASS; and quick task 260423-a0q (truss pushbutton) should either be promoted to a formal v1.2 requirement or recorded as bonus scope.
 
 ## Accumulated Context
 
@@ -107,13 +96,14 @@ To execute:
 | # | Description | Date | Commit |
 |---|-------------|------|--------|
 | frame-v2-pin-release-multi | Fix pin-release member force recovery in multi-member structures (back-solve released θ via condensation relation; TRUST-12 regression added) | 2026-04-19 | 2dc028b |
+| truss-json-solver-mismatch | Truss2d UI rejected JSON from new ExportToPDA_Truss pyRevit pushbutton. Root cause: Windows Revit host uses manual-copy deployment (not git clone); the new truss bundle folder had never been copied to Windows, so the ribbon button clicked was actually the frame exporter. Fix: user downloaded script.py + bundle.yaml + icon.png from raw.githubusercontent.com and placed them in the Windows ExportToPDA_Truss.pushbutton/ folder, then pyRevit Reload. UI now accepts the JSON. | 2026-04-24 | (no code change — deploy-only fix) |
 
 ### Blockers/Concerns
 
-None.
+None — only the pending scope decision on Phase 6 Revit Tier 2.
 
 ## Session Continuity
 
-Last session: 2026-04-21T16:56:46.372Z
-Stopped at: Completed 05-03-PLAN.md — ExportToPDA button feature-complete; plan 05-04 human UAT ready (portal-frame fixture generated)
-Resume: `/clear` then `/gsd-execute-phase 5` — runs waves 1→3 auto, pauses at wave 4 human UAT in Revit
+Last session: 2026-04-26T10:38:35.958Z
+Stopped at: Phase 6 context gathered (autonomous completion delegated by user 2026-04-26); ready for /gsd-plan-phase 6
+Resume: `/gsd-progress` — surfaces the audit report and routes to the three options (plan Phase 6, rescope to v1.3, or hybrid).
