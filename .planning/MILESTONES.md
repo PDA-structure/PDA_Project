@@ -73,3 +73,49 @@ Canonical JSON interchange format across browser UIs, external importers, and th
 - [v1.1-REQUIREMENTS.md](milestones/v1.1-REQUIREMENTS.md) — shipped + deferred requirements
 
 ---
+
+## v1.2 — 2D Frame Hardening + Revit-as-UI (MVP)
+
+**Shipped:** 2026-04-26
+**Phases:** 4–6 (10 plans total)
+**Git range:** 2dc028b → 0df5511
+
+### Delivered
+
+The 2D frame solver hardened against multi-member topologies and pure-bar joint failures, plus a one-click pyRevit pushbutton (sibling `CustomRevitExtension` repo) that exports drafting-view detail lines as canonical PDA JSON for round-trip into the frame2d browser UI. Engineers can now draw a 2D structural layout in Revit and have it solving in the browser within a single click + a few support/load placements.
+
+### Key Accomplishments
+
+1. **Multi-member frame test coverage** — 5 new analytical cases (TRUST-13..17) covering portal frame, two-span continuous beam with pin release + UDL, mixed bilateral pin release, spring-supported simple beam, and series cantilever / propped-cantilever
+2. **Spring supports end-to-end in frame2d UI** — toolbar button, modal, coil-glyph canvas rendering, type-discriminated JSON save/load (backward compatible with Phase 3 string supports), SI-unit payload — verified by 11-step human UAT
+3. **Canonical UAT harness** — 5 human-authored fixtures + pytest harness through `/solve/frame2d` TestClient; surfaced and fixed two D-14 bugs (API solver-alias HTTP 500 + frame2d resetAll middle-mouse-pan state leak)
+4. **Revit Tier 1 geometry exporter (sibling repo)** — pyRevit `ExportToPDA` pushbutton with view-type guard, 1mm Chebyshev endpoint merge, T-junction split, mid-span crossing detection, feet→metres conversion, lexicographic node sort. Live UAT: 6 fixtures + frame2d round-trip all PASS
+5. **Pure-bar joint robustness** — `frame_v2.assemble_primary_stiffness_matrix` detects pure-bar joints during assembly; `_pure_bar_theta_dofs` union into existing extraction pipeline auto-restrains the orphan θ DOF; mixed beam+bar models (e.g. Pratt trusses with continuous beam chords) now solve cleanly
+6. **Typed `SolverDiagnosticError` + structured 422 payload** — adapter rejects UDL-on-bar with `cause="udl_on_bar"` BEFORE solver runs; API exception handler returns `{detail, cause, offending_nodes, offending_members}` with backward-compat flat fallback (D-13)
+7. **frame2d UI diagnostics overhaul** — pre-solve scan with red-dot pure-bar markers, blocking banner for UDL-on-bar, structured-422 parsing replaces generic "Structure is unstable" with cause-suffixed status + canvas highlights of offending nodes/members
+8. **Snapshot regression infrastructure (D-16 user constraint)** — 56 baseline JSONs + pytest plugin enforces byte-identical solver output across all pre-existing tests; baseline captured BEFORE the solver edit (commit `93629a4` < `4356c70`) so git ordering proves no regression
+
+### Bonus Scope
+
+- Quick task 260423-a0q — pyRevit `ExportToPDA_Truss` pushbutton (sibling repo) for truss2d round-trip; built and HUMAN-UAT-passed but outside the formal v1.2 requirements list
+
+### Deferred to v1.3+
+
+- Revit Tier 2 — Analytical Exporter Hardening (REVIT-T2-01..07) — rescoped 2026-04-26 after audit reroute. Drafting-view exporter covers MVP; analytical-model extraction reconsidered for v1.3 with full Revit 2023/24/25 API risk picture
+- Phase 6 tooling tech debt: WR-01..04 (snapshot script absolute path, UI client-side predicate parity, mkdir-at-import, unused param)
+
+### Stats
+
+- Phases: 3 (4, 5, 6) | Plans: 10 (3+4+3) | Tasks: 25 | Quick tasks: 1
+- Tests: 61 passing (v1.1: 37 → v1.2: 61; +5 multi-member, +5 UAT, +5 spring, +8 pure-bar/UDL-on-bar, +3 UI-contract, +others)
+- Snapshot regression baseline: 56 JSONs covering all pytest cases
+- Timeline: 2026-04-19 → 2026-04-26 (7 days)
+- Files changed: 150 | LOC delta: +20,261 / −154
+
+### Archive
+
+- [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) — full phase details
+- [v1.2-REQUIREMENTS.md](milestones/v1.2-REQUIREMENTS.md) — 13 satisfied requirements + bonus scope + deferred items
+- [v1.2-MILESTONE-AUDIT.md](milestones/v1.2-MILESTONE-AUDIT.md) — audit verifying 13/13 requirements satisfied
+
+---

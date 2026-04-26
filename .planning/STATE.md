@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: executing
-stopped_at: Phase 6 context gathered (autonomous completion delegated by user 2026-04-26); ready for /gsd-plan-phase 6
-last_updated: "2026-04-26T15:08:30.195Z"
+status: shipped
+stopped_at: v1.2 milestone complete; ready for /gsd-new-milestone
+last_updated: "2026-04-26T19:55:00.000Z"
 last_activity: 2026-04-26
 progress:
-  total_phases: 7
+  total_phases: 3
   completed_phases: 3
   total_plans: 10
   completed_plans: 10
@@ -18,55 +18,45 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
+See: .planning/PROJECT.md (updated 2026-04-26 — v1.2 milestone shipped)
 
-**Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 06 — frame-v2-pure-bar-joint-robustness
+**Core value:** Engineers can define a structure (in browser or via Revit pushbutton), solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
+**Current focus:** Planning next milestone (v1.3 — Grillage + Revit Results-Import + Tier 2)
 
 ## Current Position
 
-Phase: 06
-Plan: Not started
-Status: Executing Phase 06
+Milestone: v1.2 SHIPPED 2026-04-26
+Phase: none active
+Status: between milestones
 Last activity: 2026-04-26
 
 ## Resume instructions (next session)
 
-1. `/gsd-progress` — surfaces audit report and current routing options.
-2. Read `.planning/v1.2-MILESTONE-AUDIT.md` — three resolution paths spelled out:
-   - **Option A — plan Phase 6 properly:** `/gsd-plan-milestone-gaps`
-   - **Option B — rescope Tier 2 to v1.3:** edit `.planning/REQUIREMENTS.md` + `.planning/ROADMAP.md` moving REVIT-T2-01..07 into v1.3 deferred section, then re-run `/gsd-audit-milestone` (should pass).
-   - **Option C — hybrid:** minimal Phase 6 with REVIT-T2-02 (production path migration) + REVIT-T2-07 (legacy retirement); defer T2-01/03/04/05/06 to v1.3.
-3. Decision owner: user. AI can't pick between A/B/C — depends on whether Revit Tier 2 analytical extractor is MVP-critical for real engineer workflows now.
-4. Minor tech debt to clean up whenever convenient: `REQUIREMENTS.md` line 21 — REVIT-T1-05 checkbox still `[ ]` despite verification PASS; and quick task 260423-a0q (truss pushbutton) should either be promoted to a formal v1.2 requirement or recorded as bonus scope.
+1. `/gsd-new-milestone` — define v1.3 scope (questioning → research → requirements → roadmap)
+2. v1.3 carry-overs already known: Grillage solver, Revit Results-Import, Revit Tier 2 Analytical Exporter Hardening (REVIT-T2-01..07)
 
 ## Accumulated Context
 
-### Decisions
+### Decisions (full log: PROJECT.md Key Decisions table)
 
-- v1.0 shipped: Trust and Production Hardening + Model Evolution and UX Polish (Phases 1–2)
-- v1.1 shipped PARTIAL: Phase 3 Interchange Format only. Phase 4 Grillage deferred to v1.3+ after product pivot
-- v1.2 focus: solidify the 2D frame solver/UI (bug fixes, spring supports, multi-member tests) AND establish Revit as the primary data-input path (sibling repo `CustomRevitExtension`)
-- Revit tool work lives in sibling repo `/Users/catrinevans/Documents/CustomRevitExtension/` (pyRevit extension, IronPython 2.7 compat)
-- Tier 1 Revit exporter: drafting-view detail lines → canonical JSON, XY-plane only, "2D TRUSSES AND 2D FRAMES ONLY" banner
-- Tier 2 Revit exporter: fix AnalyticalMember-based script for Revit 2025 + extend with supports/loads/validation + retire legacy pda_project/pyrevit_exporters/export_to_pda.py
-- Phase numbering continues from v1.1 (v1.2 uses Phases 4, 5, 6)
-- Phase 4 repo: pda_project. Phase 5 repo: CustomRevitExtension. Phase 6 repo: CustomRevitExtension (primary) + pda_project (retire legacy file)
-- [Phase 05]: Phase 5 Plan 1: ExportToPDA.pushbutton scaffold created in sibling CustomRevitExtension repo (commits 94a2c8f + 58c059d). REVIT-T1-02 delivered: ViewDrafting guard + once-per-session 2D-only TaskDialog via __revit__.Application._pda_export_warning_shown + detail-line collector with D-03 selection override wired to lib/Snippets/_selection_func.get_selected_elements([DetailLine]).
-- [Phase 05-revit-tier-1-geometry-exporter]: Phase 5 Plan 2: Geometry pipeline added to ExportToPDA/script.py in sibling CustomRevitExtension repo (commits 0ae500a, 66f012a, 359862b). REVIT-T1-03 (1mm Chebyshev merge) + REVIT-T1-04 (feet→m via convert_internal_units, 4dp rounded, Z dropped) delivered. D-05 T-split + D-06 crossing-warn + D-08 lexicographic sort all wired into main(). script.py: 156→352 lines.
-- [Phase 05]: Phase 5 Plan 3: _build_json emits canonical PDA JSON matching Frame2DRequest Pydantic + frame2d UI canvas.* contract; _sanitise_filename hardens default save filename (T-05-11); forms.save_file + json.dump(ensure_ascii=True) + success TaskDialog wired into main() in sibling CustomRevitExtension repo (commits 435a502, 6cf7db0). REVIT-T1-01 delivered. script.py: 352→465 lines. Portal-frame UAT fixture generated offline for plan 05-04.
+- v1.0 shipped (2026-04-18): Trust + Production Hardening + Model Evolution + UX Polish (Phases 1–2)
+- v1.1 shipped PARTIAL (2026-04-19): Phase 3 Interchange Format only. Phase 4 Grillage deferred to v1.3+
+- v1.2 shipped (2026-04-26): Phases 4–6 (frame solver hardening + Revit Tier 1 geometry exporter + pure-bar joint robustness). Tier 2 Revit rescoped to v1.3 mid-milestone (audit Option B 2026-04-26)
+- Snapshot-before-mutation regression gate (D-16) is now a project-wide pattern; baseline lives at `tests/snapshots/baseline/` (56 JSONs); pytest plugin in `conftest.py`
+- `SolverDiagnosticError(RuntimeError)` typed-exception path added in v1.2; structured 422 payload (`detail`, `cause`, `offending_nodes`, `offending_members`) with backward-compat flat fallback
+- Pure-bar θ-DOF auto-restraint as structural invariant (D-01, reject D-02 regularisation); user-supplied DOFs always win
 
 ### Pending Todos
 
-4 pending — Run `/gsd-check-todos` to review.
+Run `/gsd-check-todos` to review.
 
-- **[high]** Multi-member frame solver test coverage (2026-04-19) — absorbed into v1.2 Phase 4 (HARDEN-01)
+### Deferred Items (v1.3+)
 
-### Deferred Items
-
-- **Grillage Solver** (was v1.1 Phase 4) — pushed to v1.3+ (Phase 7)
-- **Revit results-import button** — v1.3+ (Phase 8)
+- **Grillage Solver** (was v1.1 Phase 4) — v1.3+ (Phase 7)
+- **Revit Results-Import button** — v1.3+ (Phase 8)
+- **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — rescoped from v1.2 (2026-04-26 audit reroute)
 - **3D truss / 3D frame solvers** — v1.4+ (Phases 9–10)
+- **Phase 6 tooling tech debt** (WR-01..04): snapshot script absolute path, UI client-side predicate parity, mkdir-at-import, unused param. Tracked for `/gsd-code-review-fix 06`
 
 ### Quick Tasks Completed (v1.0)
 
@@ -89,7 +79,7 @@ Last activity: 2026-04-26
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 260423-a0q | Add pyRevit `ExportToPDA_Truss` pushbutton — clones Phase 5 frame2d exporter and emits truss2d-schema JSON (sibling CustomRevitExtension repo). _Awaiting HUMAN-UAT round-trip in Revit._ | 2026-04-23 | 95d6748 (CustomRevitExtension) | [260423-a0q-add-pyrevit-pushbutton-to-export-draftin](./quick/260423-a0q-add-pyrevit-pushbutton-to-export-draftin/) |
+| 260423-a0q | Add pyRevit `ExportToPDA_Truss` pushbutton — clones Phase 5 frame2d exporter and emits truss2d-schema JSON (sibling CustomRevitExtension repo). HUMAN-UAT round-trip passed 2026-04-24. Recorded as bonus scope at v1.2 close. | 2026-04-23 | 95d6748 (CustomRevitExtension) | [260423-a0q-add-pyrevit-pushbutton-to-export-draftin](./quick/260423-a0q-add-pyrevit-pushbutton-to-export-draftin/) |
 
 ### Debug Sessions Resolved
 
@@ -100,10 +90,10 @@ Last activity: 2026-04-26
 
 ### Blockers/Concerns
 
-None — only the pending scope decision on Phase 6 Revit Tier 2.
+None.
 
 ## Session Continuity
 
-Last session: 2026-04-26T10:38:35.958Z
-Stopped at: Phase 6 context gathered (autonomous completion delegated by user 2026-04-26); ready for /gsd-plan-phase 6
-Resume: `/gsd-progress` — surfaces the audit report and routes to the three options (plan Phase 6, rescope to v1.3, or hybrid).
+Last session: 2026-04-26T19:55:00Z
+Stopped at: v1.2 milestone close complete (audit passed, archived, PROJECT.md evolved, RETROSPECTIVE.md updated, ready for git commit + tag + /gsd-new-milestone)
+Resume: `/gsd-new-milestone` to define v1.3 scope.
