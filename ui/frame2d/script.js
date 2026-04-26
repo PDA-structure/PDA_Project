@@ -736,6 +736,7 @@ function draw() {
     clearDiagramState();
   }
   drawNodes();
+  drawDiagnosticOverlays();   // Phase 6 PUREBAR-04 — pre/post-solve red highlights
   if (document.getElementById('chkSupports').checked) drawSupports();
   if (document.getElementById('chkLoads').checked) drawNodeLoads();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
@@ -848,6 +849,69 @@ function drawNodes() {
     ctx.font = 'bold 11px Arial';
     ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
   });
+}
+
+/**
+ * Phase 6 PUREBAR-04 (D-11, D-12) — diagnostic overlay rendering.
+ *
+ * Reads three module-level arrays (all 0-based ids):
+ *   - pureBarNodeIds: pre-solve informational marker, drawn as a small
+ *     filled red dot offset NE of each affected node so it doesn't
+ *     overlap the existing node marker (drawNodes uses radius 5*sc).
+ *   - offendingNodes: from structured 422 payload (cause + offending_*),
+ *     drawn as a red ring around the node via highlightNode().
+ *   - offendingMembers: from structured 422 payload, redrawn as a thick
+ *     red solid line on top of drawMembers() (overrides the bar dash so
+ *     the offending member is unambiguous even if it's a bar).
+ *
+ * Re-uses the same #e53935 red token used by drawNodes — no new CSS
+ * class needed (D-04 Claude's Discretion: match existing canvas style).
+ * Empty arrays → no-op (no flicker, no errors).
+ */
+function drawDiagnosticOverlays() {
+  const sc  = getSymbolScale();
+  const RED = '#e53935';
+
+  // 1. Offending members — red thick solid line on top of drawMembers().
+  if (offendingMembers.length > 0) {
+    offendingMembers.forEach(idx => {
+      const m = members[idx];
+      if (!m) return;
+      const a = nodes.find(nd => nd.id === m.start);
+      const b = nodes.find(nd => nd.id === m.end);
+      if (!a || !b) return;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = RED;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);   // solid even for bar members
+      ctx.stroke();
+    });
+  }
+
+  // 2. Offending nodes — red ring via the existing highlightNode primitive.
+  if (offendingNodes.length > 0) {
+    offendingNodes.forEach(idx => {
+      const n = nodes.find(nd => nd.id === idx);
+      if (!n) return;
+      highlightNode(n, RED);
+    });
+  }
+
+  // 3. Pure-bar joint informational dots — small filled red dot offset NE.
+  if (pureBarNodeIds.length > 0) {
+    const r   = 3 * sc;
+    const off = 10 * sc;
+    pureBarNodeIds.forEach(idx => {
+      const n = nodes.find(nd => nd.id === idx);
+      if (!n) return;
+      ctx.beginPath();
+      ctx.arc(n.x + off, n.y - off, r, 0, Math.PI * 2);
+      ctx.fillStyle = RED;
+      ctx.fill();
+    });
+  }
 }
 
 function highlightNode(n, color) {
