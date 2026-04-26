@@ -69,6 +69,16 @@ let results    = null;
 let _udlActiveMemberIdx = null;
 let _springActiveNodeId = null;
 
+// Phase 6 PUREBAR-04 — diagnostic overlay state.
+// pureBarNodeIds: 0-based node ids flagged by the pre-solve scan (informational).
+// offendingNodes / offendingMembers: 0-based ids populated from structured 422
+//   payload (cause / offending_nodes / offending_members per Plan 06-02 D-09).
+// All three arrays are read by drawDiagnosticOverlays() (wired into draw()) and
+// cleared at the start of validateBeforeSolve() and on a fresh successful solve.
+let pureBarNodeIds   = [];
+let offendingNodes   = [];
+let offendingMembers = [];
+
 // ── View transform (zoom / pan) ───────────────────────────────────────────
 let view = { scale: 1, tx: 0, ty: 0 };
 let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy = 0;
@@ -479,6 +489,87 @@ function computeSpringPayload() {
   return { springDoF, springStiffness };
 }
 
+/**
+ * Phase 6 PUREBAR-04 (D-11) — pre-solve diagnostic scan.
+ *
+ * Walks members + bars to identify two failure modes the server would
+ * otherwise reject (UDL-on-bar) or auto-restrain (pure-bar joint) on solve:
+ *   1. Pure-bar joints — every incident member has type='bar'. Server will
+ *      auto-restrain the θ DOF (Plan 06-01 D-01). This scan flags them as
+ *      informational so the user understands the visual.
+ *   2. UDL on bar members — server will reject with structured 422 (Plan
+ *      06-02 cause='udl_on_bar'). Catch this client-side to give immediate
+ *      feedback and avoid the round-trip.
+ *
+ * Sets module-level pureBarNodeIds (0-based) so drawDiagnosticOverlays()
+ * can render small offset red dots near the affected joints. Returns false
+ * to BLOCK solve when any UDL-on-bar member is found; otherwise returns
+ * true and informational-status text.
+ */
+function validateBeforeSolve() {
+  // Reset diagnostic state for this solve attempt.
+  pureBarNodeIds   = [];
+  offendingNodes   = [];
+  offendingMembers = [];
+
+  // Build per-node incidence: nodeId (0-based, equals array index after
+  // reindexNodes) → list of member array-indices (0-based) incident on that node.
+  const incidence = new Map();
+  members.forEach((m, idx) => {
+    if (!incidence.has(m.start)) incidence.set(m.start, []);
+    if (!incidence.has(m.end))   incidence.set(m.end,   []);
+    incidence.get(m.start).push(idx);
+    incidence.get(m.end).push(idx);
+  });
+
+  // 1. Pure-bar joint detection. Server-side predicate (Plan 06-01 D-03):
+  //    every incident member is in `bars`. Same predicate, expressed via
+  //    m.type === 'bar' (the same condition used at line ~538 to build the
+  //    1-based `bars` payload).
+  const pureBar = [];
+  for (const [nodeId, memberIdxs] of incidence.entries()) {
+    if (memberIdxs.length === 0) continue;
+    const allBars = memberIdxs.every(i => members[i].type === 'bar');
+    if (allBars) pureBar.push(nodeId);
+  }
+  pureBarNodeIds = pureBar;
+
+  // 2. UDL-on-bar detection (vertical UDL `udl` and horizontal `udl_x`).
+  //    Mirrors the server-side check in FrameV2Adapter (Plan 06-02): any
+  //    non-zero ENForces / ENMoments on a bar-typed member is rejected.
+  const udlOnBar = [];
+  members.forEach((m, idx) => {
+    if (m.type !== 'bar') return;
+    const hasVertical   = m.udl   != null && m.udl   !== 0;
+    const hasHorizontal = m.udl_x != null && m.udl_x !== 0;
+    if (hasVertical || hasHorizontal) udlOnBar.push(idx);
+  });
+
+  if (udlOnBar.length > 0) {
+    // Map back to 1-based for user-facing message (matches API convention).
+    const oneBased = udlOnBar.map(i => i + 1);
+    offendingMembers = udlOnBar;   // 0-based for drawDiagnosticOverlays
+    setStatus(
+      'UDL on bar member(s) ' + oneBased.join(', ') +
+      ': bars are axial-only. Change member type to "beam" or remove UDL.',
+      true
+    );
+    draw();   // re-render so the offending member is highlighted in red
+    return false;   // BLOCK solve
+  }
+
+  if (pureBar.length > 0) {
+    const oneBased = pureBar.map(n => n + 1);
+    setStatus(
+      'Note: pure-bar joints at node(s) ' + oneBased.join(', ') +
+      ' — θ will be auto-restrained on solve.',
+      false   // informational, NOT an error (Solve still allowed)
+    );
+  }
+
+  return true;   // allow solve to proceed
+}
+
 // ── Solve ─────────────────────────────────────────────────────────────────
 async function solve() {
   if (nodes.length < 2)    return setStatus('Need at least 2 nodes.', true);
@@ -490,6 +581,10 @@ async function solve() {
   const A_cm2 = parseFloat(document.getElementById('inputA').value);
   if ([E_GPa, I_cm4, A_cm2].some(v => isNaN(v) || v <= 0))
     return setStatus('Check E, I and A values.', true);
+
+  // Phase 6 PUREBAR-04 — pre-solve scan. Returns false to BLOCK on
+  // UDL-on-bar; otherwise sets pureBarNodeIds for canvas overlay.
+  if (!validateBeforeSolve()) return;
 
   // Resolve per-member overrides: use list payload if any member has an override
   const anyOverride = members.some(m => m.E_override != null || m.I_override != null || m.A_override != null);
