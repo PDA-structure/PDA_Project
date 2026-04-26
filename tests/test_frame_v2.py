@@ -1053,3 +1053,103 @@ def test_trust_19_captured_pratt_fixture_replay(client):
     assert all(abs(x) < 1e6 for x in UG), (
         "UG contains absurdly large values (instability not resolved)"
     )
+
+
+# ---------------------------------------------------------------------------
+# TRUST-20 — UDL-on-bar adapter rejection (PUREBAR-03, D-06..D-09, D-13)
+#
+# Pre-fix behaviour: a UDL applied to a bar member was silently dropped in
+# `frame_v2.apply_equivalent_nodal_actions` (line 376 — `if m in self.bars:
+# continue`). The structure solved without error but with a wrong load
+# pattern, masking the engineering question (the user almost certainly
+# meant to set the member type to 'beam' or remove the UDL).
+#
+# Post-fix: `FrameV2Adapter.solve()` scans `model.bars` for any non-zero
+# `ENForces` / `ENMoments` BEFORE instantiating the solver and raises
+# `SolverDiagnosticError(cause="udl_on_bar", offending_members=[...])`.
+# The API exception handler picks up the typed attributes and returns a
+# structured 422 payload. A plain `RuntimeError` (e.g. genuine instability
+# from `np.linalg.LinAlgError` re-raise) still returns the legacy flat
+# payload (D-13 backward compat).
+# ---------------------------------------------------------------------------
+def test_trust_20_udl_on_bar_adapter_rejection():
+    """TRUST-20: UDL applied to a bar member raises SolverDiagnosticError at adapter.
+
+    Builds a minimal 1-bar model with non-zero ENForces (UDL-equivalent).
+    The adapter precondition (Phase 6 D-06) must reject the model BEFORE
+    instantiating BeamBarStructure_v2. Pre-fix behaviour silently dropped
+    the load in frame_v2.apply_equivalent_nodal_actions.
+    """
+    from pda_analysis_software.errors import SolverDiagnosticError
+
+    model = FrameModel2D(
+        nodes=np.array([[0.0, 0.0], [1.0, 0.0]], float),
+        members=np.array([[1, 2]], int),
+        ENForces=np.array([[-5000.0, -5000.0]], float),  # UDL-equivalent
+        ENMoments=np.array([[0.0, 0.0]], float),
+        forceVector=np.zeros((6, 1), float),
+        E=200e9, I=1e-4, A=0.01,
+        bars=[1],                                         # member 1 is a bar
+        restrainedDoF=[1, 2, 3, 4, 5, 6],
+    )
+    adapter = FrameV2Adapter(model)
+    with pytest.raises(SolverDiagnosticError) as excinfo:
+        adapter.solve()
+    assert excinfo.value.cause == "udl_on_bar"
+    assert 1 in excinfo.value.offending_members
+    assert "bar member" in excinfo.value.detail.lower()
+
+
+def test_trust_20_udl_on_bar_api_422(client):
+    """TRUST-20b: API surfaces structured 422 payload for UDL-on-bar.
+
+    Same model as TRUST-20 but routed through the FastAPI endpoint.
+    Verifies the exception handler in api_server/app.py picks up the
+    SolverDiagnosticError attributes and returns the additive structured
+    payload (Phase 6 D-09, D-13).
+    """
+    response = client.post("/solve/frame2d", json={
+        "solver": "frame_v2",
+        "nodes": [[0.0, 0.0], [1.0, 0.0]],
+        "members": [[1, 2]],
+        "ENForces": [[-5000.0, -5000.0]],
+        "ENMoments": [[0.0, 0.0]],
+        "forceVector": [0, 0, 0, 0, 0, 0],
+        "E": 200e9, "I": 1e-4, "A": 0.01,
+        "bars": [1],
+        "restrainedDoF": [1, 2, 3, 4, 5, 6],
+    })
+    assert response.status_code == 422, response.text
+    body = response.json()
+    assert body["cause"] == "udl_on_bar"
+    assert 1 in body["offending_members"]
+    assert "bar member" in body["detail"].lower()
+    # Backward-compat: detail field is still present (legacy readers).
+    assert isinstance(body["detail"], str)
+
+
+def test_trust_20_legacy_unstable_returns_flat_payload(client):
+    """TRUST-20c: Backward compatibility — non-typed RuntimeError returns flat payload.
+
+    Confirms the exception handler's fallback branch still works: a model
+    that triggers np.linalg.LinAlgError -> RuntimeError (no .cause attr)
+    returns the legacy flat {"detail": "structure is unstable..."} payload.
+    Existing UI readers that only inspect `detail` continue to work (D-13).
+    """
+    # Genuinely under-restrained: 2 free nodes, no supports → singular Ks.
+    response = client.post("/solve/frame2d", json={
+        "solver": "frame_v2",
+        "nodes": [[0.0, 0.0], [1.0, 0.0]],
+        "members": [[1, 2]],
+        "ENForces": [[0.0, 0.0]],
+        "ENMoments": [[0.0, 0.0]],
+        "forceVector": [0, 0, -1000, 0, 0, 0],   # downward load at node 1
+        "E": 200e9, "I": 1e-4, "A": 0.01,
+        "restrainedDoF": [],                      # NO supports — singular
+    })
+    assert response.status_code == 422, response.text
+    body = response.json()
+    # Flat payload: only "detail" guaranteed; "cause" may be missing OR null.
+    assert "detail" in body
+    # If cause is present, it MUST NOT be 'udl_on_bar' (this is genuine instability).
+    assert body.get("cause") != "udl_on_bar"
