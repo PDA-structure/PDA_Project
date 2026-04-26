@@ -31,6 +31,22 @@ class BeamBarStructure_v2:
     Important fix:
       - Prevents double-counting ENAs if solve_structure() is called multiple times by resetting
         force_vector to the original base vector at the start of each solve.
+
+    Pure-bar joint handling
+    -----------------------
+    A *pure-bar joint* is a node where every incident member is in `bars`
+    (axial-only). Such a joint has no rotational DOF that can be physically
+    constrained — there is no rotational element to react against the θ
+    moment equation. During stiffness assembly we detect these joints and
+    record their θ DOFs in `self._pure_bar_theta_dofs`; the structure
+    reduction step (`extract_structure_stiffness_matrix`) unions this list
+    with the user-provided `restrainedDoF` / `pinDoF`, deleting the singular
+    θ row/column from Ks. This is a structural-engineering invariant, not
+    numerical regularisation: see PUREBAR-01..02 in
+    .planning/REQUIREMENTS.md and the rejection of regularisation in
+    .planning/phases/06-frame-v2-pure-bar-joint-robustness/06-CONTEXT.md (D-02).
+    The auto-restraint defers to user intent: nodes whose θ DOF is already
+    in `restrainedDoF`, `pinDoF`, or `springDoF` are NOT auto-restrained.
     """
 
     def __init__(
@@ -67,6 +83,10 @@ class BeamBarStructure_v2:
         self._force_vector_base = fv.copy()  # used to reset before each solve
 
         self.bars = set(bars or [])
+        # Auto-restrained θ DOFs from pure-bar joint detection (1-based ints).
+        # Populated by assemble_primary_stiffness_matrix(); consumed by
+        # extract_structure_stiffness_matrix(). See class docstring for rationale.
+        self._pure_bar_theta_dofs: list[int] = []
         self.beamPinLeft = set(beamPinLeft or [])
         self.beamPinRight = set(beamPinRight or [])
 
@@ -408,6 +428,47 @@ class BeamBarStructure_v2:
 
             self.Kp[np.ix_(dof, dof)] += Ke
 
+        # Pure-bar joint detection (PUREBAR-01, PUREBAR-02; CONTEXT D-01..D-05).
+        # A joint where every incident member is a bar has no rotational DOF
+        # that can be physically constrained — restraining its θ to zero is
+        # mechanically correct, not regularisation. We collect those θ DOFs
+        # here; extract_structure_stiffness_matrix unions them with the
+        # user-provided restrainedDoF / pinDoF list, deleting the singular
+        # row/col from Ks.
+        #
+        # Indexing convention:
+        #   self.members[e] holds 1-based node ids (validated in __init__).
+        #   The incidence dict is keyed by 0-based array index so the
+        #   lookup loop `for n in range(self.n_nodes)` aligns directly.
+        #   Emitted θ DOFs are 1-based via (n + 1) * 3, matching the
+        #   restrainedDoF / pinDoF convention.
+        #
+        # Predicate exclusions (CONTEXT D-04): a node is NOT auto-restrained
+        # if its θ DOF is already in restrainedDoF (covered), pinDoF (already
+        # released), or springDoF (user explicitly added a Kθ rotational
+        # spring — overrides auto-restraint).
+        excluded = (
+            set(self.restrainedDoF)
+            | set(self.pinDoF)
+            | set(self.springDoF)
+        )
+        per_node_incidence: dict[int, list[int]] = {}
+        for e in range(self.n_members):
+            ni = int(self.members[e][0])  # 1-based node id
+            nj = int(self.members[e][1])  # 1-based node id
+            per_node_incidence.setdefault(ni - 1, []).append(e + 1)  # key: 0-based
+            per_node_incidence.setdefault(nj - 1, []).append(e + 1)
+        pure_bar: list[int] = []
+        for n in range(self.n_nodes):  # n is 0-based array index
+            incident = per_node_incidence.get(n, [])
+            if not incident:
+                continue
+            if all(m in self.bars for m in incident):
+                theta_1b = (n + 1) * 3   # θ DOF in 1-based public API
+                if theta_1b not in excluded:
+                    pure_bar.append(theta_1b)
+        self._pure_bar_theta_dofs = pure_bar
+
     def add_spring_stiffnesses(self):
         if not self.springDoF:
             return
@@ -418,7 +479,7 @@ class BeamBarStructure_v2:
             self.Kp[idx, idx] += float(k)
 
     def extract_structure_stiffness_matrix(self):
-        removed_dof = self.restrainedDoF + self.pinDoF
+        removed_dof = self.restrainedDoF + self.pinDoF + self._pure_bar_theta_dofs
         removed_index = sorted({d - 1 for d in removed_dof})
         Ks = np.delete(self.Kp, removed_index, axis=0)
         Ks = np.delete(Ks, removed_index, axis=1)
