@@ -18,23 +18,22 @@
 - [x] **REVIT-T1-02**: Button shows a "2D TRUSSES AND 2D FRAMES ONLY" warning before running and refuses to run unless the active view is a drafting view
 - [x] **REVIT-T1-03**: Endpoint coordinates within 1mm tolerance are merged into a single node (structural connectivity preserved)
 - [x] **REVIT-T1-04**: Coordinates are converted Revit-feet → metres (×0.3048), rounded to 4 decimals; Z is dropped (XY plane only)
-- [ ] **REVIT-T1-05**: The exported JSON loads in the PDA frame2d browser UI and solves after the user adds supports/loads
+- [x] **REVIT-T1-05**: The exported JSON loads in the PDA frame2d browser UI and solves after the user adds supports/loads
 
-### Revit Tier 2 — Analytical Exporter Hardening (REVIT-T2)
+### Solver Robustness — Pure-Bar Joints (PUREBAR)
 
-- [ ] **REVIT-T2-01**: Analytical-model exporter runs successfully in Revit 2023, 2024, and 2025 (handles API differences between versions)
-- [ ] **REVIT-T2-02**: Button lives at production path `Analytical.panel/StructuralAnalyticalModel.pushbutton/` (retired from TestCodes panel)
-- [ ] **REVIT-T2-03**: Exporter extracts support restraints (fixed, pinned, roller) from the analytical model → canonical `restrainedDoF`
-- [ ] **REVIT-T2-04**: Exporter extracts point loads and UDLs from the analytical model → canonical `forceVector`, `ENForces`, `ENMoments`
-- [ ] **REVIT-T2-05**: Exporter extracts per-member material and section properties (E, I, A) from Revit member types → canonical per-member lists
-- [ ] **REVIT-T2-06**: Exporter performs pre-export validation: warns on duplicate nodes, disconnected members, and non-planar geometry
-- [ ] **REVIT-T2-07**: Original `pda_project/pyrevit_exporters/export_to_pda.py` retired with a README pointer to the new location in `CustomRevitExtension`
+- [ ] **PUREBAR-01**: `frame_v2.assemble_primary_stiffness_matrix` detects pure-bar joints (every incident member is a bar) during assembly
+- [ ] **PUREBAR-02**: Hybrid beam+bar models (e.g. Pratt/Warren trusses with continuous beam chords) solve correctly; pure-bar joints no longer cause `Ks` singularity / HTTP 422
+- [ ] **PUREBAR-03**: `frame_v2.apply_equivalent_nodal_actions` no longer silently drops UDL applied to bar members — either applied correctly as nodal forces, or rejected with a clear error
+- [ ] **PUREBAR-04**: `frame2d` UI replaces generic "Structure is unstable" with specific diagnostics; canvas highlights joints with zero rotational stiffness; flag dropped UDL on bar members
+- [ ] **PUREBAR-05**: Regression test added using the captured failing fixture (`~/Downloads/frame2d-model-2026-04-22T06-14-49.json`)
 
 ## Deferred to v1.3+
 
 - **Grillage Solver** (GRILLAGE-01..05) — was original v1.1 Phase 4, pushed forward after pivot
 - **Revit results-import button** — read solver output JSON, annotate Revit model
 - **3D truss / 3D frame solvers**
+- **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — rescoped from v1.2 after 2026-04-26 discussion. Drafting-view exporter (Phase 5) covers MVP engineer workflow; Tier 2 analytical-model extraction reconsidered for v1.3 with full risk picture (Revit 2023/24/25 API drift, family-parameter variability for E/I/A extraction)
 
 ## Out of Scope (for v1.2)
 
@@ -55,12 +54,11 @@
 | REVIT-T1-03 | Phase 5 | Active |
 | REVIT-T1-04 | Phase 5 | Active |
 | REVIT-T1-05 | Phase 5 | Active |
-| REVIT-T2-01 | Phase 6 | Active |
-| REVIT-T2-02 | Phase 6 | Active |
-| REVIT-T2-03 | Phase 6 | Active |
-| REVIT-T2-04 | Phase 6 | Active |
-| REVIT-T2-05 | Phase 6 | Active |
-| REVIT-T2-06 | Phase 6 | Active |
-| REVIT-T2-07 | Phase 6 | Active |
+| PUREBAR-01 | Phase 6 | Active |
+| PUREBAR-02 | Phase 6 | Active |
+| PUREBAR-03 | Phase 6 | Active |
+| PUREBAR-04 | Phase 6 | Active |
+| PUREBAR-05 | Phase 6 | Active |
+| REVIT-T2-01..07 | Deferred to v1.3 | — |
 
-_Phase mapping filled in 2026-04-19 after roadmap creation._
+_Phase mapping filled in 2026-04-19 after roadmap creation. Phase 6 rescoped 2026-04-26: Revit Tier 2 deferred to v1.3, pure-bar joint robustness promoted from backlog._

@@ -35,16 +35,17 @@ Full archive: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md)
 
 ### 🚧 v1.2 — 2D Frame Hardening + Revit-as-UI (MVP) (Active)
 
-**Milestone Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep) and establish Revit as the primary data-input path with a geometry-exporter button and a hardened analytical-model exporter in the sibling `CustomRevitExtension` repo.
+**Milestone Goal:** Solidify the 2D frame solver and UI (multi-member test coverage, spring supports, bug sweep, pure-bar joint robustness) and establish Revit as the primary data-input path via a geometry-exporter button (drafting views) in the sibling `CustomRevitExtension` repo. Tier 2 analytical-model exporter rescoped to v1.3 (2026-04-26 discussion).
 
 - [x] **Phase 4: 2D Frame Solver + UI Hardening** (3/3 plans) — completed 2026-04-20
 - [x] **Phase 5: Revit Tier 1 — Geometry Exporter** (4/4 plans) — completed 2026-04-21
-- [ ] **Phase 6: Revit Tier 2 — Analytical Exporter Hardening** — Hardened exporter with Revit 2025 compat, supports/loads/validation, production location; legacy exporter retired
+- [ ] **Phase 6: frame_v2 — Pure-Bar Joint Robustness** — Detect pure-bar joints, eliminate θ-DOF singularity in mixed beam+bar models, fix UDL-on-bars silent drop, surface joint-level diagnostics in frame2d UI
 
-### 📋 v1.3 — Grillage + Revit Results-Import (Planned)
+### 📋 v1.3 — Grillage + Revit Results-Import + Tier 2 (Planned)
 
 - [ ] **Phase 7: Grillage Solver** — /solve/grillage endpoint, torsional stiffness, analytical tests (was original v1.1 Phase 4)
 - [ ] **Phase 8: Revit Results-Import** — pyRevit button reads solver output JSON and annotates the Revit analytical model
+- [ ] **Phase TBD: Revit Tier 2 — Analytical Exporter Hardening** — rescoped from v1.2 (REVIT-T2-01..07): Revit 2023/24/25 compat, supports/loads/section-property extraction from analytical model, view-plane-projection from active plan/elevation/section view, production-path migration to `Analytical.panel/StructuralAnalyticalModel.pushbutton/`, legacy retirement. Scope discussion captured 2026-04-26. Pending v1.3 prioritisation.
 
 ### 📋 v1.4 — 3D Solvers (Planned)
 
@@ -146,19 +147,20 @@ Plans:
 - [x] 05-04-PLAN.md — Human UAT: 6 fixtures in live Revit + frame2d UI round-trip verification (REVIT-T1-01, REVIT-T1-02, REVIT-T1-03, REVIT-T1-05)
 **UI hint**: yes
 
-### Phase 6: Revit Tier 2 — Analytical Exporter Hardening
+### Phase 6: frame_v2 — Pure-Bar Joint Robustness
 
-**Goal**: The analytical-model exporter works across Revit 2023, 2024, and 2025 and produces a complete canonical JSON including supports, loads, and section properties — living at its permanent production location in CustomRevitExtension — while the legacy exporter in pda_project is retired
-**Depends on**: Phase 5
-**Repo**: `CustomRevitExtension` (primary); `pda_project` (retire legacy file)
-**Requirements**: REVIT-T2-01, REVIT-T2-02, REVIT-T2-03, REVIT-T2-04, REVIT-T2-05, REVIT-T2-06, REVIT-T2-07
+**Goal**: `frame_v2` solves hybrid beam+bar models (e.g. Pratt/Warren trusses with a continuous beam chord) without returning HTTP 422 at joints where every incident member is a bar; UDL applied to bar members is no longer silently dropped; the frame2d UI surfaces joint-level diagnostics instead of a generic "Structure is unstable" error
+**Depends on**: Phase 4
+**Repo**: `pda_project`
+**Requirements**: PUREBAR-01, PUREBAR-02, PUREBAR-03, PUREBAR-04, PUREBAR-05
 **Success Criteria** (what must be TRUE):
-  1. The exporter runs without error in Revit 2023, 2024, and 2025 — tested against each version's API surface
-  2. The exported JSON contains correct restrainedDoF derived from the analytical model's support restraints (fixed, pinned, roller)
-  3. Point loads and UDLs from the analytical model appear as correct forceVector, ENForces, and ENMoments in the exported JSON
-  4. Per-member E, I, and A values are populated from Revit member types in the exported JSON
-  5. The button lives at `Analytical.panel/StructuralAnalyticalModel.pushbutton/` and the legacy `pda_project/pyrevit_exporters/export_to_pda.py` is replaced by a README pointer to its new location
-**Plans**: TBD
+  1. The captured failing fixture (`~/Downloads/frame2d-model-2026-04-22T06-14-49.json`) — pinned at both top-chord ends, UDL on top chord beams, bottom chord + diagonals as bars — solves correctly with no HTTP 422
+  2. UDL applied to a bar member produces either correct nodal-force conversion or a clear error — never a silent drop
+  3. frame2d UI canvas highlights joints with zero rotational stiffness; "Structure is unstable" is replaced with specific cause text identifying the offending joint(s)
+  4. Existing TRUST-* and HARDEN-* tests continue to pass — no regression in beam-only or bar-only models
+  5. New regression test asserts pure-bar joints don't fail; promoted from todo `2026-04-22-frame2d-pure-bar-joint-instability.md`
+**Plans**: TBD (1–2 expected)
+**Origin**: Promoted from backlog item 999.5 on 2026-04-26 after v1.2 audit reroute. Original Phase 6 (Revit Tier 2 — Analytical Exporter Hardening) deferred to v1.3.
 
 ## Progress
 
@@ -169,7 +171,7 @@ Plans:
 | 3. Interchange Format and External Inputs | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 4. 2D Frame Solver + UI Hardening | v1.2 | 0/3 | Not started | - |
 | 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/4 | Not started | - |
-| 6. Revit Tier 2 — Analytical Exporter Hardening | v1.2 | 0/TBD | Not started | - |
+| 6. frame_v2 — Pure-Bar Joint Robustness | v1.2 | 0/TBD | Not started | - |
 | 7. Grillage Solver | v1.3 | 0/TBD | Not started | - |
 | 8. Revit Results-Import | v1.3 | 0/TBD | Not started | - |
 | 9. 3D Truss Solver | v1.4 | 0/TBD | Not started | - |
@@ -221,18 +223,6 @@ Plans:
 
 **Goal:** A Microsoft Word add-in (Office JS API) consumes analysis and design results and formats them into structured calculation sheets in the style of Tekla Tedds for Word — section headings, input tables, result summaries, diagrams. Engineers can produce submission-ready calculations directly from the tool.
 **Context:** Identified 2026-04-18. Completely separate technology stack from the current Python/FastAPI/JS platform — requires Microsoft Office JS API or VSTO. Commercially high-value but a large investment. Near-term alternative: an HTML/PDF calculation report generator within the current stack that produces Tedds-style output. Captured here to preserve intent. Prerequisite: stable analysis + design solver (999.3).
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
-
----
-
-### Phase 999.5: frame_v2 — Handle Pure-Bar Joints in Mixed Beam/Bar Models (BACKLOG)
-
-**Goal:** `frame_v2` solves hybrid beam+bar models (e.g. Pratt/Warren-style trusses with a continuous beam chord) without returning HTTP 422 at joints where every incident member is a bar. Detect pure-bar joints during assembly in `frame_v2.assemble_primary_stiffness_matrix` and either eliminate the θ DOF from those nodes or implicitly restrain it, removing the singularity in `Ks` caused by bars contributing stiffness only to Ux/Uy (`frame_v2.py:309-324`). Also addresses a secondary finding: `apply_equivalent_nodal_actions` silently drops UDL applied to bars (`frame_v2.py:376`).
-**Context:** Identified 2026-04-22 while testing a mixed beam/bar truss in the frame2d UI (pinned at both top-chord ends, UDL on top chord beams, bottom chord + diagonals as bars). Solver returned 422 because nodes N2 and N4 had only bar members — zero θ stiffness → singular Ks. Model was structurally valid; failure is a formulation limitation, not a bug. Workaround exists (Kθ spring ~1e-3 at pure-bar joints), but the tool should handle this natively since mixing beams + bars is the stated purpose of `frame_v2`. Promoted from todo `2026-04-22-frame2d-pure-bar-joint-instability.md`. Test model at `~/Downloads/frame2d-model-2026-04-22T06-14-49.json`. Includes UI cues (canvas warning for joints with zero rotational stiffness; descriptive error message replacing generic "Structure is unstable"; flag dropped UDL on bar members).
 **Requirements:** TBD
 **Plans:** 0 plans
 
