@@ -74,38 +74,50 @@
 
 ## Traceability
 
-Filled by roadmapper after this file is complete. Phases continue numbering from v1.2 (last phase: 6) → v1.3 starts at Phase 7.
+Phases continue numbering from v1.2 (last phase: 6) → v1.3 starts at Phase 7. Filled by roadmapper 2026-04-26.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PREP-01 | quick-task | Active |
-| REVIT-CONVERT-01 | TBD | Active |
-| REVIT-CONVERT-02 | TBD | Active |
-| REVIT-CONVERT-03 | TBD | Active |
-| REVIT-CONVERT-04 | TBD | Active |
-| REVIT-T2-01 | TBD | Active |
-| REVIT-T2-02 | TBD | Active |
-| REVIT-T2-03 | TBD | Active |
-| REVIT-T2-04 | TBD | Active |
-| REVIT-T2-05 | TBD | Active |
-| REVIT-T2-06 | TBD | Active |
-| REVIT-T2-07 | TBD | Active |
-| REVIT-T2-08 | TBD | Active |
-| REVIT-T2-09 | TBD | Active |
-| REVIT-T2-10 | TBD | Active |
-| REVIT-T2-11 | TBD | Active |
-| REVIT-T2-12 | TBD | Active |
-| REVIT-T2-13 | TBD | Active |
-| REVIT-RI-01 | TBD | Active |
-| REVIT-RI-02 | TBD | Active |
-| REVIT-RI-03 | TBD | Active |
-| REVIT-RI-04 | TBD | Active |
-| REVIT-RI-05 | TBD | Active |
-| REVIT-RI-06 | TBD | Active |
-| REVIT-RI-07 | TBD | Active |
-| REVIT-RI-08 | TBD | Active |
-| REVIT-RI-09 | TBD | Active |
-| REVIT-RI-10 | TBD | Active |
-| REVIT-RI-11 | TBD | Active |
+| REVIT-CONVERT-01 | Phase 7 | Active |
+| REVIT-CONVERT-02 | Phase 7 | Active |
+| REVIT-CONVERT-03 | Phase 7 | Active |
+| REVIT-CONVERT-04 | Phase 7 | Active |
+| REVIT-T2-01 | Phase 8 | Active |
+| REVIT-T2-02 | Phase 8 | Active |
+| REVIT-T2-03 | Phase 8 | Active |
+| REVIT-T2-04 | Phase 8 | Active |
+| REVIT-T2-05 | Phase 8 | Active |
+| REVIT-T2-06 | Phase 9 | Active |
+| REVIT-T2-07 | Phase 9 | Active |
+| REVIT-T2-08 | Phase 9 | Active |
+| REVIT-T2-09 | Phase 8 | Active |
+| REVIT-T2-10 | Phase 8 | Active |
+| REVIT-T2-11 | Phase 8 | Active |
+| REVIT-T2-12 | Phase 8 | Active |
+| REVIT-T2-13 | Phase 8 | Active |
+| REVIT-RI-01 | Phase 10 | Active |
+| REVIT-RI-02 | Phase 10 | Active |
+| REVIT-RI-03 | Phase 10 | Active |
+| REVIT-RI-04 | Phase 10 | Active |
+| REVIT-RI-05 | Phase 11 | Active |
+| REVIT-RI-06 | Phase 10 | Active |
+| REVIT-RI-07 | Phase 10 | Active |
+| REVIT-RI-08 | Phase 10 | Active |
+| REVIT-RI-09 | Phase 11 | Active |
+| REVIT-RI-10 | Phase 11 | Active |
+| REVIT-RI-11 | Phase 10 | Active |
 
-_Total: 28 requirements (1 PREP, 4 CONVERT, 13 Tier 2, 11 Results-Import)._
+_Total: 28 requirements (1 PREP quick-task, 4 CONVERT → Phase 7, 13 Tier 2 → Phases 8-9, 11 Results-Import → Phases 10-11). All 27 phase-mapped requirements assigned; PREP-01 tracked as quick-task. 100% coverage._
+
+### Phase-to-requirement summary
+
+| Phase | Count | Requirements |
+|-------|-------|--------------|
+| Phase 7 — Element-to-Analytical Conversion | 4 | CONVERT-01, CONVERT-02, CONVERT-03, CONVERT-04 |
+| Phase 8 — Tier 2 Hardening + revit_meta | 10 | T2-01, T2-02, T2-03, T2-04, T2-05, T2-09, T2-10, T2-11, T2-12, T2-13 |
+| Phase 9 — Tier 2 Differentiators | 3 | T2-06, T2-07, T2-08 |
+| Phase 10 — Results-Import Table Stakes | 8 | RI-01, RI-02, RI-03, RI-04, RI-06, RI-07, RI-08, RI-11 |
+| Phase 11 — Results-Import Differentiators | 3 | RI-05, RI-09, RI-10 |
+| Quick-task | 1 | PREP-01 |
+| **Total** | **29** | (28 unique reqs; PREP-01 listed once) |

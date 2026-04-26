@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
-status: defining_requirements
-stopped_at: v1.3 milestone started; running research → requirements → roadmap
-last_updated: "2026-04-26T20:05:00.000Z"
+status: active
+stopped_at: v1.3 roadmap created — 5 phases (7-11), 16 plans, 27 phase-mapped requirements + 1 PREP quick-task
+last_updated: "2026-04-26T20:30:00.000Z"
 last_activity: 2026-04-26
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 16
   completed_plans: 0
   percent: 0
 ---
@@ -21,27 +21,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 
 **Core value:** Engineers can define a structure (in browser or via Revit pushbutton), solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** v1.3 — Revit Tier 2 + Results-Import + Grillage (defining requirements)
+**Current focus:** v1.3 — Revit Tier 2 + Results-Import (roadmap defined, ready to execute Phase 7)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 7 (Revit Element-to-Analytical Conversion) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-26 — Milestone v1.3 started
+Status: Roadmap created; ready to plan Phase 7
+Last activity: 2026-04-26 — v1.3 roadmap written (5 phases 7-11, 16 plans, 27 phase-mapped requirements + 1 PREP quick-task)
 
 ## Resume instructions (next session)
 
-1. If REQUIREMENTS.md exists: `/gsd-discuss-phase 7` to start Phase 7 (or whichever number the roadmap assigns)
-2. If REQUIREMENTS.md missing: re-run `/gsd-new-milestone` to resume from research
+1. Run PREP-01 quick-task FIRST: commit untracked `solver_core/.../{__init__.py, engine/, models/, results/}`, `pyproject.toml`, and `pda_analysis_software.egg-info/` to resolve recurring CF2 worktree-mirror friction.
+2. Then `/gsd-plan-phase 7` to plan Phase 7 (Revit Element-to-Analytical Conversion).
 
 ## Accumulated Context
 
 ### Decisions (full log: PROJECT.md Key Decisions table)
 
 - v1.0 shipped (2026-04-18): Trust + Production Hardening + Model Evolution + UX Polish (Phases 1–2)
-- v1.1 shipped PARTIAL (2026-04-19): Phase 3 Interchange Format only. Phase 4 Grillage deferred to v1.3+
+- v1.1 shipped PARTIAL (2026-04-19): Phase 3 Interchange Format only. Phase 4 Grillage deferred to v1.5+ (re-deferred from v1.3 per user 2026-04-26)
 - v1.2 shipped (2026-04-26): Phases 4–6 (frame solver hardening + Revit Tier 1 geometry exporter + pure-bar joint robustness). Tier 2 Revit rescoped to v1.3 mid-milestone (audit Option B 2026-04-26)
+- v1.3 roadmap (2026-04-26): 5 phases (7-11), Revit-themed milestone — Element-to-Analytical Conversion → Tier 2 Hardening + revit_meta → Tier 2 Differentiators → Results-Import Table Stakes → Results-Import Differentiators
+- v1.3 ordering constraint: Phase 7 (CONVERT) BEFORE Phase 8 (Tier 2 export) — exporter needs analytical members to read; Phase 8 (revit_meta dual-key emission) BEFORE Phase 10 (Results-Import member matching depends on revit_meta)
+- v1.3 host scope: Revit 2025+ only (2023/2024 dropped per user 2026-04-26)
 - Snapshot-before-mutation regression gate (D-16) is now a project-wide pattern; baseline lives at `tests/snapshots/baseline/` (56 JSONs); pytest plugin in `conftest.py`
 - `SolverDiagnosticError(RuntimeError)` typed-exception path added in v1.2; structured 422 payload (`detail`, `cause`, `offending_nodes`, `offending_members`) with backward-compat flat fallback
 - Pure-bar θ-DOF auto-restraint as structural invariant (D-01, reject D-02 regularisation); user-supplied DOFs always win
@@ -50,13 +53,20 @@ Last activity: 2026-04-26 — Milestone v1.3 started
 
 Run `/gsd-check-todos` to review.
 
-### Deferred Items (v1.3+)
+### Quick Tasks Pending (v1.3)
 
-- **Grillage Solver** (was v1.1 Phase 4) — v1.3+ (Phase 7)
-- **Revit Results-Import button** — v1.3+ (Phase 8)
-- **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — rescoped from v1.2 (2026-04-26 audit reroute)
-- **3D truss / 3D frame solvers** — v1.4+ (Phases 9–10)
+| # | Description | Status |
+|---|-------------|--------|
+| PREP-01 | Commit untracked `solver_core/.../{__init__.py, engine/, models/, results/}`, `pyproject.toml`, and `pda_analysis_software.egg-info/`. Resolves recurring CF2 worktree-mirror friction (hit v1.2 twice). MUST run before Phase 7 work begins. | Pending |
+
+### Deferred Items
+
+- **Grillage Solver** (was v1.1 Phase 4) — v1.5+ Phase 14 (re-deferred from v1.3 per user 2026-04-26: 3D solvers prioritised first)
+- **Slab/Floor Element-to-Analytical Conversion** (extends REVIT-CONVERT to OST_Floors / OST_StructuralFoundation with tributary-area / load-takedown logic) — v1.5+ Phase 15. v1.3's CONVERT requirements explicitly designed to leave room for this expansion. See `.planning/seeds/SEED-001-slab-floor-load-chasedown.md`.
+- **3D truss / 3D frame solvers** — v1.4 (Phases 12–13)
 - **Phase 6 tooling tech debt** (WR-01..04): snapshot script absolute path, UI client-side predicate parity, mkdir-at-import, unused param. Tracked for `/gsd-code-review-fix 06`
+- **Load combination resolution** (Eurocode/BS partial factors, ψ factors) — backlog 999.2 territory; Tier 2 explicitly out-of-scope
+- **pyRevit CPython3 migration** — Revit 2025 + IronPython 2.7 still works in pyRevit 5.0; defer
 
 ### Quick Tasks Completed (v1.0)
 
@@ -94,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-26T19:55:00Z
-Stopped at: v1.2 milestone close complete (audit passed, archived, PROJECT.md evolved, RETROSPECTIVE.md updated, ready for git commit + tag + /gsd-new-milestone)
-Resume: `/gsd-new-milestone` to define v1.3 scope.
+Last session: 2026-04-26T20:30:00Z
+Stopped at: v1.3 ROADMAP.md written (Phases 7-11, 16 plans, 27 reqs mapped + PREP-01 as quick-task). Ready for PREP-01 quick-task → `/gsd-plan-phase 7`.
+Resume: PREP-01 first, then `/gsd-plan-phase 7`.
