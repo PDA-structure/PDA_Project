@@ -6,12 +6,26 @@ Analytical reference cases:
   - Fixed-fixed beam: midpoint deflection under UDL (via ENAs)
 """
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 
+from api_server.app import app
 from pda_analysis_software.solvers.frame_v2 import BeamBarStructure_v2
 from pda_analysis_software.adapters.frame_adapters import FrameV2Adapter
 from pda_analysis_software.models.frame2d_model import FrameModel2D
+
+
+FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures" / "uat"
+
+
+@pytest.fixture(scope="module")
+def client() -> TestClient:
+    """FastAPI test client for TRUST-19 (and any future API-level tests)."""
+    return TestClient(app)
 
 
 E = 200e9   # Pa
@@ -862,3 +876,180 @@ def test_trust_17_cantilever_plus_propped_cantilever():
     assert np.isclose(s.FG[1, 0] + s.FG[4, 0], P, atol=1e-4)
     # No horizontal reaction (no horizontal load)
     assert np.isclose(s.FG[0, 0], 0.0, atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# TRUST-18 — symmetric Pratt with bar bottom chord and bar diagonals
+#
+# Phase 06 PUREBAR-02 / PUREBAR-05. A clean hand-calculable analogue of the
+# 2026-04-22 captured failure, designed to verify the pure-bar predicate
+# without relying on any incidental DOF zeroing via pinDoF or restrainedDoF
+# (the testing-hygiene lock-in from CONTEXT D-15 and from the
+# solver_theta_dof_provenance memory note).
+# ---------------------------------------------------------------------------
+def test_trust_18_symmetric_pratt_pure_bar():
+    """TRUST-18: Symmetric 3-panel Pratt with bar bottom chord + bar diagonals.
+
+    Geometry: span 3 m, height 1 m, UDL w = 10 kN/m on top chord.
+    Pinned at N1 and N4 (top-chord ends). Bottom chord (N5, N6) and all
+    diagonals are bar members (axial-only).
+
+    Hand calc by symmetry:
+        Total UDL = 10 kN/m × 3 m = 30 kN
+        Vy_N1 = Vy_N4 = 15 kN  (each pin carries half the UDL)
+        ΣFx = 0  globally; Hx_N1 = -Hx_N4 by symmetry (the diagonals m4 and
+        m8 carry compression that pulls each pin support inward; the
+        magnitudes cancel globally but each pin individually carries a
+        non-zero Hx because the bar truss is a redundant load path
+        alongside the continuous top-chord beam — this is correct physics
+        for a statically indeterminate hybrid beam+bar structure).
+
+    Testing-hygiene lock-in (Phase 6 D-15):
+        Pure-bar interior joints N5, N6 are NOT in pinDoF or restrainedDoF.
+        Their θ DOF (DOFs 15 and 18 in 1-based) is brought to zero ONLY by
+        the auto-restraint mechanism in assemble_primary_stiffness_matrix.
+        This test would FAIL if auto-restraint is removed and pinDoF cannot
+        compensate.
+    """
+    nodes = np.array([
+        [0.0, 1.0],  # N1 pinned
+        [1.0, 1.0],  # N2
+        [2.0, 1.0],  # N3
+        [3.0, 1.0],  # N4 pinned
+        [1.0, 0.0],  # N5 pure-bar interior (no DOF restraint manually)
+        [2.0, 0.0],  # N6 pure-bar interior (no DOF restraint manually)
+    ], float)
+    members = np.array([
+        [1, 2], [2, 3], [3, 4],   # m1..m3 beams (top chord)
+        [1, 5], [2, 5], [5, 6], [3, 6], [4, 6],  # m4..m8 bars
+    ], int)
+    n_mbr = members.shape[0]
+    ENForces = np.zeros((n_mbr, 2), float)
+    ENMoments = np.zeros((n_mbr, 2), float)
+    # UDL on top-chord beams: w = 10 kN/m, segment L = 1 m
+    w = 10000.0
+    L_seg = 1.0
+    for e in (0, 1, 2):
+        ENForces[e, 0] = -w * L_seg / 2.0    # -wL/2
+        ENForces[e, 1] = -w * L_seg / 2.0
+        ENMoments[e, 0] = w * L_seg * L_seg / 12.0
+        ENMoments[e, 1] = -w * L_seg * L_seg / 12.0
+    force_vector = np.zeros((6 * 3, 1), float)  # 6 nodes × 3 DOF
+    s = BeamBarStructure_v2(
+        nodes=nodes, members=members,
+        ENForces=ENForces, ENMoments=ENMoments,
+        force_vector=force_vector,
+        E=200e9, I=1e-4, A=None, A_beam=0.01, A_bar=0.005,
+        bars=[4, 5, 6, 7, 8],
+        beamPinLeft=[], beamPinRight=[],
+        restrainedDoF=[1, 2, 10, 11],   # N1 (Ux, Uy) + N4 (Ux, Uy)
+        pinDoF=[],                       # NO manual θ release — D-15 lock-in
+        springDoF=[], springStiffness=[],
+    )
+    s.solve_structure()
+
+    # 1. No HTTP 422 reached (solver did not raise) — implicit by reaching here.
+    # 2. Reaction by symmetry: Vy at N1 + Vy at N4 = total UDL = 30 kN.
+    #    DOF numbering: N1 → DOFs 1,2,3 (Ux, Uy, θ); N4 → DOFs 10,11,12.
+    Vy_N1 = float(s.FG[1, 0])   # row 1 (0-based) = DOF 2 (1-based) = Uy at N1
+    Vy_N4 = float(s.FG[10, 0])  # row 10 (0-based) = DOF 11 = Uy at N4
+    assert Vy_N1 == pytest.approx(15000.0, rel=1e-4)
+    assert Vy_N4 == pytest.approx(15000.0, rel=1e-4)
+    # 3. Horizontal reactions: by symmetry equal and opposite, sum to zero
+    #    (global ΣFx = 0 under purely vertical UDL). Each pin individually
+    #    carries non-zero Hx because the bar diagonals m4 (1→5) and m8 (4→6)
+    #    are loaded in compression and pull each pin inward — this is correct
+    #    physics for the hybrid structure (top-chord beam continuous through
+    #    the pins + bar truss on the other side). What we DO assert is global
+    #    horizontal equilibrium and the geometric symmetry.
+    Hx_N1 = float(s.FG[0, 0])
+    Hx_N4 = float(s.FG[9, 0])
+    assert (Hx_N1 + Hx_N4) == pytest.approx(0.0, abs=1.0)   # ΣFx = 0
+    assert Hx_N1 == pytest.approx(-Hx_N4, rel=1e-6)          # symmetry
+    # 4. No phantom moments at pins (D-02 rejection of regularisation).
+    M_N1 = float(s.FG[2, 0])
+    M_N4 = float(s.FG[11, 0])
+    assert abs(M_N1) < 1.0
+    assert abs(M_N4) < 1.0
+    # 5. Pure-bar interior joints N5, N6 — auto-restraint set θ DOFs to zero.
+    #    θ_N5 = DOF 15 → 0-based row 14; θ_N6 = DOF 18 → 0-based row 17.
+    assert s.UG[14, 0] == pytest.approx(0.0, abs=1e-12)
+    assert s.UG[17, 0] == pytest.approx(0.0, abs=1e-12)
+    # 6. Auto-restraint list contains exactly N5 + N6 θ DOFs.
+    assert sorted(s._pure_bar_theta_dofs) == [15, 18]
+    # 7. Bottom-chord bar (m6, idx 5) is in tension under top-chord UDL.
+    assert s.mbrForces[5] > 0.0   # tension positive
+    # 8. Equilibrium: ΣFy = 0 (reactions cancel UDL)
+    sum_Fy_reactions = Vy_N1 + Vy_N4
+    assert sum_Fy_reactions == pytest.approx(30000.0, rel=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# TRUST-19 — captured failing fixture replay (FastAPI TestClient)
+#
+# The 2026-04-22 captured model: 6 nodes, 8 members, bars=[1..5],
+# beams=[6..7..8], pinned at N1 + N6, UDL=10 kN/m on top-chord beams.
+# Pre-fix this fixture returned HTTP 422 ("structure is unstable") because
+# nodes 3 + 4 (1-based 4 + 5) are pure-bar joints — every incident member
+# is a bar, so the θ rows in Kp were entirely zero.
+# Post-fix: pure-bar predicate auto-restrains those θ DOFs, the structure
+# solves, and the API returns HTTP 200 with sane displacements + reactions.
+# ---------------------------------------------------------------------------
+def test_trust_19_captured_pratt_fixture_replay(client):
+    """TRUST-19: Replay of captured failing model from 2026-04-22.
+
+    The original failing fixture was 6 nodes, 8 members, bars on bottom
+    chord + diagonals, beams on top chord, pinned at top-chord ends, UDL
+    on top-chord beams. Pre-fix: HTTP 422 'structure is unstable'.
+    Post-fix: solves with sane reactions.
+
+    Source: ~/Downloads/frame2d-model-2026-04-22T06-14-49.json
+    Committed verbatim per Phase 4 D-12 / Phase 6 D-17 to:
+        tests/fixtures/uat/pure_bar_pratt_captured.json
+
+    Testing-hygiene lock-in (D-15): the fixture was created by a real user
+    via the frame2d UI which never sets pinDoF or auto-restrains θ. The
+    test verifies the solver handles the captured topology end-to-end via
+    the FastAPI route — the same path the user would hit.
+
+    API response shape: api_server/app.py:153-154 returns UG and FG as
+    FLAT 1D lists (`.reshape(-1).tolist()`). Index access body["FG"][i]
+    yields a scalar float, not a row.
+    """
+    path = FIXTURES_DIR / "pure_bar_pratt_captured.json"
+    with path.open() as fh:
+        payload = json.load(fh)
+    if payload.get("solver") == "frame2d":
+        payload["solver"] = "frame_v2"
+    payload.pop("schema_version", None)
+    payload.pop("canvas", None)
+
+    response = client.post("/solve/frame2d", json=payload)
+    assert response.status_code == 200, (
+        f"Expected 200, got {response.status_code}: {response.text}"
+    )
+    body = response.json()
+
+    # FG is a FLAT 1D list of length 3*n_nodes. Fy components live at
+    # indices 1, 4, 7, ... (every 3rd entry starting from index 1).
+    FG = body["FG"]
+    assert isinstance(FG, list) and len(FG) > 0
+    assert isinstance(FG[0], (int, float)), (
+        "FG must be flat 1D list of scalars per api_server/app.py:154"
+    )
+    Fy_total = sum(FG[i] for i in range(1, len(FG), 3))
+    assert Fy_total > 0.0, (
+        "Reactions should sum to positive Fy under downward UDL"
+    )
+
+    # UG is a FLAT 1D list. No NaN, no absurdly large values.
+    UG = body["UG"]
+    assert isinstance(UG, list) and len(UG) > 0
+    assert isinstance(UG[0], (int, float)), (
+        "UG must be flat 1D list of scalars per api_server/app.py:153"
+    )
+    # NaN check via x != x trick (NaN is the only float not equal to itself).
+    assert all(not (x != x) for x in UG), "UG contains NaN"
+    assert all(abs(x) < 1e6 for x in UG), (
+        "UG contains absurdly large values (instability not resolved)"
+    )

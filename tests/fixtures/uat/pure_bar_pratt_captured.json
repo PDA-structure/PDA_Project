@@ -1,0 +1,362 @@
+{
+  "schema_version": "1.0",
+  "solver": "frame2d",
+  "nodes": [
+    [
+      -23.6339,
+      17.332
+    ],
+    [
+      -21.6339,
+      15.832
+    ],
+    [
+      -21.6339,
+      17.332
+    ],
+    [
+      -19.6339,
+      15.832
+    ],
+    [
+      -19.6339,
+      17.332
+    ],
+    [
+      -17.6339,
+      17.332
+    ]
+  ],
+  "members": [
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      2,
+      1
+    ],
+    [
+      4,
+      6
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      3,
+      5
+    ],
+    [
+      5,
+      6
+    ]
+  ],
+  "ENForces": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      -10000,
+      -10000
+    ],
+    [
+      -10000,
+      -10000
+    ],
+    [
+      -10000,
+      -10000
+    ]
+  ],
+  "ENMoments": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      3333.3333333333335,
+      -3333.3333333333335
+    ],
+    [
+      3333.3333333333335,
+      -3333.3333333333335
+    ],
+    [
+      3333.3333333333335,
+      -3333.3333333333335
+    ]
+  ],
+  "forceVector": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "E": 200000000000,
+  "I": 0.0001,
+  "A": 0.01,
+  "bars": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "beamPinLeft": [],
+  "beamPinRight": [],
+  "restrainedDoF": [
+    1,
+    2,
+    16,
+    17
+  ],
+  "pinDoF": [],
+  "springDoF": [],
+  "springStiffness": [],
+  "udl_x": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "canvas": {
+    "origin": {
+      "x": 100,
+      "y": 400
+    },
+    "nodes": [
+      {
+        "x": -372.678,
+        "id": 0,
+        "realX": -23.6339,
+        "y": 53.360000000000014,
+        "realY": 17.332
+      },
+      {
+        "x": -332.678,
+        "id": 1,
+        "realX": -21.6339,
+        "y": 83.36000000000001,
+        "realY": 15.832
+      },
+      {
+        "x": -332.678,
+        "id": 2,
+        "realX": -21.6339,
+        "y": 53.360000000000014,
+        "realY": 17.332
+      },
+      {
+        "x": -292.678,
+        "id": 3,
+        "realX": -19.6339,
+        "y": 83.36000000000001,
+        "realY": 15.832
+      },
+      {
+        "x": -292.678,
+        "id": 4,
+        "realX": -19.6339,
+        "y": 53.360000000000014,
+        "realY": 17.332
+      },
+      {
+        "x": -252.678,
+        "id": 5,
+        "realX": -17.6339,
+        "y": 53.360000000000014,
+        "realY": 17.332
+      }
+    ],
+    "members": [
+      {
+        "udl": null,
+        "A_override": null,
+        "I_override": null,
+        "id": 0,
+        "pinRight": false,
+        "E_override": null,
+        "end": 3,
+        "type": "bar",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 1
+      },
+      {
+        "udl": null,
+        "A_override": null,
+        "I_override": null,
+        "id": 1,
+        "pinRight": false,
+        "E_override": null,
+        "end": 2,
+        "type": "bar",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 1
+      },
+      {
+        "udl": null,
+        "A_override": null,
+        "I_override": null,
+        "id": 2,
+        "pinRight": false,
+        "E_override": null,
+        "end": 4,
+        "type": "bar",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 3
+      },
+      {
+        "udl": null,
+        "A_override": null,
+        "I_override": null,
+        "id": 3,
+        "pinRight": false,
+        "E_override": null,
+        "end": 0,
+        "type": "bar",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 1
+      },
+      {
+        "udl": null,
+        "A_override": null,
+        "I_override": null,
+        "id": 4,
+        "pinRight": false,
+        "E_override": null,
+        "end": 5,
+        "type": "bar",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 3
+      },
+      {
+        "udl": 10000,
+        "A_override": null,
+        "I_override": null,
+        "id": 5,
+        "pinRight": false,
+        "E_override": null,
+        "end": 2,
+        "type": "beam",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 0
+      },
+      {
+        "udl": 10000,
+        "A_override": null,
+        "I_override": null,
+        "id": 6,
+        "pinRight": false,
+        "E_override": null,
+        "end": 4,
+        "type": "beam",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 2
+      },
+      {
+        "udl": 10000,
+        "A_override": null,
+        "I_override": null,
+        "id": 7,
+        "pinRight": false,
+        "E_override": null,
+        "end": 5,
+        "type": "beam",
+        "pinLeft": false,
+        "udl_x": null,
+        "start": 4
+      }
+    ],
+    "supports": {
+      "0": "pinned",
+      "5": "pinned"
+    },
+    "nodeLoads": [],
+    "udl": [
+      {
+        "memberId": 5,
+        "wy": 10000,
+        "wx": 0
+      },
+      {
+        "memberId": 6,
+        "wy": 10000,
+        "wx": 0
+      },
+      {
+        "memberId": 7,
+        "wy": 10000,
+        "wx": 0
+      }
+    ],
+    "memberOverrides": {}
+  }
+}
