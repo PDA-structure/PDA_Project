@@ -1,0 +1,62 @@
+{
+  "module": "tests.test_frame_v2",
+  "test_name": "test_udl_simply_supported_deflection",
+  "test_label": "TRUST-02b test_trust_udl_simply_supported_deflection",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "kind": "frame_v2",
+  "UG": [
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0013333333333333333
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      -0.0013333333333333333
+    ]
+  ],
+  "FG": [
+    [
+      0.0
+    ],
+    [
+      20000.0
+    ],
+    [
+      -1.8189894035458565e-12
+    ],
+    [
+      0.0
+    ],
+    [
+      20000.0
+    ],
+    [
+      1.8189894035458565e-12
+    ]
+  ],
+  "member_forces": [
+    0.0
+  ],
+  "member_shears": [
+    [
+      20000.0,
+      20000.0
+    ]
+  ],
+  "member_moments": [
+    [
+      -1.8189894035458565e-12,
+      1.8189894035458565e-12
+    ]
+  ]
+}

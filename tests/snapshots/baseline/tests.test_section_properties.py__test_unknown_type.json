@@ -1,0 +1,8 @@
+{
+  "module": "tests.test_section_properties",
+  "test_name": "test_unknown_type",
+  "test_label": "test_unknown_type",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "skipped": true,
+  "reason": "no solver invocation"
+}

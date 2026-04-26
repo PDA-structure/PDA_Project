@@ -1,0 +1,89 @@
+{
+  "module": "tests.test_uat_frame2d",
+  "test_name": "test_uat_continuous_pin_release",
+  "test_label": "UAT-test_uat_continuous_pin_release test_uat_test_uat_continuous_pin_release",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "kind": "frame_v2",
+  "UG": [
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      -0.008
+    ],
+    [
+      -0.003
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ]
+  ],
+  "FG": [
+    [
+      0.0
+    ],
+    [
+      32500.0
+    ],
+    [
+      -50000.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      7500.0
+    ],
+    [
+      30000.0
+    ]
+  ],
+  "member_forces": [
+    0.0,
+    0.0
+  ],
+  "member_shears": [
+    [
+      32500.0,
+      7500.0
+    ],
+    [
+      -7500.0,
+      7500.0
+    ]
+  ],
+  "member_moments": [
+    [
+      -50000.0,
+      0.0
+    ],
+    [
+      0.0,
+      30000.0
+    ]
+  ]
+}

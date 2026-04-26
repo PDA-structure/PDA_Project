@@ -1,0 +1,8 @@
+{
+  "module": "tests.test_interchange",
+  "test_name": "test_force_vector_length_matches_nodes_truss2d",
+  "test_label": "test_force_vector_length_matches_nodes_truss2d",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "skipped": true,
+  "reason": "no solver invocation"
+}

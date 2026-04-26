@@ -1,0 +1,53 @@
+{
+  "module": "tests.test_truss2d",
+  "test_name": "test_two_bar_truss_equilibrium",
+  "test_label": "test_two_bar_truss_equilibrium",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "kind": "truss2d",
+  "UG": [
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      -7.0710678118654756e-06
+    ]
+  ],
+  "FG": [
+    [
+      5000.0
+    ],
+    [
+      4999.999999999999
+    ],
+    [
+      -5000.0
+    ],
+    [
+      5000.000000000001
+    ],
+    [
+      0.0
+    ],
+    [
+      -10000.0
+    ]
+  ],
+  "member_forces": [
+    -7071.067811865474,
+    -7071.067811865476
+  ],
+  "member_shears": null,
+  "member_moments": null
+}

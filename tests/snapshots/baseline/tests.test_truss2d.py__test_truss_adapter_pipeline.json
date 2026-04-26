@@ -1,0 +1,40 @@
+{
+  "module": "tests.test_truss2d",
+  "test_name": "test_truss_adapter_pipeline",
+  "test_label": "test_truss_adapter_pipeline",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "kind": "truss2d",
+  "UG": [
+    [
+      0.0
+    ],
+    [
+      0.0
+    ],
+    [
+      5.000000000000001e-07
+    ],
+    [
+      0.0
+    ]
+  ],
+  "FG": [
+    [
+      -1000.0000000000001
+    ],
+    [
+      0.0
+    ],
+    [
+      1000.0000000000001
+    ],
+    [
+      0.0
+    ]
+  ],
+  "member_forces": [
+    1000.0000000000001
+  ],
+  "member_shears": null,
+  "member_moments": null
+}

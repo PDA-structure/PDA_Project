@@ -1,0 +1,8 @@
+{
+  "module": "tests.test_tekla_converter",
+  "test_name": "test_convert_noncontiguous_ids_remapped",
+  "test_label": "test_convert_noncontiguous_ids_remapped",
+  "captured_at": "2026-04-26T14:10:13.841595+00:00",
+  "skipped": true,
+  "reason": "no solver invocation"
+}
