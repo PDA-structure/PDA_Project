@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: — 2D Frame Hardening + Revit-as-UI (MVP)
-status: scope-decision-pending
+status: executing
 stopped_at: Phase 6 context gathered (autonomous completion delegated by user 2026-04-26); ready for /gsd-plan-phase 6
-last_updated: "2026-04-26T10:38:35.964Z"
-last_activity: 2026-04-24 — /gsd-audit-milestone v1.2 → gaps_found (8/15 requirements). pyRevit truss pushbutton HUMAN-UAT passed via raw.githubusercontent.com manual copy. Debug session `truss-json-solver-mismatch` resolved. Both repos (pda_project, CustomRevitExtension) pushed to origin/main.
+last_updated: "2026-04-26T13:31:59.220Z"
+last_activity: 2026-04-26 -- Phase 06 execution started
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 7
+  total_plans: 10
   completed_plans: 7
-  percent: 100
+  percent: 70
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-19 — v1.2 milestone started)
 
 **Core value:** Engineers can define a structure, solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** v1.2 milestone audit returned `gaps_found` — Phase 6 (Revit Tier 2 Analytical Exporter Hardening) never started. Awaiting scope decision before next work routes.
+**Current focus:** Phase 06 — frame-v2-pure-bar-joint-robustness
 
 ## Current Position
 
-Phase: between phases (v1.2 milestone audit complete, Phase 6 orphaned)
-Plan: N/A
-Status: scope-decision-pending
-Last activity: 2026-04-24 — /gsd-audit-milestone v1.2 → gaps_found (8/15 requirements). pyRevit truss pushbutton HUMAN-UAT passed via raw.githubusercontent.com manual copy. Debug session `truss-json-solver-mismatch` resolved. Both repos (pda_project, CustomRevitExtension) pushed to origin/main.
+Phase: 06 (frame-v2-pure-bar-joint-robustness) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 06
+Last activity: 2026-04-26 -- Phase 06 execution started
 
 ## Resume instructions (next session)
 

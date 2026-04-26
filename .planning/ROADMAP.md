@@ -159,7 +159,13 @@ Plans:
   3. frame2d UI canvas highlights joints with zero rotational stiffness; "Structure is unstable" is replaced with specific cause text identifying the offending joint(s)
   4. Existing TRUST-* and HARDEN-* tests continue to pass — no regression in beam-only or bar-only models
   5. New regression test asserts pure-bar joints don't fail; promoted from todo `2026-04-22-frame2d-pure-bar-joint-instability.md`
-**Plans**: TBD (1–2 expected)
+**Plans**: 3 plans
+
+Plans:
+- [x] 06-01-PLAN.md — Snapshot baseline + pure-bar joint detection in frame_v2.py + TRUST-18/19 tests (PUREBAR-01, PUREBAR-02, PUREBAR-05)
+- [ ] 06-02-PLAN.md — SolverDiagnosticError + adapter UDL-on-bar rejection + structured 422 + TRUST-20/20b/20c tests (PUREBAR-03)
+- [ ] 06-03-PLAN.md — frame2d UI pre-solve scan + structured 422 parsing + canvas diagnostic overlays + UI-contract tests (PUREBAR-04)
+
 **Origin**: Promoted from backlog item 999.5 on 2026-04-26 after v1.2 audit reroute. Original Phase 6 (Revit Tier 2 — Analytical Exporter Hardening) deferred to v1.3.
 
 ## Progress
@@ -171,7 +177,7 @@ Plans:
 | 3. Interchange Format and External Inputs | v1.1 | 3/3 | Complete | 2026-04-19 |
 | 4. 2D Frame Solver + UI Hardening | v1.2 | 0/3 | Not started | - |
 | 5. Revit Tier 1 — Geometry Exporter | v1.2 | 0/4 | Not started | - |
-| 6. frame_v2 — Pure-Bar Joint Robustness | v1.2 | 0/TBD | Not started | - |
+| 6. frame_v2 — Pure-Bar Joint Robustness | v1.2 | 0/3 | Not started | - |
 | 7. Grillage Solver | v1.3 | 0/TBD | Not started | - |
 | 8. Revit Results-Import | v1.3 | 0/TBD | Not started | - |
 | 9. 3D Truss Solver | v1.4 | 0/TBD | Not started | - |
