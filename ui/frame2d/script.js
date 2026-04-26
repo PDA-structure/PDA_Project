@@ -657,9 +657,44 @@ async function solve() {
       body:    JSON.stringify(payload),
     });
     if (!res.ok) {
-      const err = await res.json();
-      return setStatus('API error: ' + (err.detail || res.statusText), true);
+      // Phase 6 D-09 / D-12 / D-13 — structured 422 parsing with
+      // backward-compat fallback. Plain { detail: "..." } payloads
+      // (legacy, e.g. genuine under-restraint) still render via
+      // err.detail || res.statusText. When the server returns the
+      // typed payload from Plan 06-02 (cause / offending_nodes /
+      // offending_members), the message is enriched with the cause
+      // taxonomy and the offending elements are stored for the
+      // canvas overlay to highlight on the next draw().
+      let err = {};
+      try { err = await res.json(); } catch (_) { /* not JSON */ }
+      let msg = 'API error: ' + (err.detail || res.statusText);
+      if (err.cause) {
+        msg += ' [' + err.cause + ']';
+      }
+      // T-06-03-02 mitigation: filter server-supplied indices through
+      // Number.isInteger + range check before indexing into local arrays.
+      // Any malformed / out-of-range entry is silently dropped — a hostile
+      // server cannot drive the canvas to render outside bounds.
+      if (Array.isArray(err.offending_nodes) && err.offending_nodes.length) {
+        offendingNodes = err.offending_nodes
+          .map(n => Number(n) - 1)
+          .filter(i => Number.isInteger(i) && i >= 0 && i < nodes.length);
+      }
+      if (Array.isArray(err.offending_members) && err.offending_members.length) {
+        offendingMembers = err.offending_members
+          .map(m => Number(m) - 1)
+          .filter(i => Number.isInteger(i) && i >= 0 && i < members.length);
+      }
+      // Re-render so drawDiagnosticOverlays() (Task 3) paints highlights.
+      draw();
+      return setStatus(msg, true);
     }
+    // Successful solve — clear post-flight overlays. Pre-flight
+    // pureBarNodeIds is left in place: those joints are still the
+    // visual signature of an auto-restrained θ DOF and the user
+    // benefits from seeing them after a successful solve too.
+    offendingNodes   = [];
+    offendingMembers = [];
     results = await res.json();
     setStatus('Solved ✓', false);
     document.getElementById('chkBMD').disabled = false;
