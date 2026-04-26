@@ -24,19 +24,19 @@ A structural engineering analysis platform providing 2D truss and 2D frame/beam 
 
 </details>
 
-## Current Milestone: v1.3 — Revit Tier 2 + Results-Import + Grillage
+## Current Milestone: v1.3 — Revit Tier 2 + Results-Import
 
-**Goal:** Close out the v1.2 carry-overs — harden the Revit Tier 2 analytical-model exporter (rescoped from v1.2 with full Revit 2023/24/25 risk picture), give engineers a results-import path back into Revit, and ship the long-deferred grillage solver.
+**Goal:** Close the Revit round-trip — harden the analytical-model exporter (Tier 2, rescoped from v1.2) and ship a Results-Import pyRevit button that annotates the Revit model with solver output. Tightly Revit-themed milestone (sibling repo only on the pyRevit side; an additive `revit_meta` Pydantic field on the FastAPI side).
 
 **Target features (in priority order):**
 1. **Revit Tier 2 — Analytical Exporter Hardening** (REVIT-T2-01..07) — Revit 2023/24/25 compat, supports/loads/section-property extraction from analytical model, view-plane projection from active plan/elevation/section view, production-path migration to `Analytical.panel/StructuralAnalyticalModel.pushbutton/`, legacy retirement
 2. **Revit Results-Import** — pyRevit button reads solver output JSON and annotates the Revit analytical model
-3. **Grillage Solver** — `/solve/grillage` endpoint, torsional stiffness, analytical tests (was original v1.1 Phase 4)
 
 **Key context:**
-- All three features are carry-overs from earlier milestones — no greenfield scope
+- Both features are carry-overs from earlier milestones — no greenfield scope
 - Revit work continues in sibling `CustomRevitExtension` repo (pyRevit, IronPython 2.7); Windows host uses manual-copy deployment
-- Grillage builds on the existing solver_core layered pipeline — should follow the `frame_v2` solver pattern + reuse the snapshot-regression gate from v1.2 (D-16)
+- Grillage explicitly deferred — user priority is 3D solvers next (v1.4), grillage at v1.5+ "the very end"
+- The only `pda_project/`-side change is the additive `revit_meta` Pydantic passthrough field on `Frame2DRequest` (and on future request schemas); solver/adapter MUST NOT read it
 
 ## Core Value
 
@@ -91,13 +91,14 @@ Engineers can define a structure (in browser or via Revit pushbutton), solve it,
 - ✓ frame2d UI replaces "Structure is unstable" with cause-aware diagnostics + canvas highlights (PUREBAR-04)
 - ✓ Regression test using captured failing fixture (PUREBAR-05)
 
-### Active (v1.3 — Revit Tier 2 + Results-Import + Grillage)
+### Active (v1.3 — Revit Tier 2 + Results-Import)
 
 Requirements being defined this milestone. See `.planning/REQUIREMENTS.md` once defined.
 
 ### Deferred to v1.4+
 
-- [ ] 3D truss / 3D frame solvers (v1.4)
+- [ ] 3D truss / 3D frame solvers — v1.4 (user priority: 3D before grillage)
+- [ ] Grillage solver (/solve/grillage, torsional stiffness, analytical tests) — original v1.1 Phase 4. Deferred to v1.5+ at user request 2026-04-26 (3D solvers prioritised first)
 
 ### Out of Scope
 

@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.3
-milestone_name: — Revit Tier 2 + Results-Import + Grillage
+milestone_name: — Revit Tier 2 + Results-Import
 status: defining_requirements
 stopped_at: v1.3 milestone started; running research → requirements → roadmap
 last_updated: "2026-04-26T20:05:00.000Z"
