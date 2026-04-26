@@ -163,7 +163,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — Snapshot baseline + pure-bar joint detection in frame_v2.py + TRUST-18/19 tests (PUREBAR-01, PUREBAR-02, PUREBAR-05)
-- [ ] 06-02-PLAN.md — SolverDiagnosticError + adapter UDL-on-bar rejection + structured 422 + TRUST-20/20b/20c tests (PUREBAR-03)
+- [x] 06-02-PLAN.md — SolverDiagnosticError + adapter UDL-on-bar rejection + structured 422 + TRUST-20/20b/20c tests (PUREBAR-03)
 - [ ] 06-03-PLAN.md — frame2d UI pre-solve scan + structured 422 parsing + canvas diagnostic overlays + UI-contract tests (PUREBAR-04)
 
 **Origin**: Promoted from backlog item 999.5 on 2026-04-26 after v1.2 audit reroute. Original Phase 6 (Revit Tier 2 — Analytical Exporter Hardening) deferred to v1.3.
