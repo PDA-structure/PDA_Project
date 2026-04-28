@@ -1,0 +1,521 @@
+{
+  "phase": "07-revit-element-to-analytical-conversion",
+  "phase_name": "Revit Element-to-Analytical Conversion",
+  "generated_at": "2026-04-28T20:15:00.000Z",
+  "stats": {
+    "total": 15,
+    "answered": 15,
+    "chat_more": 0,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "selection-ux",
+      "title": "Selection & Input UX",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "How should users hand selection to the pushbutton?",
+          "context": "Existing ExportToPDA / ExportToPDA_Truss pushbuttons in Analytical.panel/col1.stack/ already follow a pattern. pyRevit pushbuttons can read uidoc.Selection at click time (pre-select) or call uidoc.Selection.PickObjects (pick-after).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Pre-select required",
+              "description": "User must select elements before clicking. If selection empty → TaskDialog 'No elements selected' and exit. Simplest, matches existing PDA pushbutton convention."
+            },
+            {
+              "id": "b",
+              "label": "Pick-after only",
+              "description": "Button always opens a PickObjects prompt with category filter. User can't pre-stage. Slower per-use but discoverable."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — pre-select if present, else pick",
+              "description": "If uidoc.Selection contains valid elements use them; otherwise launch PickObjects. Best UX but slightly more code."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "c"
+        },
+        {
+          "id": "Q-02",
+          "title": "How should bracings be treated relative to beams?",
+          "context": "OST_StructuralFraming covers both beams and bracings. Revit's StructuralType enum distinguishes Beam / Brace / Girder. Phase 7 success criteria says columns + beams + bracings are all in scope, but doesn't specify whether bracings get any special handling.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Treat identically — all OST_StructuralFraming members go through same path",
+              "description": "Single conversion path. Revit's analytical model handles release behaviour. Simplest."
+            },
+            {
+              "id": "b",
+              "label": "Tag bracings in revit_meta but convert identically",
+              "description": "Same conversion call, but emit StructuralType in any logged metadata so Phase 8 exporter / downstream tools can route bracings to bar-style elements if needed."
+            },
+            {
+              "id": "c",
+              "label": "Separate branch — bracings get explicit pin-release at both ends",
+              "description": "On creation, set AnalyticalMember.StartRelease/EndRelease to release moments for braces (axial-only). More opinionated; might fight engineer intent."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        }
+      ]
+    },
+    {
+      "id": "idempotency",
+      "title": "Idempotency & Re-runs",
+      "questions": [
+        {
+          "id": "Q-03",
+          "title": "How should the button behave on elements that are already converted?",
+          "context": "REVIT-CONVERT-03 mandates idempotency via AnalyticalToPhysicalAssociationManager.GetAssociatedElementId(). The question is what the UX feels like when 8 of 10 selected elements are already converted.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Silent skip + count under 'already-associated' reason",
+              "description": "Most predictable. Engineer sees '2 converted, 8 skipped (8 already-associated)' in the summary."
+            },
+            {
+              "id": "b",
+              "label": "Skip + secondary prompt offering regenerate (delete+recreate)",
+              "description": "After running, if any were skipped as already-associated, ask 'Regenerate 8 already-converted members?' Risky — destroys engineer's analytical edits."
+            },
+            {
+              "id": "c",
+              "label": "Skip but make 'already-associated' a distinct line in summary, not lumped with errors",
+              "description": "Like (a) but visually separates 'no-op skips' from 'genuine skips' (unsupported category, missing data) in the TaskDialog."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "c"
+        }
+      ]
+    },
+    {
+      "id": "config",
+      "title": "Configuration & Extensibility",
+      "questions": [
+        {
+          "id": "Q-04",
+          "title": "Where does the configurable supported-category list live?",
+          "context": "REVIT-CONVERT-01 mandates the category filter is a configurable list, NOT hard-coded — so v1.5+ Phase 15 (slabs/foundations) can extend without rewiring. Windows host uses manual-copy deploy (per memory), so changing code requires re-copy.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Module-level constant at top of script.py (SUPPORTED_CATEGORIES = [...])",
+              "description": "Easiest. v1.5+ adds OST_Floors to the list. Requires code change + Windows re-deploy to alter."
+            },
+            {
+              "id": "b",
+              "label": "JSON sibling file (categories.json) loaded at button click",
+              "description": "User-editable on Windows host without git/code-change. More flexible but adds a load+parse step + error handling."
+            },
+            {
+              "id": "c",
+              "label": "Module-level dict mapping category → handler function",
+              "description": "Constant + dispatch table in one. v1.5+ adds a key + a handler. Forces handler-per-category architecture early — useful when slabs need different conversion path."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "c"
+        },
+        {
+          "id": "Q-05",
+          "title": "Should v1.3 introduce the per-category-handler pattern, or defer until v1.5+ actually needs it?",
+          "context": "Q-04(c) bakes in a strategy/dispatch pattern now. v1.3 only handles columns + beams + bracings — all via Document.GenerateMembersFromSelection. The seed for slabs (SEED-001) confirms slabs will need a different conversion path (tributary-area logic).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Defer — single function for v1.3, refactor in v1.5+",
+              "description": "YAGNI. One conversion function for all v1.3 categories. Refactor when slabs land. CLAUDE.md hard rule favours this (no abstraction beyond what task requires)."
+            },
+            {
+              "id": "b",
+              "label": "Adopt now — even though v1.3 has one handler, structure code as dispatch from day one",
+              "description": "Avoids retrofitting in v1.5+. ~20 extra lines of code now."
+            },
+            {
+              "id": "c",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "a"
+        }
+      ]
+    },
+    {
+      "id": "transactions",
+      "title": "Transactions & Error Handling",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "What transaction structure wraps the batch conversion?",
+          "context": "Revit requires every doc-modifying operation inside a Transaction. Success criterion says 'a single bad element does not abort the whole batch' (REVIT-CONVERT-04). Three structural choices, all valid in Revit API.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single Transaction wrapping the whole loop, try/except per element, continue on error",
+              "description": "Simplest. Failed elements are logged but don't roll back successful ones (Revit allows continued ops within a transaction after a caught exception, generally). Matches existing ExportToPDA pattern if it follows this."
+            },
+            {
+              "id": "b",
+              "label": "TransactionGroup wrapping per-element Transactions",
+              "description": "Each element gets its own Transaction, all under one named TransactionGroup. Cleaner undo (one undo step) and per-element rollback on failure. More API ceremony."
+            },
+            {
+              "id": "c",
+              "label": "Per-element SubTransaction inside one outer Transaction",
+              "description": "Outer Transaction commits atomically; sub-transactions allow per-element rollback within. Niche."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        },
+        {
+          "id": "Q-07",
+          "title": "How granular should skip-reason taxonomy be in REVIT-CONVERT-04?",
+          "context": "Success criterion calls out 'already-associated, unsupported category, missing physical-side data' as example reasons. The set could be tighter or broader.",
+          "options": [
+            {
+              "id": "a",
+              "label": "3 fixed reasons exactly: already-associated, unsupported-category, missing-physical-data",
+              "description": "Predictable. Anything else collapses into a single 'other-error' bucket with the exception message."
+            },
+            {
+              "id": "b",
+              "label": "Open-ended — exception type or message becomes the reason",
+              "description": "Most flexible. Engineer sees actual API errors verbatim. Less polished UX."
+            },
+            {
+              "id": "c",
+              "label": "Curated short list + 'other-error' fallback with logged detail",
+              "description": "Defined enum (already-associated, unsupported-category, missing-location, missing-section, generation-failed, other-error) — 'other-error' carries the raw message. Compromise between polish and visibility."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "c"
+        }
+      ]
+    },
+    {
+      "id": "diagnostics",
+      "title": "Diagnostic Output",
+      "questions": [
+        {
+          "id": "Q-08",
+          "title": "What format should the post-run diagnostic surface use?",
+          "context": "Success criterion calls for 'TaskDialog summary {converted: N, skipped: M, total: N+M} with per-skip reasons'. pyRevit also offers an Output Window (output.print_md) with clickable element links — used by other PDA pushbuttons?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single TaskDialog with summary text + expandable detail content",
+              "description": "TaskDialog.ExpandedContent fits per-element rows. Native Revit feel. Element IDs are text only (not clickable)."
+            },
+            {
+              "id": "b",
+              "label": "TaskDialog summary + pyRevit Output Window with clickable element links for skips",
+              "description": "Best UX — engineer can click 'skipped: ID 12345' and Revit highlights it. Two surfaces for one event."
+            },
+            {
+              "id": "c",
+              "label": "Output Window only (markdown table)",
+              "description": "Modern pyRevit pattern. Slight UX regression vs. modal TaskDialog (engineer might miss it). Native to pyRevit, no Revit-version coupling."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        },
+        {
+          "id": "Q-09",
+          "title": "On a fully-clean run (all elements converted, zero skipped), what's the UX?",
+          "context": "Engineer just selected 50 columns and clicked the button. All 50 converted. Should they get a TaskDialog confirming, or silent success?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Always show TaskDialog with the summary, even on full success",
+              "description": "Confidence-affirming. Engineer sees 'converted: 50, skipped: 0' explicitly."
+            },
+            {
+              "id": "b",
+              "label": "Silent on full success, TaskDialog only when there are skips",
+              "description": "Less interruptive. Engineer assumes success unless told otherwise."
+            },
+            {
+              "id": "c",
+              "label": "Brief pyRevit toast/balloon on full success, TaskDialog when skips exist",
+              "description": "Best of both — non-modal acknowledgement + modal only when needed."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "a"
+        }
+      ]
+    },
+    {
+      "id": "properties",
+      "title": "Property Preservation",
+      "questions": [
+        {
+          "id": "Q-10",
+          "title": "How much should we trust Document.GenerateMembersFromSelection to preserve section/material/parameters?",
+          "context": "REVIT-CONVERT-02 says the API 'preserves Revit's section / material / parameter associations to the physical element'. In practice it's mostly correct but some edge cases (slanted columns, cropped beams) lose data.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Trust the API — no post-creation verification",
+              "description": "Simplest. Failures surface in Phase 8 export when section data is missing. Faster v1.3 delivery."
+            },
+            {
+              "id": "b",
+              "label": "Post-creation read-back: verify each created AnalyticalMember has a non-null section + material; flag mismatches as 'missing-section' skip",
+              "description": "Defensive. Catches edge cases at conversion time, not three phases later. ~10 extra lines per element."
+            },
+            {
+              "id": "c",
+              "label": "Read-back + explicit re-set: if section missing, re-apply from physical element via parameter copy",
+              "description": "Belt-and-braces. Risk of fighting Revit's analytical-physical association manager."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        },
+        {
+          "id": "Q-11",
+          "title": "Fallback path — when Document.GenerateMembersFromSelection skips an element, do we attempt manual creation via AnalyticalToPhysicalAssociationManager.AddAssociation?",
+          "context": "REVIT-CONVERT-02 says 'fall back to per-element creation via AnalyticalToPhysicalAssociationManager.AddAssociation for cases the built-in skips'. This is more API surface and more failure modes.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Yes — implement fallback in v1.3 as spec'd",
+              "description": "Honours requirement literally. Increases coverage at cost of extra code path + UAT cases."
+            },
+            {
+              "id": "b",
+              "label": "Defer fallback — log skipped-by-built-in as 'generation-failed', let engineer fix manually",
+              "description": "Pragmatic. Most v1.3 UAT models won't trigger the edge case. Add fallback in v1.4+ if real models need it."
+            },
+            {
+              "id": "c",
+              "label": "Yes but as a separate Plan 4 (so it can be deferred without re-scoping)",
+              "description": "Bake into the 3-plan structure as the third plan, so dropping it cleanly truncates scope if time-constrained."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        }
+      ]
+    },
+    {
+      "id": "uat",
+      "title": "Testing & UAT",
+      "questions": [
+        {
+          "id": "Q-12",
+          "title": "What's the UAT fixture strategy on the Windows host?",
+          "context": "Phase 7 needs Windows-host UAT (Revit 2025+). Manual-copy deploy from Mac dev → Windows. v1.2 Phase 5 used a hand-crafted RVT model. SEED for shared lib + UAT pattern exists.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Hand-crafted single RVT — simple frame: 4 columns + beams + diagonal brace",
+              "description": "Fastest. One model, covers all 3 categories. Engineer-judged pass/fail."
+            },
+            {
+              "id": "b",
+              "label": "3 RVT fixtures — minimal frame, multi-storey, idempotency re-run case",
+              "description": "Hits all success criteria explicitly. More setup."
+            },
+            {
+              "id": "c",
+              "label": "1 RVT fixture + a TestCodes.panel/RegressionTest.pushbutton that runs the convert + asserts counts",
+              "description": "Reproducible. Asserts {converted, skipped, total} programmatically. More code, cleaner regression story."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        },
+        {
+          "id": "Q-13",
+          "title": "Phase 8 (Tier 2 export) needs analytical members to read. How tight is Phase 7's exit gate to Phase 8's entry?",
+          "context": "Roadmap says Phase 8 'Depends on: Phase 7 (analytical members must exist to be exported in UAT)'. Question is whether Phase 7 closes the loop with a Phase 5 round-trip on its own output, or stops at 'analytical members exist'.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Phase 7 closes when analytical members exist (success criteria 1-3 only)",
+              "description": "Tight scope. Phase 8 picks up immediately. Round-trip validation lives in Phase 8."
+            },
+            {
+              "id": "b",
+              "label": "Phase 7 also runs the existing Phase 5/v1.2 frame2d round-trip on its converted output",
+              "description": "Success criterion 4 says exactly this — runs the existing Tier 1 exporter on the converted analytical model. Catches conversion bugs that would otherwise surface in Phase 8."
+            },
+            {
+              "id": "c",
+              "label": "Phase 7 closes after (b) AND a fresh Phase 8-style smoke export (no UI exit until both work)",
+              "description": "Strongest gate. Risks Phase 7 sliding into Phase 8 territory."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        }
+      ]
+    },
+    {
+      "id": "plan-shape",
+      "title": "Plan Breakdown",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "How should the 3 plans split?",
+          "context": "ROADMAP says 3 plans for Phase 7. Sibling-repo work, IronPython 2.7, manual-copy Windows deploy.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Skeleton → Conversion logic → Diagnostics+UAT",
+              "description": "Plan 1: pushbutton bundle + selection filter + idempotency check. Plan 2: per-element conversion (built-in API + optional fallback) + transaction. Plan 3: TaskDialog/output summary + UAT fixtures + Windows deploy verification."
+            },
+            {
+              "id": "b",
+              "label": "Bundle+Selection → Conversion+Idempotency → Diagnostics+UAT",
+              "description": "Plan 1: pushbutton bundle + uidoc.Selection wiring + category filter (no conversion yet). Plan 2: GenerateMembersFromSelection + association-manager idempotency + transaction. Plan 3: TaskDialog summary + per-skip reasons + UAT."
+            },
+            {
+              "id": "c",
+              "label": "Conversion-core → Idempotency+Diagnostics → UAT-only",
+              "description": "Plan 1: skeleton + conversion (no idempotency). Plan 2: idempotency + diagnostic UX. Plan 3: pure UAT + Windows deploy verification."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "b"
+        },
+        {
+          "id": "Q-15",
+          "title": "Should shared logic land in a new lib/Snippets/ helper this phase, or stay inline in script.py?",
+          "context": "Phase 8 plans an Analytical.extension/lib/Snippets/_pda_export_common.py. Phase 7 introduces selection-filter and category-handling code that's likely reusable. lib/Snippets/ already exists with _selection_func.py, _units_conversion.py.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Inline in ConvertToAnalytical.pushbutton/script.py for v1.3",
+              "description": "YAGNI. Move to Snippets in Phase 8 when actual sharing happens. Avoids premature abstraction (CLAUDE.md hard rule)."
+            },
+            {
+              "id": "b",
+              "label": "Extract category-filter helper to lib/Snippets/_analytical_categories.py now",
+              "description": "Pre-positions for Phase 8. Risk: Phase 8's needs may diverge."
+            },
+            {
+              "id": "c",
+              "label": "Extend existing _selection_func.py with category-aware filter",
+              "description": "Builds on what's there. Tightest cohesion — selection logic in one place."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered",
+          "recommendation": "a"
+        }
+      ]
+    }
+  ]
+}
