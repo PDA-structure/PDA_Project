@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
 status: active
-stopped_at: v1.3 roadmap created — 5 phases (7-11), 16 plans, 27 phase-mapped requirements + 1 PREP quick-task
-last_updated: "2026-04-26T20:30:00.000Z"
-last_activity: 2026-04-26
+stopped_at: PREP-01 complete (commits b108d5b + 7d3a933) — worktree-mirror friction resolved, ready to discuss Phase 7
+last_updated: "2026-04-28T19:51:21.000Z"
+last_activity: 2026-04-28
 progress:
   total_phases: 5
   completed_phases: 0
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 Phase: 7 (Revit Element-to-Analytical Conversion) — not started
 Plan: —
 Status: Roadmap created; ready to plan Phase 7
-Last activity: 2026-04-26 — v1.3 roadmap written (5 phases 7-11, 16 plans, 27 phase-mapped requirements + 1 PREP quick-task)
+Last activity: 2026-04-28 — Completed quick task 260428-s93 (PREP-01: root .gitignore + track solver_core scaffolding)
 
 ## Resume instructions (next session)
 
@@ -55,9 +55,7 @@ Run `/gsd-check-todos` to review.
 
 ### Quick Tasks Pending (v1.3)
 
-| # | Description | Status |
-|---|-------------|--------|
-| PREP-01 | Commit untracked `solver_core/.../{__init__.py, engine/, models/, results/}`, `pyproject.toml`, and `pda_analysis_software.egg-info/`. Resolves recurring CF2 worktree-mirror friction (hit v1.2 twice). MUST run before Phase 7 work begins. | Pending |
+_None._
 
 ### Deferred Items
 
@@ -91,6 +89,12 @@ Run `/gsd-check-todos` to review.
 |---|-------------|------|--------|-----------|
 | 260423-a0q | Add pyRevit `ExportToPDA_Truss` pushbutton — clones Phase 5 frame2d exporter and emits truss2d-schema JSON (sibling CustomRevitExtension repo). HUMAN-UAT round-trip passed 2026-04-24. Recorded as bonus scope at v1.2 close. | 2026-04-23 | 95d6748 (CustomRevitExtension) | [260423-a0q-add-pyrevit-pushbutton-to-export-draftin](./quick/260423-a0q-add-pyrevit-pushbutton-to-export-draftin/) |
 
+### Quick Tasks Completed (v1.3)
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260428-s93 | PREP-01 — add root `.gitignore` (Python/macOS/Jupyter artifacts) and track 7 genuine `solver_core/` scaffolding files (`pyproject.toml`, `pda_analysis_software/__init__.py`, `adapters/__init__.py`, `engine/analysis_engine.py`, `models/{frame2d,truss2d}_model.py`, `results/results.py`). `*.egg-info/` deliberately gitignored, not committed. Worktree-mirror smoke test passed; resolves recurring CF2 friction before Phase 7. | 2026-04-28 | 7d3a933 | [260428-s93-prep-01-commit-untracked-solver-core-sca](./quick/260428-s93-prep-01-commit-untracked-solver-core-sca/) |
+
 ### Debug Sessions Resolved
 
 | # | Description | Date | Commit |
@@ -104,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-26T20:30:00Z
-Stopped at: v1.3 ROADMAP.md written (Phases 7-11, 16 plans, 27 reqs mapped + PREP-01 as quick-task). Ready for PREP-01 quick-task → `/gsd-plan-phase 7`.
-Resume: PREP-01 first, then `/gsd-plan-phase 7`.
+Last session: 2026-04-28T19:51:21Z
+Stopped at: PREP-01 complete (commits b108d5b + 7d3a933). Worktree-mirror friction resolved. Ready for `/gsd-discuss-phase 7`.
+Resume: `/clear`, then `/gsd-discuss-phase 7` (Revit element-to-analytical conversion pushbutton — sibling-repo work in CustomRevitExtension on Revit 2025+; needs Windows host for UAT).
