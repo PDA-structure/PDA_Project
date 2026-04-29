@@ -92,6 +92,11 @@ Full archive: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md)
 **Plans**: 3 plans
 **UI hint**: yes
 
+Plans:
+- [ ] 07-01-PLAN.md — Bundle + Selection + Category Filter (skeleton: bundle.yaml, script.py shell, hybrid input, SUPPORTED_CATEGORIES registry, ISelectionFilter)
+- [ ] 07-02-PLAN.md — Conversion + Idempotency + Transactions (AnalyticalMember.Create + AddAssociation per D-11 reversal; TransactionGroup + per-element Tx; read-back verify; skip-reason taxonomy)
+- [ ] 07-03-PLAN.md — Diagnostics + UAT + Windows Deploy (TaskDialog + Output Window with linkify; 3 RVT fixtures; UAT_RUNBOOK.md; Phase 5 Tier 1 round-trip; Windows manual-copy deploy)
+
 ### Phase 8: Revit Tier 2 — Analytical Exporter Hardening (Table Stakes + revit_meta)
 **Goal**: Engineers can export a hardened canonical PDA JSON from a Revit 2025+ analytical model — including geometry, supports, section properties, and dual-key `revit_meta` for round-trip identity — and round-trip it back through the frame2d UI / `/solve/frame2d` endpoint without loss.
 **Repo target**: Sibling `CustomRevitExtension` (primary) + `pda_project/api_server/app.py` (additive `revit_meta: Optional[dict]` Pydantic passthrough on `Frame2DRequest`)
