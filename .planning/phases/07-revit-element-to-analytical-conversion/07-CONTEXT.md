@@ -43,7 +43,8 @@ Engineers can convert user-selected physical Revit elements (columns, beams, bra
   - `unsupported-category`
   - `missing-location`
   - `missing-section`
-  - `generation-failed` (used when `Document.GenerateMembersFromSelection` returns no analytical member for an element it didn't reject outright — see D-11)
+  - `unsupported-geometry` (location can't be expressed as a bounded Line/Arc/Ellipse — e.g., curved columns, sketch-based elements; added 2026-04-29 with D-11 reversal)
+  - `generation-failed` (used when `AnalyticalMember.Create` raises an unexpected exception or the curve fails Revit's bounded-curve validation despite passing our pre-check)
   - `other-error` (carries raw `str(exc)` for diagnostic visibility)
 
 ### Diagnostic Output
@@ -51,8 +52,13 @@ Engineers can convert user-selected physical Revit elements (columns, beams, bra
 - **D-09 (Q-09):** TaskDialog is always shown, even on a fully-clean run (zero skips). Confirmation > silence — engineer should never wonder "did it actually do anything?"
 
 ### Property Preservation
-- **D-10 (Q-10):** Trust `Document.GenerateMembersFromSelection` for the conversion call itself, but **post-creation read-back verify** every created `AnalyticalMember` has a non-null section and material. Members that come back with missing data are flagged as `missing-section` skip, the (orphaned) analytical member is removed within its transaction, and the physical element is reported in the summary.
-- **D-11 (Q-11):** **REVIT-CONVERT-02 fallback descoped to v1.4+.** The requirement's `AnalyticalToPhysicalAssociationManager.AddAssociation` per-element fallback path is NOT implemented in Phase 7. Elements that `Document.GenerateMembersFromSelection` rejects are logged as `generation-failed`. Re-evaluate after Phase 7 UAT shows real-world skip rate; if v1.3 UAT models exercise the fallback edge case meaningfully, raise as Phase 7.x or fold into Phase 9 spring-support work. **This is a documented requirement softening, not a silent gap.**
+- **D-10 (Q-10):** **Post-creation read-back verify** every created `AnalyticalMember` has a non-null section and material before commit. Members that come back with missing data are flagged as `missing-section` skip, the (orphaned) analytical member is removed within its transaction, and the physical element is reported in the summary. (Section/material association is set automatically by `AnalyticalToPhysicalAssociationManager.AddAssociation` — see D-11.)
+- **D-11 (Q-11) — REVERSED 2026-04-29 per RESEARCH.md Critical Finding:** `Document.GenerateMembersFromSelection` does NOT exist as a public Revit 2025 API method (verified by absence: revitapidocs 2024/2025/2025.3, GitHub, Autodesk Help; user confirmed independently). The verifiable physical→analytical conversion path is the manual two-call pattern, which becomes Phase 7's **primary** (and only) path:
+  1. Derive bounded `Curve` from each physical element (per Pitfall 3 in RESEARCH.md — `LocationCurve.Curve` for framing/bracings; vertical `Line.CreateBound(LocationPoint, LocationPoint+heightZ)` for columns built from base-level / top-level offsets).
+  2. `AnalyticalMember.Create(doc, curve)` (Revit 2023+; requires active transaction; bounded curves only).
+  3. `AnalyticalToPhysicalAssociationManager.AddAssociation(analyticalId, physicalId)` — links the new analytical member to its physical source. Section, material, and parameter associations propagate via this call.
+  4. Read-back per D-10 → if section/material null, flag `missing-section`, transaction rolls back.
+  Skip-reason taxonomy gains one entry: `unsupported-geometry` for elements whose location can't be expressed as a bounded curve (e.g., curved columns, sketch-based elements). The `generation-failed` reason is retained for unexpected `Create` exceptions. **REVIT-CONVERT-02 is now FULLY fulfilled** in Phase 7 (no requirement softening); the original requirement was correct, only the chosen API name was wrong.
 
 ### Testing & UAT
 - **D-12 (Q-12):** **Three RVT UAT fixtures** authored on Mac, manual-copied to Windows host:
@@ -86,8 +92,14 @@ Engineers can convert user-selected physical Revit elements (columns, beams, bra
 ### Q-04 / Q-05 reconciliation (locked decision, not a gray area)
 Q-04 picked the dispatch-table option (c); Q-05 picked YAGNI defer (a). Surface tension. Resolved by adopting the **registry shape** (a Python dict literal) without per-category code branching: both `OST_StructuralColumns` and `OST_StructuralFraming` map to the same `convert_member` function in v1.3. The dict *is* the configuration. v1.5+ adds keys + new handler functions without restructuring the call site. Keeps both decisions honoured: the registry is in place (Q-04) AND there is no premature per-category branching code (Q-05).
 
-### Q-11 documented requirement softening (locked decision)
-Q-11 chose to defer the `AddAssociation` fallback path despite REVIT-CONVERT-02 mandating it. The planner and Phase 8 must read this as: REVIT-CONVERT-02 is partially fulfilled in Phase 7. The primary path (`Document.GenerateMembersFromSelection`) is implemented; the fallback is logged as `generation-failed` and deferred to v1.4+. **This is the only requirement softening for Phase 7.** REQUIREMENTS.md REVIT-CONVERT-02 row should reflect "Partial — fallback descoped to v1.4+" status when Phase 7 closes. Re-raise if UAT fixtures exercise the edge case.
+### Q-11 REVERSED 2026-04-29 — REVIT-CONVERT-02 now fully fulfilled
+Q-11 originally deferred the `AddAssociation` "fallback" on the assumption that `Document.GenerateMembersFromSelection` was the primary API. Research (07-RESEARCH.md Critical Finding) verified by absence — and the user confirmed against revitapi 2025.3 — that `GenerateMembersFromSelection` does NOT exist as a public Revit API method. The two-call manual pattern (`AnalyticalMember.Create` + `AnalyticalToPhysicalAssociationManager.AddAssociation`) is the only verifiable physical→analytical conversion path and is now Phase 7's **primary** path. **REVIT-CONVERT-02 is FULLY fulfilled in Phase 7 — no requirement softening.** REQUIREMENTS.md REVIT-CONVERT-02 row should be updated when Phase 7 closes to reflect that the manual path is the implemented path and the original "primary"/"fallback" framing was based on an incorrect API assumption.
+
+### Curve derivation per element (locked, per Pitfall 3 in RESEARCH.md)
+With the un-descoped two-call path, Phase 7 derives the bounded `Curve` for each physical element before calling `AnalyticalMember.Create`:
+- **Framing / bracings** (`OST_StructuralFraming` family instances): use `element.Location.Curve` (a `LocationCurve`). Bounded by construction.
+- **Columns** (`OST_StructuralColumns` family instances): location is a `LocationPoint`. Build a vertical `Line.CreateBound(base_point, top_point)` where `base_point` and `top_point` are derived from the column's base level + base offset and top level + top offset (Revit parameters: `FAMILY_BASE_LEVEL_OFFSET_PARAM`, `FAMILY_TOP_LEVEL_OFFSET_PARAM`, plus the resolved level Z elevations).
+- **Unsupported geometry** (e.g., curved columns, sketch-based elements where neither path applies): skip with reason `unsupported-geometry`.
 
 ### Cross-phase coupling notes for the planner
 - Phase 7 outputs analytical members. Phase 8 (Tier 2 exporter) reads them. Phase 7 success criterion 4 (Tier 1 round-trip) provides the smoke test that bridges the two — gives Phase 8 a known-good starting point.
@@ -117,9 +129,12 @@ Q-11 chose to defer the `AddAssociation` fallback path despite REVIT-CONVERT-02 
 - `~/Documents/CustomRevitExtension/PDA_customRevit.extension/lib/Snippets/_units_conversion.py` — existing unit helper (read for IronPython 2.7 patterns).
 
 ### External / API references
-- Revit API 2025: `Document.GenerateMembersFromSelection(ElementId[])` — primary conversion API. Returns `IList<ElementId>` of created `AnalyticalMember`s.
-- Revit API 2025: `AnalyticalToPhysicalAssociationManager.GetAssociatedElementId(ElementId)` — idempotency check.
-- Revit API 2025: `AnalyticalToPhysicalAssociationManager.AddAssociation(ElementId, ElementId)` — fallback path (DESCOPED in Phase 7 per D-11; DO NOT implement).
+- Revit API 2023+: `AnalyticalMember.Create(Document, Curve)` — **primary conversion API per D-11 (reversed)**. Static factory in `Autodesk.Revit.DB.Structure`. Curve must be bounded (Line / Arc / Ellipse). Requires active transaction.
+- Revit API 2023+: `AnalyticalToPhysicalAssociationManager.GetAnalyticalToPhysicalAssociationManager(Document)` — static factory for the manager.
+- Revit API 2023+: `AnalyticalToPhysicalAssociationManager.AddAssociation(ElementId analyticalId, ElementId physicalId)` — **primary association call per D-11 (reversed)**. Links analytical→physical 1:1 and propagates section/material/parameters.
+- Revit API 2023+: `AnalyticalToPhysicalAssociationManager.GetAssociatedElementId(ElementId)` — idempotency check; returns `ElementId.InvalidElementId` (NOT `None`) when no association exists.
+- Revit API 2023+: `AnalyticalToPhysicalAssociationManager.HasAssociation(ElementId)` — boolean idempotency convenience.
+- ~~`Document.GenerateMembersFromSelection`~~ — **DOES NOT EXIST as a public API method** (verified by absence 2026-04-29 — RESEARCH.md Critical Finding). Earlier reference in this file was based on an incorrect API name. Do NOT attempt to call.
 - pyRevit `script.get_output()` — Output Window for clickable element links: `output.linkify(element_id)`.
 - pyRevit memory note (project): ribbon stacks max 3 columns; do NOT propose 4-across pushbutton layouts.
 - LearnRevitAPI (Erik Frits) — practical pyRevit/Revit API reference, always include in Revit phase research per project memory.
@@ -155,7 +170,7 @@ Q-11 chose to defer the `AddAssociation` fallback path despite REVIT-CONVERT-02 
 <deferred>
 ## Deferred Ideas
 
-- **`AddAssociation` fallback path** (REVIT-CONVERT-02 partial fulfilment) — v1.4+ if UAT shows it's needed; otherwise fold into Phase 9.
+- ~~`AddAssociation` fallback path (REVIT-CONVERT-02 partial fulfilment)~~ — **No longer deferred.** D-11 was reversed 2026-04-29 after research verified `Document.GenerateMembersFromSelection` does not exist; `AddAssociation` is now Phase 7's primary path. REVIT-CONVERT-02 is fully fulfilled.
 - **Per-category handler split** (Q-04(c) full form) — v1.5+ Phase 15 when slabs/foundations need a different conversion path.
 - **`lib/Snippets/` extraction** of selection-filter / category-handling logic — Phase 8 (already planned in Phase 8 spec as `_pda_export_common.py`).
 - **Bracing-specific pin-release on creation** (Q-02(c)) — engineer can apply manually post-conversion; not a Phase 7 concern.
