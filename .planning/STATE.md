@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 Phase: 07 (revit-element-to-analytical-conversion) — PAUSED at Plan 07-03 Task 2
 Plan: 3 of 3 (07-01 ✓, 07-02 ✓, 07-03 partial: Task 1 done, runbook drafted)
 Status: Paused — awaiting Revit access
-Last activity: 2026-05-02 -- Phase 07 paused at plan 07-03 Task 2 (no Revit access)
+Last activity: 2026-05-02 -- Completed quick task 260502-tz5: PREP-01 janitorial commits (planning artifacts + run_server.py + visualization/ package). Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
 
 ## Resume instructions (next session, when Revit is accessible)
 
@@ -100,6 +100,7 @@ _None._
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260428-s93 | PREP-01 — add root `.gitignore` (Python/macOS/Jupyter artifacts) and track 7 genuine `solver_core/` scaffolding files (`pyproject.toml`, `pda_analysis_software/__init__.py`, `adapters/__init__.py`, `engine/analysis_engine.py`, `models/{frame2d,truss2d}_model.py`, `results/results.py`). `*.egg-info/` deliberately gitignored, not committed. Worktree-mirror smoke test passed; resolves recurring CF2 friction before Phase 7. | 2026-04-28 | 7d3a933 | [260428-s93-prep-01-commit-untracked-solver-core-sca](./quick/260428-s93-prep-01-commit-untracked-solver-core-sca/) |
+| 260502-tz5 | PREP-01 follow-up — three atomic janitorial commits clearing accumulated untracked files: (1) seven `.planning/` artifacts (debug session, strategy note, two seeds, phase-07 patterns, threejs todo, config.json `_auto_chain_active` toggle); (2) `api_server/run_server.py` uvicorn dev launcher; (3) `visualization/` package (`__init__.py` + `truss2d_plots.py` leaf plotting module per CLAUDE.md). Leaf invariant verified — no `solver_core/` or `api_server/` import of `visualization`. 61/61 tests pass. `.claude/` remains untracked by design. | 2026-05-02 | 41e44e7 | [260502-tz5-prep-01-commit-accumulated-untracked-pla](./quick/260502-tz5-prep-01-commit-accumulated-untracked-pla/) |
 
 ### Debug Sessions Resolved
 
