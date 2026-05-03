@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-const API_URL = 'http://localhost:8000';
+const API_URL = ''; // relative — UI is served from the same FastAPI process
 
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
