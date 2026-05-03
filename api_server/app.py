@@ -1,7 +1,9 @@
 import math
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional, Union
 import numpy as np
@@ -61,6 +63,16 @@ engine.register("frame_v2", lambda model: FrameV2Adapter(model))
 # both keys to the same adapter lets callers use either name interchangeably.
 engine.register("frame2d", lambda model: FrameV2Adapter(model))
 engine.register("truss2d", lambda model: Truss2DAdapter(model))
+
+
+# ---- serve UIs as static files (Tailscale / Render-ready) ----
+# Resolves to <repo_root>/ui/ — siblings: api_server/, ui/, solver_core/.
+# Access: /ui/truss2d/index.html and /ui/frame2d/index.html.
+app.mount(
+    "/ui",
+    StaticFiles(directory=str(Path(__file__).resolve().parent.parent / "ui")),
+    name="ui",
+)
 
 
 @app.get("/health")
