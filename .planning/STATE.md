@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
 status: paused
 stopped_at: "Phase 7 plans 07-01 + 07-02 complete (Mac autonomous code work). Plan 07-03 partial: Task 1 (_emit_summary + main rewire) committed in sibling repo as 6aa4156; Task 2 partial (UAT_RUNBOOK.md authored as 9e5e6af). Tasks 2 (.rvt fixtures), 3 (Windows deploy), 4 (manual UAT runs) DEFERRED — require Revit 2025 access (Mac via Parallels or Windows host). Resume with /gsd-execute-phase 7 once Revit is accessible."
-last_updated: "2026-05-02T10:30:00.000Z"
-last_activity: 2026-05-02 -- Phase 07 paused at plan 07-03 Task 2 (no Revit access)
+last_updated: "2026-05-03T07:07:03Z"
+last_activity: 2026-05-03 -- Quick task 260503-b57: FastAPI now serves /ui/truss2d and /ui/frame2d; both UIs use relative API_URL (Tailscale-ready). 7/7 curl tests passed, pytest 61/61 green. Phase 07 still paused awaiting Revit access.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -101,6 +101,7 @@ _None._
 |---|-------------|------|--------|-----------|
 | 260428-s93 | PREP-01 — add root `.gitignore` (Python/macOS/Jupyter artifacts) and track 7 genuine `solver_core/` scaffolding files (`pyproject.toml`, `pda_analysis_software/__init__.py`, `adapters/__init__.py`, `engine/analysis_engine.py`, `models/{frame2d,truss2d}_model.py`, `results/results.py`). `*.egg-info/` deliberately gitignored, not committed. Worktree-mirror smoke test passed; resolves recurring CF2 friction before Phase 7. | 2026-04-28 | 7d3a933 | [260428-s93-prep-01-commit-untracked-solver-core-sca](./quick/260428-s93-prep-01-commit-untracked-solver-core-sca/) |
 | 260502-tz5 | PREP-01 follow-up — three atomic janitorial commits clearing accumulated untracked files: (1) seven `.planning/` artifacts (debug session, strategy note, two seeds, phase-07 patterns, threejs todo, config.json `_auto_chain_active` toggle); (2) `api_server/run_server.py` uvicorn dev launcher; (3) `visualization/` package (`__init__.py` + `truss2d_plots.py` leaf plotting module per CLAUDE.md). Leaf invariant verified — no `solver_core/` or `api_server/` import of `visualization`. 61/61 tests pass. `.claude/` remains untracked by design. | 2026-05-02 | 41e44e7 | [260502-tz5-prep-01-commit-accumulated-untracked-pla](./quick/260502-tz5-prep-01-commit-accumulated-untracked-pla/) |
+| 260503-b57 | Serve UI from FastAPI + switch UIs to relative API_URL — mounted `StaticFiles` at `/ui` in `api_server/app.py` (now serves `/ui/truss2d/index.html` and `/ui/frame2d/index.html`); switched both `script.js` files from hard-coded `http://localhost:8000` to `API_URL = ''` (origin-relative). Single `uvicorn` now serves API + both UIs — Tailscale-serve / Render-ready. 7/7 curl matrix passed (health + both UIs + both `/solve` endpoints + 404 sanity), pytest 61/61 green. Browser UAT deferred to user. | 2026-05-03 | b7bb211 + e64e496 | [260503-b57-serve-ui-from-fastapi-and-switch-script-](./quick/260503-b57-serve-ui-from-fastapi-and-switch-script-/) |
 
 ### Debug Sessions Resolved
 
@@ -115,6 +116,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-28T21:15:00Z
-Stopped at: Phase 7 discuss complete via --power mode (15/15 answered). 07-CONTEXT.md captures all decisions including two reconciliations: Q-04+Q-05 dispatch-table-with-one-handler, Q-11 fallback descope to v1.4+ (REVIT-CONVERT-02 partial fulfilment, documented). Commit 4202456.
-Resume: `/clear`, then `/gsd-plan-phase 7`. Sibling-repo work in `~/Documents/CustomRevitExtension/PDA_customRevit.extension/`; Windows host required for UAT (manual-copy deploy + pyRevit Reload).
+Last session: 2026-05-03T07:07:03Z
+Stopped at: Quick task 260503-b57 complete: FastAPI now serves /ui/truss2d and /ui/frame2d; both UIs use relative API_URL. 7/7 curl tests passed, pytest 61/61 green. Phase 07 still paused awaiting Revit access.
+Resume: User browser-UAT both UIs at `http://127.0.0.1:8000/ui/<solver>/index.html` to confirm interactive solve flow, then wire `tailscale serve --bg --https=443 http://127.0.0.1:8000` (separate quick task). Phase 7 resume still gated on Revit 2025 access — `/gsd-execute-phase 7` from plan 07-03 Task 2 once available.
