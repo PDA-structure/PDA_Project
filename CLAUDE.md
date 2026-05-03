@@ -115,6 +115,12 @@ Key design principles:
 - Unit conversions in the UI: E GPa→Pa (×1e9), A cm²→m² (×1e-4), I cm⁴→m⁴ (×1e-8)
 - Endpoints: `GET /health`, `POST /solve/truss2d`, `POST /solve/frame2d`
 - `/health` returns `{"status": "ok", "solvers": [...]}` — useful for verifying solver registration
+- Tailnet access (tailscale serve, persistent across reboots): with uvicorn running on `127.0.0.1:8000`, the API and UIs are reachable from any device on the same tailnet via `https://<mac-name>.<tailnet>.ts.net/...` (current host: `https://catrins-imac.tail568b7e.ts.net/`). Endpoints: `/health`, `/ui/truss2d/index.html`, `/ui/frame2d/index.html`, `POST /solve/{truss2d,frame2d}`.
+- Tailscale runbook:
+  - Register proxy (one-time, persists): `tailscale serve --bg 8000`
+  - Inspect: `tailscale serve status`
+  - Tear down: `tailscale serve reset`
+  - `tailscale funnel` (public internet exposure) is intentionally NOT used — tailnet-only.
 
 ## UI conventions (both truss2d and frame2d)
 - Canvas grid: GRID=20 px, UNIT=1 m → 1 grid square = 1 m
