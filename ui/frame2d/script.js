@@ -105,6 +105,9 @@ const MODE_LABELS = {
   editNode: 'Edit Node', delete: 'Delete',
 };
 
+const SUPPORT_MODES = new Set(['fixed', 'pinned', 'rollerX', 'rollerY', 'spring']);
+const LOAD_MODES    = new Set(['loadX', 'loadY', 'loadMoment', 'udl']);
+
 function setMode(m) {
   mode = m;
   currentMemberStart = null;
@@ -112,6 +115,18 @@ function setMode(m) {
     b.classList.toggle('active', b.dataset.mode === m)
   );
   document.getElementById('modeLabel').textContent = MODE_LABELS[m] || m;
+
+  // Auto-enable the matching visibility layer so clicks always produce
+  // visible feedback. Without this, supports/loads added with chkSupports/
+  // chkLoads unchecked land in the data array but render nothing —
+  // the symptom that caused the long-running misdiagnosed "freeze after
+  // load" debug session (.planning/debug/frame2d-load-then-add-support.md).
+  if (SUPPORT_MODES.has(m)) {
+    document.getElementById('chkSupports').checked = true;
+  } else if (LOAD_MODES.has(m)) {
+    document.getElementById('chkLoads').checked = true;
+  }
+  draw();
 }
 
 // ── Canvas click ──────────────────────────────────────────────────────────
