@@ -39,6 +39,35 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Theme bootstrap ───────────────────────────────────────────────────────
+(function initTheme() {
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    const ico = document.getElementById('themeToggleIcon');
+    const lbl = document.getElementById('themeToggleLabel');
+    if (ico) ico.textContent = (t === 'dark') ? '☀' : '☾';   // ☀ / ☾
+    if (lbl) lbl.textContent = (t === 'dark') ? 'Light' : 'Dark';
+  }
+  let saved = null;
+  try { saved = localStorage.getItem('frame2d_theme'); } catch (_) {}
+  const prefersDark = window.matchMedia &&
+                      window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initial = saved || (prefersDark ? 'dark' : 'light');
+  applyTheme(initial);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const tog = document.getElementById('themeToggle');
+    if (!tog) return;
+    // Sync button label/icon now that the DOM exists.
+    applyTheme(document.documentElement.dataset.theme || initial);
+    tog.addEventListener('click', function () {
+      const next = (document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem('frame2d_theme', next); } catch (_) {}
+    });
+  });
+})();
+
 const API_URL = ''; // relative — UI is served from the same FastAPI process
 
 const canvas = document.getElementById('canvas');
