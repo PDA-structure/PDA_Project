@@ -844,9 +844,10 @@ function drawMembers() {
 
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
-      color = Math.abs(f) < 1e-3 ? cssVar('--canvas-zero')
+      const isZero = Math.abs(f) < 1e-3;
+      color = isZero ? cssVar('--canvas-zero')
             : (f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression'));
-      forceLabel = (f / 1000).toFixed(2) + ' kN';
+      forceLabel = isZero ? null : (f / 1000).toFixed(2) + ' kN';
     }
 
     ctx.strokeStyle = color;
