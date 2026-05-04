@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 Phase: 07 (revit-element-to-analytical-conversion) — PAUSED at Plan 07-03 Task 2
 Plan: 3 of 3 (07-01 ✓, 07-02 ✓, 07-03 partial: Task 1 done, runbook drafted)
 Status: Paused — awaiting Revit access
-Last activity: 2026-05-04 -- Completed quick task 260504-lti: Frame2D UI followup-1 polish in 3 atomic commits — theme-aware canvas colours via cssVar token bridge (30 tokens migrated), zero-value force-label suppression (no more "0.00 kN" junk text), lighter dark-mode buttons, smaller default canvas labels (10px) + live label-size slider. Validate mode: plan-checker 1 revision, verifier 8/8, browser UAT 10/10 approved. Two follow-ups still pending (collapsible right-panel sections, results panel below canvas + reactions on canvas). Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
+Last activity: 2026-05-04 -- PAUSED quick task 260504-nwi (Frame2D UI followup-2: collapsible right-panel sections via native <details>/<summary>) after plan-checker iteration 1. Plan written, no code changes. Plan-checker found 1 BLOCKER (Task 1+2 verifiers use pathspec '-- ui/frame2d/*' which filters diff before grep gate, silently allowing safety-contract violations) + 2 warnings (hardcoded base hash 1869d33 in script.js byte-equality check; left/right rail naming inconsistency). Resume sequence + fix details in .planning/quick/260504-nwi-.../PAUSE.md. Last completed: 260504-lti (followup-1) — 8/8 verified, 10/10 UAT approved. One follow-up still pending after nwi resumes: results panel below canvas + reactions on canvas. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
 
 ## Resume instructions (next session, when Revit is accessible)
 
