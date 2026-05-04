@@ -794,13 +794,34 @@ function draw() {
 }
 
 function drawGrid() {
+  // drawGrid runs with the world transform active (set in draw()).
+  // Inverse-transform canvas corners → world rect → snap to GRID multiples
+  // so the grid extends to whatever world region is currently visible
+  // and follows pan/zoom indefinitely.
   ctx.strokeStyle = '#eee';
-  ctx.lineWidth = 0.5;
-  for (let x = 0; x < canvas.width; x += GRID) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+  ctx.lineWidth = 0.5 / view.scale;   // keep lines visually 0.5 px regardless of zoom
+
+  const worldLeft   = (0             - view.tx) / view.scale;
+  const worldRight  = (canvas.width  - view.tx) / view.scale;
+  const worldTop    = (0             - view.ty) / view.scale;
+  const worldBottom = (canvas.height - view.ty) / view.scale;
+
+  const xStart = Math.floor(worldLeft   / GRID) * GRID;
+  const xEnd   = Math.ceil (worldRight  / GRID) * GRID;
+  const yStart = Math.floor(worldTop    / GRID) * GRID;
+  const yEnd   = Math.ceil (worldBottom / GRID) * GRID;
+
+  for (let x = xStart; x <= xEnd; x += GRID) {
+    ctx.beginPath();
+    ctx.moveTo(x, worldTop);
+    ctx.lineTo(x, worldBottom);
+    ctx.stroke();
   }
-  for (let y = 0; y < canvas.height; y += GRID) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  for (let y = yStart; y <= yEnd; y += GRID) {
+    ctx.beginPath();
+    ctx.moveTo(worldLeft, y);
+    ctx.lineTo(worldRight, y);
+    ctx.stroke();
   }
 }
 
