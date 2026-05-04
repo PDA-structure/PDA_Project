@@ -120,25 +120,13 @@ None — plan executed exactly as written. The auto task's eight steps each land
 7. No media queries added.
 8. No toolbar-collapse JS added.
 
-## Pending — Task 2 (Manual UAT, checkpoint:human-verify)
+## Task 2 (Manual UAT, checkpoint:human-verify) — APPROVED 2026-05-04 (with note)
 
-**Awaiting user verification.** Task 2 is a manual browser UAT — the auto commit made the actual layout flip; this checkpoint validates it visually + functionally + as a regression smoke. The manual UAT script under `<how-to-verify>` in the plan covers:
+User reviewed the live UI and confirmed: "this is great for today, i have checked a few bits and look already better." Approved.
 
-- Layout — horizontal toolbar at top, canvas filling below, results panel still below canvas.
-- Wrap behaviour — OBSERVE AND REPORT (rows occupied at user's viewport, judgement on whether intermediate-width wrap is acceptable; deferred follow-up if ugly).
-- All 10 disclosure cards still collapse/expand (regression on nwi).
-- All toolbar buttons still trigger correct modes (regression on script.js byte-equality).
-- Build + solve a cantilever — full regression smoke (status "Solved ✓", M ≈ 50 kNm, V ≈ 10 kN, results panel renders correctly below canvas).
-- Diagram toggles (BMD/SFD/labels — lti regression).
-- Save / Load JSON regression.
-- Dark theme regression (lti).
-- Resize during use.
-- DevTools sanity check (computed flex-direction values).
-- Diff sanity (developer check — `git diff 77796ab..HEAD -- ui/frame2d/script.js` returns zero, etc.).
+**Single follow-up flagged:** toolbar wrap behaviour on window resize "may need to be improved at some point" — captured as a backlog todo at `.planning/todos/pending/2026-05-04-frame2d-toolbar-wrap-improvement.md` with concrete remediation options ranked by effort (tighter min-width → smaller summary text → card grouping consolidation → media-query breakpoints → icon-only collapsed mode). Recommended next step is options 1+2 as a CSS-only follow-up; escalate to option 3 (card consolidation) if still cramped after that.
 
-**User signal required:** type "approved" or describe any divergence so an additional commit / revert can be made.
-
-**Open question for the user:** does the horizontal toolbar feel like an improvement over the vertical rail, on your normal viewport size? If not, the rs3 commit is cleanly revertable with `git revert 9ef7eaa` — single-commit rollback restores the lti+nwi vertical-rail layout exactly.
+The horizontal-toolbar layout itself is a confirmed improvement over the vertical rail at the user's normal viewport. rs3 stays in main.
 
 ## Rollback
 
