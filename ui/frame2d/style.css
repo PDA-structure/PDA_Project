@@ -56,6 +56,38 @@
   --font-size-sm: 12px;
   --font-size-md: 13px;
   --font-size-lg: 16px;
+
+  /* ── Canvas content colours (theme-aware) ─────────────────── */
+  --canvas-stroke: var(--color-accent);             /* default member / outline (aliases brand navy) */
+  --canvas-bar: #555555;                            /* bar-element member colour */
+  --canvas-node: #e53935;                           /* node circle fill (red marker) */
+  --canvas-label: #1a2744;                          /* default label text colour */
+  --canvas-grid: var(--color-grid);                 /* aliases j8m grid token (auto light/dark) */
+  --canvas-support: #1a2744;                        /* fixed/pinned/roller glyph stroke + fill */
+  --canvas-spring: #6a1b9a;                         /* spring support glyph */
+  --canvas-load: #2e7d32;                           /* X/Y node-load arrow */
+  --canvas-load-label: #1b5e20;                     /* node-load value text */
+  --canvas-load-moment: #6a1b9a;                    /* moment-load arc + arrowhead */
+  --canvas-load-moment-label: #4a148c;              /* moment-load value text */
+  --canvas-udl: #7b1fa2;                            /* vertical UDL arrows */
+  --canvas-udl-label: #4a148c;                      /* vertical UDL value text */
+  --canvas-udl-x: #0288d1;                          /* horizontal UDL arrows */
+  --canvas-udl-x-label: #01579b;                    /* horizontal UDL value text */
+  --canvas-tension: var(--color-info);              /* member force > 0 (aliases #1565c0) */
+  --canvas-compression: var(--color-danger-strong); /* member force < 0 (aliases #b71c1c) */
+  --canvas-zero: #999999;                           /* member force ~0 + diagram baselines */
+  --canvas-bmd: #1565c0;                            /* BMD outline colour */
+  --canvas-bmd-fill: rgba(33, 150, 243, 0.25);      /* BMD polygon fill */
+  --canvas-sfd: #2e7d32;                            /* SFD outline colour */
+  --canvas-sfd-fill: rgba(76, 175, 80, 0.25);       /* SFD polygon fill */
+  --canvas-deflected: rgba(255, 152, 0, 0.75);      /* deflected-shape outline */
+  --canvas-deflected-label: #e65100;                /* δ_max label colour */
+  --canvas-pin-release: #ff6f00;                    /* pin-release circle outline */
+  --canvas-pin-release-fill: #ffffff;               /* pin-release circle fill */
+  --canvas-label-bg: rgba(255, 255, 255, 0.88);     /* labelText() text-backing rect */
+  --canvas-member-preview: #3f51b5;                 /* per-member E/I/A override outline */
+  --canvas-diagnostic: #e53935;                     /* offending nodes/members highlight */
+  --canvas-label-size: 10px;                        /* default canvas label font size (Task 3 reads this) */
 }
 
 /* ── @font-face: self-hosted Inter ─────────────────────────── */
@@ -338,4 +370,35 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
   --color-danger-bg-soft: #3a2227;
   --color-accent-spring: #ab47bc;
   --color-accent-spring-border: #6a358a;
+
+  /* ── Canvas content colours — dark theme overrides ────────── */
+  --canvas-stroke: #cfd6e0;                  /* members visible on dark canvas */
+  --canvas-bar: #9aa1aa;                     /* bar lighter on dark */
+  --canvas-node: #ff7373;                    /* node marker — softer red on dark */
+  --canvas-label: #e6e8eb;                   /* labels readable on dark canvas */
+  /* --canvas-grid omitted — aliases var(--color-grid) which is already overridden above */
+  --canvas-support: #cfd6e0;                 /* support glyphs — match member stroke */
+  --canvas-spring: #ce93d8;                  /* spring purple — lifted for dark */
+  --canvas-load: #6abf6e;                    /* load green — brighter on dark */
+  --canvas-load-label: #a5d6a7;
+  --canvas-load-moment: #ce93d8;
+  --canvas-load-moment-label: #e1bee7;
+  --canvas-udl: #ce93d8;                     /* purple UDL on dark */
+  --canvas-udl-label: #e1bee7;
+  --canvas-udl-x: #5aa9e6;                   /* horizontal UDL blue — lifted */
+  --canvas-udl-x-label: #90caf9;
+  /* --canvas-tension omitted — aliases var(--color-info) already overridden */
+  /* --canvas-compression omitted — aliases var(--color-danger-strong) already overridden */
+  --canvas-zero: #6f747c;                    /* zero-force grey — visible on dark */
+  --canvas-bmd: #5aa9e6;
+  --canvas-bmd-fill: rgba(90, 169, 230, 0.30);
+  --canvas-sfd: #6abf6e;
+  --canvas-sfd-fill: rgba(106, 191, 110, 0.30);
+  --canvas-deflected: rgba(255, 183, 77, 0.85);
+  --canvas-deflected-label: #ffb74d;
+  --canvas-pin-release: #ffb74d;
+  --canvas-pin-release-fill: #161a20;        /* match dark canvas-bg */
+  --canvas-label-bg: rgba(22, 26, 32, 0.88); /* dark backing rect for labels */
+  --canvas-member-preview: #6b8acc;
+  --canvas-diagnostic: #ff7373;
 }

@@ -73,6 +73,13 @@ const API_URL = ''; // relative — UI is served from the same FastAPI process
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
 
+// ── CSS variable bridge ───────────────────────────────────────────────────
+// Reads a CSS custom property from :root (light) or [data-theme="dark"] (dark).
+// Used by every canvas-drawing function so colours follow the active theme.
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 const GRID = 20;
 const UNIT = 1;
 
@@ -798,7 +805,7 @@ function drawGrid() {
   // Inverse-transform canvas corners → world rect → snap to GRID multiples
   // so the grid extends to whatever world region is currently visible
   // and follows pan/zoom indefinitely.
-  ctx.strokeStyle = '#eee';
+  ctx.strokeStyle = cssVar('--canvas-grid');
   ctx.lineWidth = 0.5 / view.scale;   // keep lines visually 0.5 px regardless of zoom
 
   const worldLeft   = (0             - view.tx) / view.scale;
@@ -832,12 +839,13 @@ function drawMembers() {
     if (!n1 || !n2) return;
 
     // colour from results
-    let color = m.type === 'bar' ? '#555' : '#1a2744';
+    let color = m.type === 'bar' ? cssVar('--canvas-bar') : cssVar('--canvas-stroke');
     let forceLabel = null;
 
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
-      color = Math.abs(f) < 1e-3 ? '#999' : (f > 0 ? '#1565c0' : '#b71c1c');
+      color = Math.abs(f) < 1e-3 ? cssVar('--canvas-zero')
+            : (f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression'));
       forceLabel = (f / 1000).toFixed(2) + ' kN';
     }
 
@@ -854,7 +862,7 @@ function drawMembers() {
 
     // override indicator — blue outline when member has per-member E/I/A
     if (m.E_override != null || m.I_override != null || m.A_override != null) {
-      ctx.strokeStyle = '#3f51b5';
+      ctx.strokeStyle = cssVar('--canvas-member-preview');
       ctx.lineWidth = 4;
       ctx.setLineDash([]);
       ctx.beginPath();
@@ -896,10 +904,10 @@ function drawPinCircle(x1, y1, x2, y2, end) {
   const cy = end === 'start' ? y1 + uy*offset : y2 - uy*offset;
   ctx.beginPath();
   ctx.arc(cx, cy, 5, 0, Math.PI*2);
-  ctx.strokeStyle = '#ff6f00';
+  ctx.strokeStyle = cssVar('--canvas-pin-release');
   ctx.lineWidth = 1.5;
   ctx.stroke();
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = cssVar('--canvas-pin-release-fill');
   ctx.fill();
 }
 
@@ -908,9 +916,9 @@ function drawNodes() {
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI*2);
-    ctx.fillStyle = '#e53935';
+    ctx.fillStyle = cssVar('--canvas-node');
     ctx.fill();
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = cssVar('--canvas-label');
     ctx.font = 'bold 11px Arial';
     ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
   });
@@ -935,7 +943,7 @@ function drawNodes() {
  */
 function drawDiagnosticOverlays() {
   const sc  = getSymbolScale();
-  const RED = '#e53935';
+  const RED = cssVar('--canvas-diagnostic');
 
   // 1. Offending members — red thick solid line on top of drawMembers().
   if (offendingMembers.length > 0) {
@@ -1005,7 +1013,7 @@ function drawSupports() {
 function drawFixed(x, y) {
   const sc = getSymbolScale();
   const w = 22 * sc, h = 7 * sc;
-  ctx.fillStyle = '#1a2744';
+  ctx.fillStyle = cssVar('--canvas-support');
   ctx.fillRect(x - w/2, y, w, h);
   drawHatch(x - w/2 - 2*sc, x + w/2 + 2*sc, y + h, 'H');
 }
@@ -1013,7 +1021,7 @@ function drawFixed(x, y) {
 function drawPin(x, y) {
   const sc = getSymbolScale();
   const h = 14 * sc, hw = 12 * sc;
-  ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = cssVar('--canvas-support'); ctx.fillStyle = cssVar('--canvas-support'); ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - hw, y + h); ctx.lineTo(x + hw, y + h);
   ctx.closePath(); ctx.fill();
@@ -1025,7 +1033,7 @@ function drawPin(x, y) {
 function drawRollerH(x, y) {
   const sc = getSymbolScale();
   const h = 12 * sc, hw = 11 * sc, r = 3 * sc;
-  ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = cssVar('--canvas-support'); ctx.fillStyle = cssVar('--canvas-support'); ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - hw, y + h); ctx.lineTo(x + hw, y + h);
   ctx.closePath(); ctx.stroke();
@@ -1041,7 +1049,7 @@ function drawRollerH(x, y) {
 function drawRollerV(x, y) {
   const sc = getSymbolScale();
   const h = 12 * sc, hh = 11 * sc, r = 3 * sc;
-  ctx.strokeStyle = '#1a2744'; ctx.fillStyle = '#1a2744'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = cssVar('--canvas-support'); ctx.fillStyle = cssVar('--canvas-support'); ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(x, y); ctx.lineTo(x - h, y - hh); ctx.lineTo(x - h, y + hh);
   ctx.closePath(); ctx.stroke();
@@ -1060,7 +1068,7 @@ function drawRollerV(x, y) {
 function drawSpring(x, y, Kx, Ky, Ktheta) {
   const sc = getSymbolScale();
   ctx.save();
-  ctx.strokeStyle = '#6a1b9a'; ctx.fillStyle = '#6a1b9a'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = cssVar('--canvas-spring'); ctx.fillStyle = cssVar('--canvas-spring'); ctx.lineWidth = 1.5;
 
   // Horizontal coil on -X side of node for Kx
   if (Kx != null) {
@@ -1118,7 +1126,7 @@ function drawSpring(x, y, Kx, Ky, Ktheta) {
   if (labelParts.length) {
     ctx.font = '9px Arial';
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#6a1b9a';
+    ctx.fillStyle = cssVar('--canvas-spring');
     ctx.fillText(labelParts.join(' · '), x + 10 * sc, y - 10 * sc);
   }
 
@@ -1126,7 +1134,7 @@ function drawSpring(x, y, Kx, Ky, Ktheta) {
 }
 
 function drawHatch(from, to, base, dir) {
-  ctx.strokeStyle = '#1a2744'; ctx.lineWidth = 1;
+  ctx.strokeStyle = cssVar('--canvas-support'); ctx.lineWidth = 1;
   const spacing = 5, len = 6;
   const count = Math.ceil((to - from) / spacing);
   for (let i = 0; i <= count; i++) {
@@ -1147,7 +1155,7 @@ function drawNodeLoads() {
   nodeLoads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
-    ctx.strokeStyle = '#2e7d32'; ctx.fillStyle = '#2e7d32'; ctx.lineWidth = 2;
+    ctx.strokeStyle = cssVar('--canvas-load'); ctx.fillStyle = cssVar('--canvas-load'); ctx.lineWidth = 2;
 
     if (l.direction === 'y') {
       const sign = l.magnitude < 0 ? 1 : -1;
@@ -1155,7 +1163,7 @@ function drawNodeLoads() {
       ctx.beginPath();
       ctx.moveTo(n.x - arrowHW, n.y + sign*arrowTip); ctx.lineTo(n.x, n.y + sign*arrowLen); ctx.lineTo(n.x + arrowHW, n.y + sign*arrowTip);
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1b5e20';
+      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x, n.y + sign*(arrowLen + 14*sc));
 
     } else if (l.direction === 'x') {
@@ -1164,14 +1172,14 @@ function drawNodeLoads() {
       ctx.beginPath();
       ctx.moveTo(n.x + sign*arrowTip, n.y - arrowHW); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.lineTo(n.x + sign*arrowTip, n.y + arrowHW);
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#1b5e20';
+      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x + sign*(arrowLen + 12*sc), n.y - 6);
 
     } else if (l.direction === 'moment') {
       // curved arrow for moment
       const r = 14 * sc;
       const sign = l.magnitude > 0 ? 1 : -1;  // + = CCW
-      ctx.strokeStyle = '#6a1b9a'; ctx.fillStyle = '#6a1b9a'; ctx.lineWidth = 2;
+      ctx.strokeStyle = cssVar('--canvas-load-moment'); ctx.fillStyle = cssVar('--canvas-load-moment'); ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(n.x, n.y, r, sign > 0 ? 0.3 : Math.PI + 0.3, sign > 0 ? Math.PI * 1.7 : Math.PI * 2.7);
       ctx.stroke();
@@ -1186,7 +1194,7 @@ function drawNodeLoads() {
       ctx.lineTo(ax, ay);
       ctx.lineTo(ax + arrowSz*Math.cos(tang + 0.5), ay + arrowSz*Math.sin(tang + 0.5));
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#4a148c';
+      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-moment-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kNm', n.x, n.y - r - 6);
     }
   });
@@ -1196,7 +1204,7 @@ function drawNodeLoads() {
 function drawNodeLabels() {
   ctx.save();
   ctx.font = '600 11px Arial';
-  ctx.fillStyle = '#1a2744';
+  ctx.fillStyle = cssVar('--canvas-label');
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   nodes.forEach(function(n, i) {
@@ -1219,7 +1227,7 @@ function drawUDLs() {
     const sign = m.udl > 0 ? 1 : -1;   // positive = downward in canvas (y increases down)
     const steps = Math.max(2, Math.floor(Math.hypot(n2.x-n1.x, n2.y-n1.y) / 22));
 
-    ctx.strokeStyle = '#7b1fa2'; ctx.fillStyle = '#7b1fa2'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = cssVar('--canvas-udl'); ctx.fillStyle = cssVar('--canvas-udl'); ctx.lineWidth = 1.5;
 
     // top connecting line
     ctx.beginPath();
@@ -1246,7 +1254,7 @@ function drawUDLs() {
     // label
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#4a148c';
+    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-label');
     ctx.fillText((Math.abs(m.udl)/1000).toFixed(1)+' kN/m', mx, my - arrowLen*sign - 6);
   });
 
@@ -1264,7 +1272,7 @@ function drawUDLs() {
     const len = Math.hypot(dx, dy) || 1;
 
     const steps = Math.max(2, Math.floor(len / 22));
-    ctx.strokeStyle = '#0288d1'; ctx.fillStyle = '#0288d1'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = cssVar('--canvas-udl-x'); ctx.fillStyle = cssVar('--canvas-udl-x'); ctx.lineWidth = 1.5;
 
     // Horizontal baseline along the arrow tails (offset horizontally from member)
     const baseOffsetX = -arrowLen * sign;
@@ -1295,7 +1303,7 @@ function drawUDLs() {
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = '#01579b';
+    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-x-label');
     ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx - arrowLen * sign * 1.8, my);
   });
 }
@@ -1310,7 +1318,7 @@ function labelText(text, x, y, color) {
   ctx.textBaseline = 'middle';
   const w = ctx.measureText(text).width;
   const h = fs + 4;
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillStyle = cssVar('--canvas-label-bg');
   ctx.fillRect(x - w/2 - 2, y - h/2, w + 4, h);
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
@@ -1331,7 +1339,7 @@ function drawDeflected() {
   const I = parseFloat(document.getElementById('inputI').value) * 1e-8;
   const UG = results.UG;
   const NSEG = 20;
-  ctx.strokeStyle = 'rgba(255,152,0,0.75)';
+  ctx.strokeStyle = cssVar('--canvas-deflected');
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 4]);
   let maxTransverse = 0, maxLX = 0, maxLY = 0;
@@ -1392,7 +1400,7 @@ function drawDeflected() {
   });
   ctx.setLineDash([]);
   if (maxTransverse > 1e-8) {
-    labelText('δ=' + (maxTransverse * 1000).toFixed(3) + ' mm', maxLX, maxLY - 12, '#e65100');
+    labelText('δ=' + (maxTransverse * 1000).toFixed(3) + ' mm', maxLX, maxLY - 12, cssVar('--canvas-deflected-label'));
   }
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
@@ -1430,8 +1438,8 @@ function drawBMD() {
   const diagMult = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
   const scaleFactor = (0.2 * minMbrLen) / maxMoment * diagMult;
 
-  ctx.fillStyle = 'rgba(33, 150, 243, 0.25)';
-  ctx.strokeStyle = '#1565c0';
+  ctx.fillStyle = cssVar('--canvas-bmd-fill');
+  ctx.strokeStyle = cssVar('--canvas-bmd');
   ctx.lineWidth = 1.5;
 
   members.forEach((m, idx) => {
@@ -1462,9 +1470,9 @@ function drawBMD() {
     ctx.fill();
     ctx.stroke();
 
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
+    ctx.strokeStyle = cssVar('--canvas-zero'); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(n1.x, n1.y); ctx.lineTo(n2.x, n2.y); ctx.stroke();
-    ctx.fillStyle = 'rgba(33, 150, 243, 0.25)'; ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = cssVar('--canvas-bmd-fill'); ctx.strokeStyle = cssVar('--canvas-bmd'); ctx.lineWidth = 1.5;
   });
 
   if (document.getElementById('chkDiagLabels').checked) {
@@ -1482,12 +1490,12 @@ function drawBMD() {
       const L_m = memberLengthReal(m);
       if (Math.abs(Mi) > maxMoment * 0.01) {
         const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
-        labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, '#1565c0');
+        labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-bmd'));
       }
       const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
       if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
         const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
-        labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, '#1565c0');
+        labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-bmd'));
       }
       if (m.udl && m.type !== 'bar') {
         let peakM = 0, peakXi = 0.5;
@@ -1499,7 +1507,7 @@ function drawBMD() {
         if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
           const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
           const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
-          labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, '#1565c0');
+          labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, cssVar('--canvas-bmd'));
         }
       }
     });
@@ -1526,8 +1534,8 @@ function drawSFD() {
   const diagMult = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
   const scaleFactor = (0.2 * minMbrLen) / maxShear * diagMult;
 
-  ctx.fillStyle = 'rgba(76, 175, 80, 0.25)';
-  ctx.strokeStyle = '#2e7d32';
+  ctx.fillStyle = cssVar('--canvas-sfd-fill');
+  ctx.strokeStyle = cssVar('--canvas-sfd');
   ctx.lineWidth = 1.5;
 
   members.forEach((m, idx) => {
@@ -1556,9 +1564,9 @@ function drawSFD() {
     ctx.fill();
     ctx.stroke();
 
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1;
+    ctx.strokeStyle = cssVar('--canvas-zero'); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(n1.x, n1.y); ctx.lineTo(n2.x, n2.y); ctx.stroke();
-    ctx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = cssVar('--canvas-sfd-fill'); ctx.strokeStyle = cssVar('--canvas-sfd'); ctx.lineWidth = 1.5;
   });
 
   if (document.getElementById('chkDiagLabels').checked) {
@@ -1575,23 +1583,23 @@ function drawSFD() {
       const Vi = shears[idx][0], Vj = -shears[idx][1];
       if (Math.abs(Vi) > maxShear * 0.01) {
         const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
-        labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, '#2e7d32');
+        labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-sfd'));
       }
       if (Math.abs(Vj) > maxShear * 0.01) {
         const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
-        labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, '#2e7d32');
+        labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-sfd'));
       }
       if (Vi * Vj < 0) {
         const xi0 = Vi / (Vi - Vj);
         const zx = n1.x + xi0 * dx, zy = n1.y + xi0 * dy;
         ctx.save();
-        ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
+        ctx.strokeStyle = cssVar('--canvas-sfd'); ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(zx + perpX * 6, zy + perpY * 6);
         ctx.lineTo(zx - perpX * 6, zy - perpY * 6);
         ctx.stroke();
         ctx.restore();
-        labelText('V=0', zx, zy, '#2e7d32');
+        labelText('V=0', zx, zy, cssVar('--canvas-sfd'));
       }
     });
   }
