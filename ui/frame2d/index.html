@@ -21,14 +21,14 @@
     <!-- Left panel -->
     <aside class="panel">
 
-      <section class="panel-section">
-        <h3>Geometry</h3>
+      <details class="card" open>
+        <summary>Geometry</summary>
         <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
         <button class="tool-btn" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">🔗 Add Member</button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Supports</h3>
+      <details class="card" open>
+        <summary>Supports</summary>
         <button class="tool-btn support-btn" data-mode="fixed" onclick="setMode('fixed')"
           title="Fully fixed — restrains X, Y and rotation">
           ▪ Fixed
@@ -54,38 +54,38 @@
           〰 Spring
           <span class="support-tag">Kx | Ky | Kθ</span>
         </button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Node Loads</h3>
+      <details class="card" open>
+        <summary>Node Loads</summary>
         <button class="tool-btn" data-mode="loadX"      onclick="setMode('loadX')"      title="Apply horizontal force at a node">→ Force X</button>
         <button class="tool-btn" data-mode="loadY"      onclick="setMode('loadY')"      title="Apply vertical force at a node">↓ Force Y</button>
         <button class="tool-btn" data-mode="loadMoment" onclick="setMode('loadMoment')" title="Apply moment at a node">↺ Moment</button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Member Loads</h3>
+      <details class="card" open>
+        <summary>Member Loads</summary>
         <button class="tool-btn" data-mode="udl" onclick="setMode('udl')" title="Apply uniform distributed load to a member (vertical and/or horizontal)">▤ UDL</button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Member Properties</h3>
+      <details class="card" open>
+        <summary>Member Properties</summary>
         <button class="tool-btn" data-mode="toggleBar"  onclick="setMode('toggleBar')"  title="Toggle member between beam (bending) and bar (axial only)">⇌ Beam / Bar</button>
         <button class="tool-btn" data-mode="pinLeft"    onclick="setMode('pinLeft')"    title="Toggle rotation release at the start node of a member">◎ Pin — Left end</button>
         <button class="tool-btn" data-mode="pinRight"   onclick="setMode('pinRight')"   title="Toggle rotation release at the end node of a member">◎ Pin — Right end</button>
         <button class="tool-btn" data-mode="memberProps" onclick="setMode('memberProps')" title="Click a member to assign per-member E, I, A overrides">&#x229e; Per-Member E/I/A</button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Edit</h3>
+      <details class="card" open>
+        <summary>Edit</summary>
         <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
         <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
         <button class="tool-btn" data-mode="delete" onclick="setMode('delete')"  title="Delete a node or member">🗑 Delete</button>
         <button class="tool-btn danger" onclick="resetAll()">🔄 Reset All</button>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>File</h3>
+      <details class="card" open>
+        <summary>File</summary>
         <button class="tool-btn" id="btnSave" onclick="saveModel()" title="Download structure as JSON" disabled>
           &#x1F4BE; Save JSON
         </button>
@@ -93,10 +93,10 @@
           &#x1F4C2; Load JSON
         </button>
         <input type="file" id="fileInput" accept=".json" style="display:none">
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Material Properties</h3>
+      <details class="card" open>
+        <summary>Material Properties</summary>
         <label>E (GPa)
           <input type="number" id="inputE" value="200" min="0" step="1">
         </label>
@@ -106,10 +106,10 @@
         <label>A (cm²)
           <input type="number" id="inputA" value="100" min="0" step="1">
         </label>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Section Calculator</h3>
+      <details class="card" open>
+        <summary>Section Calculator</summary>
         <label class="panel-label">Section type
           <select id="sectionType" style="width:100%;font-size:12px;padding:4px 6px;border:1px solid #ccc;border-radius:4px;">
             <option value="rectangle">Rectangle</option>
@@ -135,10 +135,10 @@
           <div id="secResultI" style="color:#1565c0;font-size:12px;margin-top:4px;"></div>
           <div id="secResultA" style="color:#1565c0;font-size:12px;"></div>
         </div>
-      </section>
+      </details>
 
-      <section class="panel-section">
-        <h3>Display</h3>
+      <details class="card" open>
+        <summary>Display</summary>
         <label class="checkbox-label">
           <input type="checkbox" id="chkSupports" checked> Show supports
         </label>
@@ -176,7 +176,7 @@
           <span id="themeToggleIcon">&#9790;</span>
           <span id="themeToggleLabel">Dark</span>
         </button>
-      </section>
+      </details>
 
       <section class="panel-section">
         <button class="tool-btn" onclick="resetView()" title="Reset zoom and pan to default (or scroll wheel to zoom, middle-mouse to pan)">🔍 Reset View</button>
