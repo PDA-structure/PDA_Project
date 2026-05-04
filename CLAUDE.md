@@ -128,6 +128,7 @@ Key design principles:
 - Scale correction for flex layout: `scaleX = canvas.width / rect.width`
 - Active button highlighting: `data-mode` attribute on buttons, toggled in `setMode()`
 - Member hit detection: point-to-line distance, tolerance 8 px
+- Mode entry auto-enables the matching visibility layer: support modes (fixed/pinned/rollerX/rollerY/spring) tick `chkSupports`, load modes (loadX/loadY/loadMoment/udl) tick `chkLoads`, and `draw()` is called so previously-added invisible glyphs become visible immediately. Implemented in `setMode()`. Closes the long-standing "click does nothing visible" foot-gun (debug session `.planning/debug/frame2d-load-then-add-support.md`). frame2d done 2026-05-04 (quick 260504-ene); truss2d follow-up pending.
 
 ## How to add a new solver
 Follow this checklist to extend the system cleanly:
