@@ -1,3 +1,11 @@
+> **RESOLVED 2026-05-04** (quick task 260504-ene)
+>
+> Actual root cause: chkSupports / chkLoads visibility checkboxes unchecked at click time. Supports/loads were correctly being added to the data arrays but `drawSupports()` / `drawNodeLoads()` were skipped because of the visibility gate in `draw()` (ui/frame2d/script.js:740-741). The UI was never frozen — rendering was suppressed.
+>
+> Fix: setMode() in ui/frame2d/script.js now auto-enables the matching visibility checkbox and calls draw(). Sibling truss2d UI has the same anti-pattern; tracked as a follow-up todo.
+>
+> Debug session: `.planning/debug/frame2d-load-then-add-support.md` (status: resolved).
+
 ---
 created: 2026-05-02T20:49:59.432Z
 title: Frame2D UI freezes when adding supports after loading JSON
