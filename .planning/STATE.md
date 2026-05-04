@@ -4,8 +4,8 @@ milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
 status: paused
 stopped_at: "Phase 7 plans 07-01 + 07-02 complete (Mac autonomous code work). Plan 07-03 partial: Task 1 (_emit_summary + main rewire) committed in sibling repo as 6aa4156; Task 2 partial (UAT_RUNBOOK.md authored as 9e5e6af). Tasks 2 (.rvt fixtures), 3 (Windows deploy), 4 (manual UAT runs) DEFERRED — require Revit 2025 access (Mac via Parallels or Windows host). Resume with /gsd-execute-phase 7 once Revit is accessible."
-last_updated: "2026-05-03T08:13:52Z"
-last_activity: 2026-05-03 -- Quick task 260503-cf7: Tailscale serve --bg 8000 registered (persistent tailnet HTTPS proxy `https://catrins-imac.tail568b7e.ts.net/` → `http://127.0.0.1:8000`); CLAUDE.md "API server" section gained tailscale runbook. 4/4 tailnet curl probes passed. Phase 07 still paused awaiting Revit access.
+last_updated: "2026-05-04T20:00:00Z"
+last_activity: 2026-05-04 -- Quick task 260504-nwi (Frame2D UI followup-2: collapsible left-rail cards via native <details>/<summary>) RESUMED after pause. Plan-checker iteration 2 PASS, executor ran in isolated worktree, fast-forward merged to main. 3 commits landed (9d9bd9f HTML conversion of 10 sections, 1d0bbf3 CSS disclosure styling with Unicode chevron + reduced-motion guard, 21b2b35 SUMMARY). All 5 automated verifiers green (HTML structure, CSS rules, two single-file diff gates, script.js byte-equality from EXPECTED_BASE 7f42555); pytest 61/61. Awaiting user manual UAT (Task 3 — 13-step browser script). Phase 07 still paused awaiting Revit access.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 Phase: 07 (revit-element-to-analytical-conversion) — PAUSED at Plan 07-03 Task 2
 Plan: 3 of 3 (07-01 ✓, 07-02 ✓, 07-03 partial: Task 1 done, runbook drafted)
 Status: Paused — awaiting Revit access
-Last activity: 2026-05-04 -- PAUSED quick task 260504-nwi (Frame2D UI followup-2: collapsible right-panel sections via native <details>/<summary>) after plan-checker iteration 1. Plan written, no code changes. Plan-checker found 1 BLOCKER (Task 1+2 verifiers use pathspec '-- ui/frame2d/*' which filters diff before grep gate, silently allowing safety-contract violations) + 2 warnings (hardcoded base hash 1869d33 in script.js byte-equality check; left/right rail naming inconsistency). Resume sequence + fix details in .planning/quick/260504-nwi-.../PAUSE.md. Last completed: 260504-lti (followup-1) — 8/8 verified, 10/10 UAT approved. One follow-up still pending after nwi resumes: results panel below canvas + reactions on canvas. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
+Last activity: 2026-05-04 -- RESUMED + LANDED quick task 260504-nwi (Frame2D UI followup-2: collapsible left-rail cards via native <details>/<summary>). Plan revised to fix iteration-1 findings (B-01 full-tree single-file gate, W-01 EXPECTED_BASE param + canonical `git diff --quiet`, W-02 left-panel terminology) → plan-checker iteration 2 PASS → gsd-executor in isolated worktree → fast-forward merge to main. 3 commits: 9d9bd9f (10 HTML conversions, only ui/frame2d/index.html), 1d0bbf3 (CSS marker hiding + Unicode ▸ chevron + 0.2s rotation + prefers-reduced-motion guard, only ui/frame2d/style.css), 21b2b35 (SUMMARY). All 5 automated verifiers green; script.js byte-equality held from EXPECTED_BASE 7f42555; pytest 61/61. Task 3 manual browser UAT (13-step script) PENDING — awaiting user "approved" or divergence report. Last completed: 260504-lti (followup-1) — 8/8 verified, 10/10 UAT approved. One follow-up still pending: results panel below canvas + reactions on canvas. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
 
 ## Resume instructions (next session, when Revit is accessible)
 
