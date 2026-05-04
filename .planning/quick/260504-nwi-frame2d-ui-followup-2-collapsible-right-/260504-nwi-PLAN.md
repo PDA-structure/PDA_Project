@@ -12,7 +12,7 @@ requirements:
   - QUICK-260504-nwi
 must_haves:
   truths:
-    - "Each headed section in the right-side (left rail) toolbar — Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display — has been converted from <section class=\"panel-section\"><h3>...</h3>... to <details class=\"card\" open><summary>...</summary>... so its header is clickable and toggles content visibility"
+    - "Each headed section in the left-panel toolbar — Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display — has been converted from <section class=\"panel-section\"><h3>...</h3>... to <details class=\"card\" open><summary>...</summary>... so its header is clickable and toggles content visibility"
     - "All converted <details> elements default to OPEN on page load (preserves current behaviour — user collapses what they don't need; nothing is hidden by default)"
     - "Sections collapse / expand independently — multiple sections can be collapsed simultaneously, and collapsing one does NOT auto-collapse another (NOT a strict accordion)"
     - "The default browser disclosure marker (the right-pointing triangle) is hidden via summary { list-style: none; } + summary::-webkit-details-marker { display: none; } + summary::marker { display: none; } in style.css"
@@ -49,9 +49,9 @@ must_haves:
 ---
 
 <objective>
-Frame2D UI followup-2: convert each headed section in the right-side toolbar (Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display — 10 in total) into native HTML `<details class="card" open>` / `<summary>` collapsible cards, so the user can click any section header to collapse/expand it. All sections start expanded; multiple can be collapsed simultaneously (independent toggles, not a strict accordion). Pure HTML + CSS — zero JavaScript changes.
+Frame2D UI followup-2: convert each headed section in the left-panel toolbar (Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display — 10 in total) into native HTML `<details class="card" open>` / `<summary>` collapsible cards, so the user can click any section header to collapse/expand it. All sections start expanded; multiple can be collapsed simultaneously (independent toggles, not a strict accordion). Pure HTML + CSS — zero JavaScript changes.
 
-This is **option 6.1** from the 2026-05-04 j8m UAT followup discussion (chosen over option 6.2's horizontal toolbar because it preserves layout grain and is lower risk). It addresses the user's complaint that the right-side toolbar has too many sections stacked vertically and requires scrolling to reach the lower ones.
+This is **option 6.1** from the 2026-05-04 j8m UAT followup discussion (chosen over option 6.2's horizontal toolbar because it preserves layout grain and is lower risk). It addresses the user's complaint that the left-panel toolbar has too many sections stacked vertically and requires scrolling to reach the lower ones.
 
 Purpose: dramatically shorten the panel when the user only needs a few sections, without removing or renaming anything. Native `<details>`/`<summary>` gives us browser-handled open/close state, accessibility (screen readers announce as button + region), keyboard support (Space/Enter), and zero JS risk.
 
@@ -79,14 +79,14 @@ Output:
 <!-- Concrete code shapes already present. Use these directly — no codebase exploration needed. -->
 
 ### Base commit for "script.js unchanged" verification
-The base commit before Task 1 lands is HEAD `1869d33` (or whatever HEAD resolves to at execute time). Task 2's verifier compares against this base. If a different base is more convenient at execute time (e.g. the executor runs from a fresh branch tip), record that hash in SUMMARY.md and use it for the diff check.
+The base commit before Task 1 lands is HEAD `1869d33` (or whatever HEAD resolves to at execute time). Task 2's verifier compares against this base via the `EXPECTED_BASE` env var (with `1869d33` as a fallback default — see Task 2 verify[3]). The orchestrator MUST capture `git rev-parse HEAD` before spawning the executor and export it as `EXPECTED_BASE` so the verifier diffs against the real pre-task base; if the env var is unset, the verifier falls back to the literal `1869d33`. Record the captured hash in SUMMARY.md.
 
 ### File sizes (post-lti, before nwi)
 - `ui/frame2d/index.html` — 297 lines
 - `ui/frame2d/style.css` — 405 lines (post-lti with `--canvas-*` tokens + `[data-theme="dark"]` overrides + `--canvas-label-size` etc. all in place)
 - `ui/frame2d/script.js` — UNCHANGED in this plan, but for reference: ~2200 lines post-lti
 
-### Inventory of <section class="panel-section"> blocks in ui/frame2d/index.html (12 total)
+### Inventory of <section class="panel-section"> blocks in ui/frame2d/index.html (12 total — left panel)
 
 | Line | Heading text | Convert to <details>? |
 |------|--------------|------------------------|
@@ -247,7 +247,7 @@ Forbidden in this plan:
   <name>Task 1 (Commit 1): Convert headed panel sections to <details class="card" open> / <summary></name>
   <files>ui/frame2d/index.html</files>
   <action>
-**Goal:** convert exactly 10 `<section class="panel-section">` blocks (those with an `<h3>` heading child) into native HTML5 `<details class="card" open>` / `<summary>` disclosures. The 2 sections without `<h3>` headings (Reset View at line ~181, SOLVE at line ~185) are LEFT UNCHANGED. After this commit, the page works — clicking any section header collapses/expands the section — but the disclosure marker is the browser default (a right-pointing triangle prepended to the summary text). Task 2 fixes the cosmetics.
+**Goal:** convert exactly 10 `<section class="panel-section">` blocks in the left panel (those with an `<h3>` heading child) into native HTML5 `<details class="card" open>` / `<summary>` disclosures. The 2 sections without `<h3>` headings (Reset View at line ~181, SOLVE at line ~185) are LEFT UNCHANGED. After this commit, the page works — clicking any section header collapses/expands the section — but the disclosure marker is the browser default (a right-pointing triangle prepended to the summary text). Task 2 fixes the cosmetics.
 
 **Step 1 — Identify the 10 sections to convert.**
 
@@ -324,14 +324,14 @@ Task 2 styles the disclosure to match the j8m / lti aesthetic — but Task 1 is 
 - Any other file in the repo — zero edits.
 - The `<aside class="panel">` wrapper that contains all sections — zero edits.
 
-**Commit message (suggested):** `feat(quick-260504-nwi): convert frame2d right-rail headed sections to <details>/<summary>`
+**Commit message (suggested):** `feat(quick-260504-nwi): convert frame2d left-rail headed sections to <details>/<summary>`
   </action>
   <verify>
     <automated>node -e "const fs = require('fs'); const html = fs.readFileSync('ui/frame2d/index.html','utf8'); const detailsCount = (html.match(/<details class=\"card\" open>/g) || []).length; if (detailsCount < 7) { console.error('FAIL: expected at least 7 <details class=\"card\" open> elements, found '+detailsCount); process.exit(1); } if (detailsCount !== 10) { console.error('WARN: expected 10 <details class=\"card\" open> elements (per inventory), found '+detailsCount+' — check whether all headed sections were converted'); /* not a hard fail; threshold is 7 */ } const summaryCount = (html.match(/<summary[>\\s]/g) || []).length; if (summaryCount < detailsCount) { console.error('FAIL: <summary> count ('+summaryCount+') is less than <details> count ('+detailsCount+')'); process.exit(1); } /* Negative grep: every <details class=\"card\"> must have open */ const detailsWithoutOpen = html.match(/<details class=\"card\"(?! open>)[^>]*>/g) || []; if (detailsWithoutOpen.length > 0) { console.error('FAIL: found '+detailsWithoutOpen.length+' <details class=\"card\"> without open attribute:'); detailsWithoutOpen.forEach(m => console.error('  '+m)); process.exit(1); } /* No <h3> remains inside any converted section (heading text is now in <summary>) — h3 outside <details> is fine */ /* Negative check: ensure no JS was added in this task — there should still be exactly one <script src=\"script.js\"> reference */ const scriptTags = (html.match(/<script\\b[^>]*>/g) || []).length; if (scriptTags !== 1) { console.error('FAIL: expected exactly 1 <script> tag, found '+scriptTags+' — Task 1 must not add JS'); process.exit(1); } console.log('PASS: '+detailsCount+' <details class=\"card\" open> elements, '+summaryCount+' <summary> elements, all <details> have open attribute, single <script> tag');"</automated>
-    <automated>git diff HEAD~1..HEAD --name-only -- 'ui/frame2d/*' | sort -u | tr '\n' ' ' | grep -qE '^ui/frame2d/index\.html ?$' && echo "PASS: only ui/frame2d/index.html changed in this commit" || (echo "FAIL: commit touched files other than ui/frame2d/index.html — Task 1 must be HTML-only"; git diff HEAD~1..HEAD --name-only; exit 1)</automated>
+    <automated>CHANGED=$(git diff HEAD~1..HEAD --name-only | sort -u | tr '\n' ' ' | sed 's/ *$//'); if [ "$CHANGED" = "ui/frame2d/index.html" ]; then echo "PASS: only ui/frame2d/index.html changed in this commit"; else echo "FAIL: expected only ui/frame2d/index.html, got: $CHANGED"; git diff HEAD~1..HEAD --name-only; exit 1; fi</automated>
   </verify>
   <done>
-- 10 `<details class="card" open>` elements exist in `ui/frame2d/index.html` (one per headed section in the right-rail toolbar).
+- 10 `<details class="card" open>` elements exist in `ui/frame2d/index.html` (one per headed section in the left-rail toolbar).
 - Each `<details>` has a corresponding `<summary>` child as its first element, containing the section heading text.
 - All `<details class="card">` carry the `open` attribute (no exceptions).
 - The two unheaded sections (Reset View, SOLVE) remain as `<section class="panel-section">`.
@@ -492,8 +492,8 @@ This commit is CSS-only. The verifier in this task checks that `git diff <BASE>.
   </action>
   <verify>
     <automated>node -e "const fs = require('fs'); const css = fs.readFileSync('ui/frame2d/style.css','utf8'); const checks = [['summary::-webkit-details-marker', 'hides Safari/older-Chromium default marker'], ['summary::marker', 'hides Firefox standards-path marker'], ['details[open]', 'has details[open] selector for open-state styling'], ['transform: rotate(90deg)', 'rotates chevron 90deg when open'], ['transition:', 'has at least one transition for smooth animation'], ['@media (prefers-reduced-motion: reduce)', 'guards animation behind reduced-motion media query']]; let fail = 0; checks.forEach(([needle, label]) => { if (!css.includes(needle)) { console.error('FAIL: '+label+' (needle: '+JSON.stringify(needle)+') not found in style.css'); fail++; } }); /* Verify the reduced-motion block contains a transition rule (i.e. it actually disables motion) */ const rmIdx = css.indexOf('@media (prefers-reduced-motion: reduce)'); if (rmIdx >= 0) { const tail = css.slice(rmIdx, rmIdx + 600); if (!/transition\\s*:\\s*none/.test(tail)) { console.error('FAIL: @media (prefers-reduced-motion: reduce) block does not contain a \"transition: none\" rule'); fail++; } } if (fail) process.exit(1); console.log('PASS: marker hidden, details[open] rotation, transition + reduced-motion guard all present');"</automated>
-    <automated>git diff HEAD~1..HEAD --name-only -- 'ui/frame2d/*' | sort -u | tr '\n' ' ' | grep -qE '^ui/frame2d/style\.css ?$' && echo "PASS: only ui/frame2d/style.css changed in this commit" || (echo "FAIL: commit touched files other than ui/frame2d/style.css — Task 2 must be CSS-only"; git diff HEAD~1..HEAD --name-only; exit 1)</automated>
-    <automated>BASE=$(git log --format=%H -1 -- ui/frame2d/script.js) && DIFF_LINES=$(git diff 1869d33..HEAD -- ui/frame2d/script.js | wc -l | tr -d ' ') && if [ "$DIFF_LINES" = "0" ]; then echo "PASS: ui/frame2d/script.js is unchanged from base 1869d33"; else echo "FAIL: ui/frame2d/script.js has changed from base 1869d33 ($DIFF_LINES diff lines) — this plan forbids any script.js change"; git diff --stat 1869d33..HEAD -- ui/frame2d/script.js; exit 1; fi</automated>
+    <automated>CHANGED=$(git diff HEAD~1..HEAD --name-only | sort -u | tr '\n' ' ' | sed 's/ *$//'); if [ "$CHANGED" = "ui/frame2d/style.css" ]; then echo "PASS: only ui/frame2d/style.css changed in this commit"; else echo "FAIL: expected only ui/frame2d/style.css, got: $CHANGED"; git diff HEAD~1..HEAD --name-only; exit 1; fi</automated>
+    <automated>BASE="${EXPECTED_BASE:-1869d33}"; if git diff --quiet "$BASE..HEAD" -- ui/frame2d/script.js; then echo "PASS: ui/frame2d/script.js is unchanged from base $BASE"; else echo "FAIL: ui/frame2d/script.js has changed from base $BASE — this plan forbids any script.js change"; git diff --stat "$BASE..HEAD" -- ui/frame2d/script.js; exit 1; fi</automated>
   </verify>
   <done>
 - `ui/frame2d/style.css` contains rules that hide the default disclosure marker (`summary::-webkit-details-marker { display: none; }` and `summary::marker { display: none; }`).
@@ -521,13 +521,13 @@ This commit is CSS-only. The verifier in this task checks that `git diff <BASE>.
   2. (Task 2) CSS disclosure styling: hide default marker, custom chevron via `summary::before` (Unicode `▸` or CSS triangle), `details[open] > summary::before { transform: rotate(90deg) }`, smooth 0.2s transition, `@media (prefers-reduced-motion: reduce)` guard, full-width clickable summary with hover background.
 - Modified files: `ui/frame2d/index.html` (Task 1), `ui/frame2d/style.css` (Task 2).
 - UNTOUCHED: `ui/frame2d/script.js`, `solver_core/`, `api_server/`, `tests/`, `ui/truss2d/`.
-- Behavioural changes: every right-rail headed section is now collapsible by clicking its header; chevron rotates smoothly; multiple sections can collapse independently; default state is all-expanded.
+- Behavioural changes: every left-rail headed section is now collapsible by clicking its header; chevron rotates smoothly; multiple sections can collapse independently; default state is all-expanded.
   </what-built>
   <how-to-verify>
 1. **Start the API server (if not already running):** `uvicorn api_server.app:app --reload` from `pda_project/`.
 2. **Open the frame2d UI:** browse to `http://127.0.0.1:8000/ui/frame2d/index.html` (or the Tailscale URL `https://catrins-imac.tail568b7e.ts.net/ui/frame2d/index.html`).
 3. **Initial state — all expanded (locked decision #3):**
-   - On first load, every section in the right rail is fully visible (Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display).
+   - On first load, every section in the left rail is fully visible (Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display).
    - Each section header shows a custom chevron (▸ or triangle) pointing DOWN (rotated 90° from the closed orientation, since the section is open).
    - The Reset View button and the SOLVE button (the two unheaded sections at the bottom) appear as before — no chevron, no collapse behaviour.
 4. **Click each section header to collapse — independent toggles (locked decision #4):**
@@ -601,7 +601,7 @@ This commit is CSS-only. The verifier in this task checks that `git diff <BASE>.
 </verification>
 
 <success_criteria>
-- The frame2d UI right-side toolbar has 10 collapsible cards: Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display.
+- The frame2d UI left-panel toolbar has 10 collapsible cards: Geometry, Supports, Node Loads, Member Loads, Member Properties, Edit, File, Material Properties, Section Calculator, Display.
 - Each card defaults to OPEN on page load (preserves current behaviour — locked decision #3).
 - Clicking any card's summary bar toggles its content visibility, with a smooth ~0.2s chevron rotation animation (or instant if `prefers-reduced-motion: reduce`).
 - Multiple cards can be collapsed simultaneously — independent toggles, not a strict accordion (locked decision #4).
