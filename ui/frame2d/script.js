@@ -83,6 +83,15 @@ function cssVar(name) {
 const GRID = 20;
 const UNIT = 1;
 
+// ── Label-size scaling (Task 3) ───────────────────────────────────────────
+// BASE_LABEL_SIZE matches --canvas-label-size in style.css (10px). labelScale
+// is wired to #inputLabelScale (range 0.5..2.0) and multiplies every ctx.font
+// pixel size in this file alongside getSymbolScale() so users can rescale
+// canvas labels independently of the symbol-size slider.
+const BASE_LABEL_SIZE = 10;
+const LABEL_FONT_FAMILY = 'Inter, system-ui, sans-serif';
+let labelScale = 1.0;
+
 let _lastBlobUrl = null;
 
 // ── Symbol scale helper ───────────────────────────────────────────────────
@@ -889,7 +898,7 @@ function drawMemberLabel(n1, n2, text, color) {
   ctx.translate(mx + nx*14, my + ny*14);
   ctx.rotate(Math.abs(angle) > Math.PI/2 ? angle + Math.PI : angle);
   ctx.fillStyle = color;
-  ctx.font = '10px Arial';
+  ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 0, 0);
@@ -920,7 +929,7 @@ function drawNodes() {
     ctx.fillStyle = cssVar('--canvas-node');
     ctx.fill();
     ctx.fillStyle = cssVar('--canvas-label');
-    ctx.font = 'bold 11px Arial';
+    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1) + 'px ' + LABEL_FONT_FAMILY;
     ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
   });
 }
@@ -1125,7 +1134,7 @@ function drawSpring(x, y, Kx, Ky, Ktheta) {
   if (Ky     != null) labelParts.push('Ky=' + Ky + ' kN/m');
   if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + ' kN·m/rad');
   if (labelParts.length) {
-    ctx.font = '9px Arial';
+    ctx.font = Math.round(BASE_LABEL_SIZE * 0.9 * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY;
     ctx.textAlign = 'left';
     ctx.fillStyle = cssVar('--canvas-spring');
     ctx.fillText(labelParts.join(' · '), x + 10 * sc, y - 10 * sc);
@@ -1164,7 +1173,7 @@ function drawNodeLoads() {
       ctx.beginPath();
       ctx.moveTo(n.x - arrowHW, n.y + sign*arrowTip); ctx.lineTo(n.x, n.y + sign*arrowLen); ctx.lineTo(n.x + arrowHW, n.y + sign*arrowTip);
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
+      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x, n.y + sign*(arrowLen + 14*sc));
 
     } else if (l.direction === 'x') {
@@ -1173,7 +1182,7 @@ function drawNodeLoads() {
       ctx.beginPath();
       ctx.moveTo(n.x + sign*arrowTip, n.y - arrowHW); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.lineTo(n.x + sign*arrowTip, n.y + arrowHW);
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
+      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x + sign*(arrowLen + 12*sc), n.y - 6);
 
     } else if (l.direction === 'moment') {
@@ -1195,7 +1204,7 @@ function drawNodeLoads() {
       ctx.lineTo(ax, ay);
       ctx.lineTo(ax + arrowSz*Math.cos(tang + 0.5), ay + arrowSz*Math.sin(tang + 0.5));
       ctx.fill();
-      ctx.font = '10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-moment-label');
+      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-moment-label');
       ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kNm', n.x, n.y - r - 6);
     }
   });
@@ -1204,7 +1213,7 @@ function drawNodeLoads() {
 // ── Node label overlay ────────────────────────────────────────────────────
 function drawNodeLabels() {
   ctx.save();
-  ctx.font = '600 11px Arial';
+  ctx.font = '600 ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1) + 'px ' + LABEL_FONT_FAMILY;
   ctx.fillStyle = cssVar('--canvas-label');
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
@@ -1255,7 +1264,7 @@ function drawUDLs() {
     // label
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-label');
+    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-label');
     ctx.fillText((Math.abs(m.udl)/1000).toFixed(1)+' kN/m', mx, my - arrowLen*sign - 6);
   });
 
@@ -1304,7 +1313,7 @@ function drawUDLs() {
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-x-label');
+    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-x-label');
     ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx - arrowLen * sign * 1.8, my);
   });
 }
@@ -1313,8 +1322,8 @@ function drawUDLs() {
 // Draws text with a white backing rect so it's readable over diagrams.
 function labelText(text, x, y, color) {
   ctx.save();
-  const fs = Math.round(10 * getSymbolScale());
-  ctx.font = `bold ${fs}px sans-serif`;
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+  ctx.font = `bold ${fs}px ${LABEL_FONT_FAMILY}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const w = ctx.measureText(text).width;
@@ -1623,6 +1632,10 @@ document.getElementById('inputScale').addEventListener('input', function () {
 });
 document.getElementById('inputDiagramScale').addEventListener('input', draw);
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
+document.getElementById('inputLabelScale').addEventListener('input', function (e) {
+  labelScale = parseFloat(e.target.value) || 1.0;
+  draw();
+});
 
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {
