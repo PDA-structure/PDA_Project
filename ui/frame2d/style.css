@@ -135,20 +135,22 @@ header {
 }
 header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
 
-/* ── Workspace ────────────────────────────────────────────── */
-.workspace { display: flex; flex: 1; gap: 0; }
+/* ── Workspace (rs3 — column flow: toolbar on top, canvas below) */
+.workspace { display: flex; flex: 1; flex-direction: column; gap: 0; min-height: 0; }
 
-/* ── Left panel ───────────────────────────────────────────── */
+/* ── Top toolbar panel (rs3 — horizontal wrap-row above canvas) ── */
 .panel {
-  width: 210px;
-  min-width: 210px;
+  width: 100%;
+  min-width: 0;
   background: var(--color-bg);
-  border-right: 1px solid var(--color-border-subtle);
-  padding: var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-3);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  overflow-y: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+  overflow-x: auto;
   box-shadow: var(--shadow-sm);
 }
 
@@ -177,6 +179,14 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
   padding: var(--space-3);
   margin-bottom: var(--space-3);
   box-shadow: var(--shadow-sm);
+}
+
+/* ── Horizontal-toolbar sizing for cards + surviving sections (rs3) */
+.card,
+.panel-section {
+  flex: 0 1 auto;
+  min-width: 180px;
+  margin-bottom: 0;
 }
 summary {
   list-style: none;          /* Firefox + standards */
