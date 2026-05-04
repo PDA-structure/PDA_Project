@@ -1446,41 +1446,43 @@ function drawBMD() {
     ctx.fillStyle = 'rgba(33, 150, 243, 0.25)'; ctx.strokeStyle = '#1565c0'; ctx.lineWidth = 1.5;
   });
 
-  // ── Annotate end moments and UDL midspan peak ─────────────────────────
-  const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
-  const nudgeM = 8 * getSymbolScale();
-  members.forEach((m, idx) => {
-    const n1 = nodes.find(n => n.id === m.start);
-    const n2 = nodes.find(n => n.id === m.end);
-    if (!n1 || !n2) return;
-    const dx = n2.x - n1.x, dy = n2.y - n1.y;
-    const angle = Math.atan2(dy, dx);
-    const perpX = -Math.sin(angle), perpY = Math.cos(angle);
-    const Mi = moments[idx][0], Mj = moments[idx][1];
-    const L_m = memberLengthReal(m);
-    if (Math.abs(Mi) > maxMoment * 0.01) {
-      const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
-      labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, '#1565c0');
-    }
-    const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
-    if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
-      const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
-      labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, '#1565c0');
-    }
-    if (m.udl && m.type !== 'bar') {
-      let peakM = 0, peakXi = 0.5;
-      for (let k = 0; k <= NSEG; k++) {
-        const xi = k / NSEG;
-        const M = Mi*(1-xi) - Mj*xi + m.udl * L_m * L_m / 2 * xi * (1-xi);
-        if (Math.abs(M) > Math.abs(peakM)) { peakM = M; peakXi = xi; }
+  if (document.getElementById('chkDiagLabels').checked) {
+    // ── Annotate end moments and UDL midspan peak ─────────────────────────
+    const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
+    const nudgeM = 8 * getSymbolScale();
+    members.forEach((m, idx) => {
+      const n1 = nodes.find(n => n.id === m.start);
+      const n2 = nodes.find(n => n.id === m.end);
+      if (!n1 || !n2) return;
+      const dx = n2.x - n1.x, dy = n2.y - n1.y;
+      const angle = Math.atan2(dy, dx);
+      const perpX = -Math.sin(angle), perpY = Math.cos(angle);
+      const Mi = moments[idx][0], Mj = moments[idx][1];
+      const L_m = memberLengthReal(m);
+      if (Math.abs(Mi) > maxMoment * 0.01) {
+        const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
+        labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, '#1565c0');
       }
-      if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
-        const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
-        const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
-        labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, '#1565c0');
+      const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
+      if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
+        const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
+        labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, '#1565c0');
       }
-    }
-  });
+      if (m.udl && m.type !== 'bar') {
+        let peakM = 0, peakXi = 0.5;
+        for (let k = 0; k <= NSEG; k++) {
+          const xi = k / NSEG;
+          const M = Mi*(1-xi) - Mj*xi + m.udl * L_m * L_m / 2 * xi * (1-xi);
+          if (Math.abs(M) > Math.abs(peakM)) { peakM = M; peakXi = xi; }
+        }
+        if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
+          const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
+          const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
+          labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, '#1565c0');
+        }
+      }
+    });
+  }
 }
 
 // ── Shear force diagram ────────────────────────────────────────────────────
@@ -1538,38 +1540,40 @@ function drawSFD() {
     ctx.fillStyle = 'rgba(76, 175, 80, 0.25)'; ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 1.5;
   });
 
-  // ── Annotate end shears and zero crossings ────────────────────────────
-  const fmtV = v => (v / 1000).toFixed(2) + ' kN';
-  const nudgeV = 8 * getSymbolScale();
-  members.forEach((m, idx) => {
-    const n1 = nodes.find(n => n.id === m.start);
-    const n2 = nodes.find(n => n.id === m.end);
-    if (!n1 || !n2) return;
-    const dx = n2.x - n1.x, dy = n2.y - n1.y;
-    const angle = Math.atan2(dy, dx);
-    const perpX = -Math.sin(angle), perpY = Math.cos(angle);
-    const Vi = shears[idx][0], Vj = -shears[idx][1];
-    if (Math.abs(Vi) > maxShear * 0.01) {
-      const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
-      labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, '#2e7d32');
-    }
-    if (Math.abs(Vj) > maxShear * 0.01) {
-      const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
-      labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, '#2e7d32');
-    }
-    if (Vi * Vj < 0) {
-      const xi0 = Vi / (Vi - Vj);
-      const zx = n1.x + xi0 * dx, zy = n1.y + xi0 * dy;
-      ctx.save();
-      ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(zx + perpX * 6, zy + perpY * 6);
-      ctx.lineTo(zx - perpX * 6, zy - perpY * 6);
-      ctx.stroke();
-      ctx.restore();
-      labelText('V=0', zx, zy, '#2e7d32');
-    }
-  });
+  if (document.getElementById('chkDiagLabels').checked) {
+    // ── Annotate end shears and zero crossings ────────────────────────────
+    const fmtV = v => (v / 1000).toFixed(2) + ' kN';
+    const nudgeV = 8 * getSymbolScale();
+    members.forEach((m, idx) => {
+      const n1 = nodes.find(n => n.id === m.start);
+      const n2 = nodes.find(n => n.id === m.end);
+      if (!n1 || !n2) return;
+      const dx = n2.x - n1.x, dy = n2.y - n1.y;
+      const angle = Math.atan2(dy, dx);
+      const perpX = -Math.sin(angle), perpY = Math.cos(angle);
+      const Vi = shears[idx][0], Vj = -shears[idx][1];
+      if (Math.abs(Vi) > maxShear * 0.01) {
+        const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
+        labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, '#2e7d32');
+      }
+      if (Math.abs(Vj) > maxShear * 0.01) {
+        const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
+        labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, '#2e7d32');
+      }
+      if (Vi * Vj < 0) {
+        const xi0 = Vi / (Vi - Vj);
+        const zx = n1.x + xi0 * dx, zy = n1.y + xi0 * dy;
+        ctx.save();
+        ctx.strokeStyle = '#2e7d32'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(zx + perpX * 6, zy + perpY * 6);
+        ctx.lineTo(zx - perpX * 6, zy - perpY * 6);
+        ctx.stroke();
+        ctx.restore();
+        labelText('V=0', zx, zy, '#2e7d32');
+      }
+    });
+  }
 }
 
 document.getElementById('chkSupports').addEventListener('change', draw);
@@ -1577,6 +1581,7 @@ document.getElementById('chkLoads').addEventListener('change', draw);
 document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
+document.getElementById('chkDiagLabels').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
 document.getElementById('inputScale').addEventListener('input', function () {
   try {
