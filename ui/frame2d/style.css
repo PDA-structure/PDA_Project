@@ -169,6 +169,66 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
   margin-bottom: var(--space-2);
 }
 
+/* ── Collapsible card disclosure (nwi) ─────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+summary {
+  list-style: none;          /* Firefox + standards */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--color-fg-faint);
+  letter-spacing: 0.5px;
+  margin: calc(-1 * var(--space-3));   /* extend click-target to full card padding */
+  margin-bottom: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  user-select: none;
+  transition: background 0.15s;
+}
+summary::-webkit-details-marker {
+  display: none;             /* Safari / older Chromium */
+}
+summary::marker {
+  display: none;             /* Firefox standards path */
+}
+summary:hover {
+  background: var(--color-surface-hover);
+}
+summary::before {
+  content: '\25B8';          /* ▸ U+25B8 BLACK RIGHT-POINTING SMALL TRIANGLE */
+  display: inline-block;
+  margin-right: var(--space-2);
+  color: var(--color-fg-faint);
+  font-size: 10px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  transform-origin: 50% 50%;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+details[open] > summary {
+  margin-bottom: var(--space-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  summary::before {
+    transition: none;
+  }
+  summary {
+    transition: none;
+  }
+}
+
 .tool-btn {
   display: block;
   width: 100%;
