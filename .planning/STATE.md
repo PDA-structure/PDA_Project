@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
 status: paused
-stopped_at: "Phase 7 plans 07-01 + 07-02 complete (Mac autonomous code work). Plan 07-03 partial: Task 1 (_emit_summary + main rewire) committed in sibling repo as 6aa4156; Task 2 partial (UAT_RUNBOOK.md authored as 9e5e6af). Tasks 2 (.rvt fixtures), 3 (Windows deploy), 4 (manual UAT runs) DEFERRED — require Revit 2025 access (Mac via Parallels or Windows host). Resume with /gsd-execute-phase 7 once Revit is accessible."
-last_updated: "2026-05-04T20:25:00Z"
-last_activity: 2026-05-04 -- Completed quick task 260504-rs3 (Frame2D UI followup-3 spike: horizontal toolbar above canvas, CSS-only layout flip, 1 commit 9ef7eaa, 4/4 verifier gates green, pytest 61/61). **Browser UAT approved by user 2026-05-04** with one follow-up flagged: toolbar wrap on window resize "may need to be improved at some point" — captured as backlog todo. Prior task 260504-nwi UAT-approved 13/13. Pausing for the day; user to revisit later. Phase 07 still paused awaiting Revit access.
+stopped_at: Phase 999.5 (BACKLOG) context gathered — frame2d ribbon hierarchy spike
+last_updated: "2026-05-05T19:40:12.247Z"
+last_activity: "2026-05-04 -- Completed quick task 260504-rs3 (Frame2D UI followup-3 spike: horizontal toolbar above canvas). CSS-only layout flip — planner determined HTML source order was already correct so only `ui/frame2d/style.css` changed (`.workspace flex-direction: column`, `.panel` rewritten as full-width wrap-row with `border-bottom` replacing `border-right`, new shared `.card, .panel-section` sizing). 1 commit `9ef7eaa`. EXPECTED_BASE 77796ab, all 4 verifier gates green, pytest 61/61. **Browser UAT approved by user 2026-05-04** with one follow-up flagged: toolbar wrap on window resize "may need to be improved at some point" — captured as backlog todo `.planning/todos/pending/2026-05-04-frame2d-toolbar-wrap-improvement.md`. Pausing for the day. Previous task 260504-nwi (collapsible left-rail cards) UAT-approved 13/13 with two follow-ups raised: (a) Display section crowded — wants items stacked + smaller text (still pending — separate quick task when revisited); (b) horizontal toolbar — addressed by rs3 above. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access."
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 0
   total_plans: 3
   completed_plans: 2
-  percent: 0
+  percent: 67
 ---
 
 # Project State
@@ -35,6 +35,7 @@ Last activity: 2026-05-04 -- Completed quick task 260504-rs3 (Frame2D UI followu
 Sibling repo `~/Documents/CustomRevitExtension/` is at HEAD `9e5e6af` with three Phase 7 commits (`6aa4156` + `5ac52b7`/`6101200`/`b9d3e07` + `9e5e6af`). Pause note: `.planning/notes/2026-05-02-phase07-paused-no-revit.md`.
 
 Outstanding work (Plan 07-03):
+
 1. Author 3 binary `.rvt` fixtures in Revit 2025 (Task 2 — see `~/Documents/CustomRevitExtension/PDA_customRevit.extension/fixtures/phase07/UAT_RUNBOOK.md` for geometry specs).
 2. Author `icon.png` for the pushbutton + manual deploy to Windows host (Task 3).
 3. Run UAT per `UAT_RUNBOOK.md` + Tier 1 round-trip on Fixture 1 (Task 4 — gates Phase 7 completion).
@@ -122,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-05-03T08:13:52Z
-Stopped at: Quick task 260503-cf7 complete: persistent tailscale serve proxy registered (`https://catrins-imac.tail568b7e.ts.net/` → `http://127.0.0.1:8000`, survives reboots); CLAUDE.md API server section gained 6-line tailscale runbook. 4/4 tailnet curl probes passed; no source/test changes (only CLAUDE.md modified). Phase 07 still paused awaiting Revit access.
+Last session: 2026-05-05T19:40:12.220Z
+Stopped at: Phase 999.5 (BACKLOG) context gathered — frame2d ribbon hierarchy spike
 Resume: User installs Tailscale on Windows work laptop and signs into the same Microsoft account → tailnet URLs (`/health`, `/ui/{truss2d,frame2d}/index.html`) become reachable from that machine while uvicorn runs on the Mac. Phase 7 resume still gated on Revit 2025 access — `/gsd-execute-phase 7` from plan 07-03 Task 2 once available.
