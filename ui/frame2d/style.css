@@ -185,7 +185,7 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
 .card,
 .panel-section {
   flex: 0 1 auto;
-  min-width: 180px;
+  min-width: 140px;
   margin-bottom: 0;
 }
 summary {
@@ -193,7 +193,7 @@ summary {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   font-weight: 600;
   color: var(--color-fg-faint);
@@ -293,6 +293,34 @@ details[open] > summary {
   width: 100%;
 }
 .checkbox-label { flex-direction: row !important; align-items: center; gap: 6px !important; cursor: pointer; }
+
+/* ── Display card density (tke — Item 1) ──────────────────────
+   Scoped via :has() to target only the Display <details class="card">,
+   identified by its unique child #chkDeflected. Forces vertical stacking
+   of .checkbox-label items, smaller font-size, tighter gap. The 9 other
+   cards' .checkbox-label items (none currently exist outside Display,
+   but the global rule remains intact for any future use) keep row layout.
+*/
+details.card:has(#chkDeflected) .checkbox-label {
+  flex-direction: column !important;
+  align-items: flex-start;
+  gap: 2px !important;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+details.card:has(#chkDeflected) > label,
+details.card:has(#chkDeflected) > label.panel-label {
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+details.card:has(#chkDeflected) > label input[type="number"],
+details.card:has(#chkDeflected) > label.panel-label input[type="number"],
+details.card:has(#chkDeflected) > label.panel-label input[type="range"] {
+  font-size: 11px;
+  padding: 2px 5px;
+}
 
 /* ── Solve button ─────────────────────────────────────────── */
 .solve-btn {
