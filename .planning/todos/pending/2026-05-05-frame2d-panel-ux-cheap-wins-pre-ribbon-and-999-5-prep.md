@@ -18,11 +18,17 @@ We don't want to lose these between now and when 999.5 is promoted from BACKLOG 
 
 ### Items
 
-**Bundle A — Pre-ribbon UX wins (existing horizontal toolbar):**
+**Bundle A — Pre-ribbon UX wins (existing horizontal toolbar):** ✅ COMPLETED 2026-05-05
 
-1. **Display section density** — open follow-up from 260504-nwi UAT close-out (logged in STATE.md last activity 2026-05-04): "Display section crowded — wants items stacked one-per-line with smaller text." Pure CSS, ~5 lines. Targets the `<details class="card">` for Display in `ui/frame2d/index.html` lines 140-179. Reduces font-size on `.checkbox-label` and ensures stacking via `display: flex; flex-direction: column` (or similar).
+1. ✅ **Display section density** — done by `260505-tke` (`77e2134`) and refined further by `260505-vxu` (`906badc`) and `260505-w2a` (`7984e97`). Display now uses 2-column layout via explicit wrapper divs (`<div class="display-col">` × 2), checkbox-labels render inline at 11px, top-aligned with col 2 starting at "Show diagram values".
 
-2. **rs3 toolbar wrap improvement** — already captured separately at `.planning/todos/pending/2026-05-04-frame2d-toolbar-wrap-improvement.md`. Tighter `.card { min-width }` + smaller `summary` text. ~5 lines CSS-only, escalation path is card consolidation if still cramped.
+2. ✅ **rs3 toolbar wrap improvement** — done by `260505-tke` (`77e2134`) + `260505-u2h` (`7d2d671`): `.card { min-width: 180px → 110px }`, `summary { 11px → 10px }`, `.tool-btn { font-size: 12px → 11px; padding: 4/8 instead of 8/12 }`. Toolbar now stays single-row across typical Mac viewport widths.
+
+**Note:** Bundle A also unintentionally surfaced and resolved several adjacent issues during the iteration:
+- `uzg` — close all cards by default + relocated results panel (`6c60da8`)
+- `v7c` — results panel as right sidebar (`f6c086a`)
+- `vhi` — initial CSS grid 2-column (had auto-placement bug, replaced by `w2a`)
+Updates committed to 2026-05-04-frame2d-toolbar-wrap-improvement.md will mark that as resolved-by-tke too.
 
 **Bundle B — Ribbon-prep cheap wins (intermediate steps that reduce Phase 999.5 work):**
 
