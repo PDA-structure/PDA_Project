@@ -222,3 +222,15 @@ Plans:
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
+### Phase 999.5: Frame2D Ribbon Hierarchy UI (BACKLOG)
+
+**Goal:** Replace the current horizontal floating toolbar in the frame2d browser UI with a Revit-style ribbon hierarchy: a single-line of tabs at the top of the screen (FILE, EDIT, GEOMETRY, SUPPORTS, NODE LOADS, MEMBER LOADS, MEMBER PROPERTIES, DISPLAY, SOLVE — with future room for MATERIAL PROPERTIES, SECTION CALCULATOR, LOAD COMBINATIONS), each revealing a panel of buttons grouped by function. Panel constraint: max 2 buttons stacked vertically per panel, growing left-to-right as more buttons are added. Frame2d only for the spike; truss2d catches up later.
+**Context:** Identified 2026-05-05 from work-laptop UAT signal — current horizontal-wrap toolbar (rs3 spike, commit `9ef7eaa`) is approaching its density ceiling as v1.3 features (load combinations, section calculator, more support types) are about to be added. Establishing the tab→panel→button hierarchy now means: (a) it scales without re-layout when those features land, and (b) the mental model transfers cleanly to the eventual 3D / Revit-hosted UIs (Phase 12-13 Blender add-on, Phase 7-11 Revit pushbuttons), since Revit itself uses the same ribbon hierarchy. Sequenced AFTER v1.3 Revit milestone — UI modernisation waits for real-use signal, which is now arriving via work-laptop sessions.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
