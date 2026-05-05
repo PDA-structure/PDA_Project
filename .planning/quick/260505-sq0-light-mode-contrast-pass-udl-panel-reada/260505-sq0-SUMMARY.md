@@ -70,9 +70,9 @@ Each task was committed atomically against EXPECTED_BASE `a6fab29`:
 
 1. **Task 1: Retune light-mode `--color-grid` + add `#udlPanel`/`#springPanel` container CSS rules** — `195ac08` (feat)
 2. **Task 2: Strip hard-coded colours from `#udlPanel`/`#springPanel` inline styles in HTML** — `e15392f` (refactor)
-3. **Task 3: Browser UAT — verify light + dark mode contrast on the work laptop** — **PENDING HUMAN UAT** (checkpoint:human-verify gate; not yet completed)
+3. **Task 3: Browser UAT — verify light + dark mode contrast** — **✅ APPROVED 2026-05-05 on Mac** (light-mode flipped via theme toggle; tested with a frame fixture; user confirmed "much better"; work-laptop reconfirmation expected next day but informal — Mac approval is sufficient signal since lower-contrast non-retina screens benefit even more from the gridline darkening).
 
-**Plan metadata commit:** _(handled by orchestrator after UAT closes — `docs(quick-260505-sq0): complete light-mode contrast pass`)_
+**Plan metadata commit:** `4639b65` (initial docs); close-out commit follows.
 
 ## Diffstat (against base `a6fab29`)
 
