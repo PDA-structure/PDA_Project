@@ -189,61 +189,65 @@
 
     </aside>
 
-    <!-- Results (between toolbar and canvas — appears when SOLVE runs) -->
-    <div class="results-panel" id="resultsPanel" style="display:none">
-      <div class="results-grid">
+    <!-- Canvas + Results sidebar (flex-row: canvas grows; results pinned to right) -->
+    <div class="canvas-row">
 
-        <div class="results-table-wrap">
-          <h3>Member Actions</h3>
-          <table id="tableMemberActions">
-            <thead>
-              <tr>
-                <th>Mbr</th><th>Nodes</th><th>Type</th>
-                <th>Axial (kN)</th>
-                <th>V_i (kN)</th><th>V_j (kN)</th>
-                <th>M_i (kNm)</th><th>M_j (kNm)</th>
-                <th>&sigma; (MPa)</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <main class="canvas-area">
+        <div class="canvas-topbar">
+          <span class="mode-indicator">Mode: <span id="modeLabel">Add Node</span></span>
+          <span class="coords" id="coords">x: — &nbsp; y: —</span>
         </div>
+        <canvas id="canvas" width="1000" height="620"></canvas>
+      </main>
 
-        <div class="results-table-wrap">
-          <h3>Reactions</h3>
-          <table id="tableReactions">
-            <thead><tr><th>Node</th><th>Dir</th><th>Reaction (kN / kNm)</th></tr></thead>
-            <tbody></tbody>
-          </table>
+      <!-- Results sidebar (right column, appears when SOLVE runs) -->
+      <div class="results-panel" id="resultsPanel" style="display:none">
+        <div class="results-grid">
+
+          <div class="results-table-wrap">
+            <h3>Member Actions</h3>
+            <table id="tableMemberActions">
+              <thead>
+                <tr>
+                  <th>Mbr</th><th>Nodes</th><th>Type</th>
+                  <th>Axial (kN)</th>
+                  <th>V_i (kN)</th><th>V_j (kN)</th>
+                  <th>M_i (kNm)</th><th>M_j (kNm)</th>
+                  <th>&sigma; (MPa)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="results-table-wrap">
+            <h3>Reactions</h3>
+            <table id="tableReactions">
+              <thead><tr><th>Node</th><th>Dir</th><th>Reaction (kN / kNm)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="results-table-wrap">
+            <h3>Nodal Displacements</h3>
+            <table id="tableDisplacements">
+              <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th><th>θ (mrad)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="results-table-wrap">
+            <h3>Summary</h3>
+            <table id="tableSummary">
+              <thead><tr><th>Quantity</th><th>Value</th><th>Location</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
         </div>
-
-        <div class="results-table-wrap">
-          <h3>Nodal Displacements</h3>
-          <table id="tableDisplacements">
-            <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th><th>θ (mrad)</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="results-table-wrap">
-          <h3>Summary</h3>
-          <table id="tableSummary">
-            <thead><tr><th>Quantity</th><th>Value</th><th>Location</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
       </div>
+
     </div>
-
-    <!-- Canvas -->
-    <main class="canvas-area">
-      <div class="canvas-topbar">
-        <span class="mode-indicator">Mode: <span id="modeLabel">Add Node</span></span>
-        <span class="coords" id="coords">x: — &nbsp; y: —</span>
-      </div>
-      <canvas id="canvas" width="1000" height="620"></canvas>
-    </main>
 
   </div>
 

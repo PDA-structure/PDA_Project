@@ -382,18 +382,27 @@ canvas {
   box-shadow: var(--shadow-sm);
 }
 
-/* ── Results panel ────────────────────────────────────────── */
+/* ── Canvas + Results sidebar row (v7c — results moved from top to right) ── */
+.canvas-row {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  gap: var(--space-2);
+}
+
+/* ── Results panel (right sidebar, vertical column) ──────────── */
 .results-panel {
   background: var(--color-surface);
-  border-top: 2px solid var(--color-accent);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-left: 2px solid var(--color-accent);
   padding: var(--space-3) var(--space-4);
   box-shadow: var(--shadow-md);
-  max-height: 30vh;
+  flex: 0 0 320px;
+  max-height: 100%;
   overflow-y: auto;
-  flex: 0 0 auto;
 }
-.results-grid { display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; }
+.results-grid { display: flex; flex-direction: column; gap: var(--space-3); align-items: stretch; }
+.results-table-wrap { overflow-x: auto; }
 .results-table-wrap h3 {
   font-size: 12px;
   text-transform: uppercase;
