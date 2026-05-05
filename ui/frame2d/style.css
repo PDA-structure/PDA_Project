@@ -302,15 +302,11 @@ details[open] > summary {
    but the global rule remains intact for any future use) keep row layout.
 */
 details.card:has(#chkDeflected) .checkbox-label {
-  flex-direction: column !important;
-  align-items: flex-start;
-  gap: 2px !important;
   font-size: 11px;
   margin-bottom: 2px;
 }
 
-details.card:has(#chkDeflected) .display-body > label,
-details.card:has(#chkDeflected) .display-body > label.panel-label {
+details.card:has(#chkDeflected) .display-body > label:not(.checkbox-label) {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
