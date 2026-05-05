@@ -140,43 +140,47 @@
       <details class="card">
         <summary>Display</summary>
         <div class="display-body">
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkSupports" checked> Show supports
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkLoads" checked> Show loads
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkDeflected"> Show deflected shape
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkBMD" disabled> Show bending moment diagram
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkSFD" disabled> Show shear force diagram
-          </label>
-          <label class="checkbox-label">
-            <input type="checkbox" id="chkDiagLabels"> Show diagram values
-          </label>
-          <label class="checkbox-label"><input type="checkbox" id="chkNodeLabels"> Node labels</label>
-          <label>Deflection scale ×
-            <input type="number" id="inputScale" value="100" min="1" step="10">
-          </label>
-          <label>BMD / SFD scale ×
-            <input type="number" id="inputDiagramScale" value="1" min="0.1" step="0.5">
-          </label>
-          <label class="panel-label">Symbol size &times;
-            <input type="number" id="inputSymbolScale" value="1.0" min="0.5" max="2.0" step="0.1">
-          </label>
-          <label class="panel-label">Label size &times;
-            <input type="range" id="inputLabelScale" min="0.5" max="2.0" step="0.1" value="1.0">
-          </label>
-          <button class="tool-btn" id="themeToggle" type="button"
-                  title="Toggle light/dark theme"
-                  style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px;">
-            <span id="themeToggleIcon">&#9790;</span>
-            <span id="themeToggleLabel">Dark</span>
-          </button>
+          <div class="display-col">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkSupports" checked> Show supports
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkLoads" checked> Show loads
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkDeflected"> Show deflected shape
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkBMD" disabled> Show bending moment diagram
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkSFD" disabled> Show shear force diagram
+            </label>
+          </div>
+          <div class="display-col">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkDiagLabels"> Show diagram values
+            </label>
+            <label class="checkbox-label"><input type="checkbox" id="chkNodeLabels"> Node labels</label>
+            <label>Deflection scale ×
+              <input type="number" id="inputScale" value="100" min="1" step="10">
+            </label>
+            <label>BMD / SFD scale ×
+              <input type="number" id="inputDiagramScale" value="1" min="0.1" step="0.5">
+            </label>
+            <label class="panel-label">Symbol size &times;
+              <input type="number" id="inputSymbolScale" value="1.0" min="0.5" max="2.0" step="0.1">
+            </label>
+            <label class="panel-label">Label size &times;
+              <input type="range" id="inputLabelScale" min="0.5" max="2.0" step="0.1" value="1.0">
+            </label>
+            <button class="tool-btn" id="themeToggle" type="button"
+                    title="Toggle light/dark theme"
+                    style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px;">
+              <span id="themeToggleIcon">&#9790;</span>
+              <span id="themeToggleLabel">Dark</span>
+            </button>
+          </div>
         </div>
       </details>
 

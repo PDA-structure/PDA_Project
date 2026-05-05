@@ -306,7 +306,7 @@ details.card:has(#chkDeflected) .checkbox-label {
   margin-bottom: 2px;
 }
 
-details.card:has(#chkDeflected) .display-body > label:not(.checkbox-label) {
+details.card:has(#chkDeflected) .display-col > label:not(.checkbox-label) {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -315,29 +315,29 @@ details.card:has(#chkDeflected) .display-body > label:not(.checkbox-label) {
   margin-bottom: 2px;
 }
 
-details.card:has(#chkDeflected) .display-body > label input[type="number"],
-details.card:has(#chkDeflected) .display-body > label.panel-label input[type="number"],
-details.card:has(#chkDeflected) .display-body > label.panel-label input[type="range"] {
+details.card:has(#chkDeflected) .display-col > label input[type="number"],
+details.card:has(#chkDeflected) .display-col > label.panel-label input[type="number"],
+details.card:has(#chkDeflected) .display-col > label.panel-label input[type="range"] {
   font-size: 11px;
   padding: 2px 5px;
 }
 
-/* Display body — 2-column grid (vhi).
-   Items default to column 1; chkDiagLabels and everything after it move to column 2.
-   Uses CSS :has() + general sibling combinator (~) for the split point. */
+/* Display body — 2 explicit column wrappers (w2a, replaces vhi grid auto-placement).
+   Two <div class="display-col"> children render side-by-side via flex-row;
+   each col is itself a flex-column. Deterministic row alignment — first item
+   of col 1 (chkSupports) and first item of col 2 (chkDiagLabels) at same baseline. */
 details.card:has(#chkDeflected) .display-body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: var(--space-3);
-  row-gap: 2px;
-  align-items: start;
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-3);
+  align-items: flex-start;
 }
-details.card:has(#chkDeflected) .display-body > * {
-  grid-column: 1;
-}
-details.card:has(#chkDeflected) .display-body > .checkbox-label:has(#chkDiagLabels),
-details.card:has(#chkDeflected) .display-body > .checkbox-label:has(#chkDiagLabels) ~ * {
-  grid-column: 2;
+details.card:has(#chkDeflected) .display-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Solve button ─────────────────────────────────────────── */
