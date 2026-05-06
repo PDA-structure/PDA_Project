@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
-status: paused
-stopped_at: "2026-05-05 — Big UI iteration session: 7 quick tasks shipped + Phase 999.5 BACKLOG captured + 2 todos. All ✅ user-approved. Day closed."
-last_updated: "2026-05-05T22:30:00.000Z"
-last_activity: "2026-05-05 -- Marathon UI iteration session. Phase 999.5 (BACKLOG) ribbon-hierarchy CONTEXT.md captured (11 decisions across 4 gray areas: `bdb9e83`+`de81925`+`a6fab29`). Then 7 quick tasks shipped, all ✅ approved end-of-session: (sq0) light-mode contrast pass for frame2d UDL/Spring panels + canvas grid `--color-grid #eeeeee → #d4d8df`, Mac UAT approved (`195ac08`+`e15392f`+`4639b65`+`c3d1434`); (tke) Bundle A — Display section vertical-stack via `:has()` + tighter `.card { min-width 180→140 }` + `summary { 11→10px }` (`77e2134`+`24e1867`); (u2h) smaller buttons + tighter min-width — `.tool-btn { font-size 12→11px; padding var(--space-2) var(--space-3) → var(--space-1) var(--space-2) }` + `.card { min-width 140→110 }`, plus inline-edit follow-up `2c85ec5` adding flex-column to bare Display labels (`7d2d671`+`2c85ec5`+`f98b06b`); (uzg) canvas real-estate — all 10 cards default closed (chevron-right) + results panel relocated from below canvas to between toolbar and canvas with 30vh cap (`6c60da8`+`349f4eb`); (v7c) results panel relocated again to right sidebar (320px column with vertical scroll, wide tables get horizontal scroll inside container) (`f6c086a`+`403082d`); (vhi) Display 2-column via CSS grid `:has()` split — found auto-placement bug where col-2 items landed at row 5 not row 1 (`df9730f`); (vxu) checkbox-labels render inline fix — net -4 lines (`906badc`+`135652f`); (w2a) replaced vhi grid with 2 explicit `<div class=\"display-col\">` wrappers — deterministic top-aligned 2-column layout (`7984e97`+`97dc042`). Also captured Bundle A parent todo `f1a4583` (now functionally complete) and multi-monitor detachable panels todo `b13797c` (deferred, needs `/gsd-discuss-phase`). BMD/SFD checkbox bug investigated — wiring clean at HTML/JS/API/solver layers, root cause was visual confusion from old `vhi` 2-column layout, resolved by `w2a` re-alignment. pytest 61/61 throughout. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access."
+status: idle
+stopped_at: "2026-05-06 — Phase 7 complete: Plan 07-03 Tasks 1-4 closed (with two execution-time scope reframings); ROADMAP success criterion 4 reframed; sibling repo pushed."
+last_updated: "2026-05-06T22:00:00.000Z"
+last_activity: "2026-05-06 -- Phase 7 closed. Resume from 2026-05-02 pause. Sibling-repo: committed Plan 07-02 follow-up fix `9342288` (explicit SectionTypeId/MaterialId on AnalyticalMember post-AddAssociation; rescued from uncommitted working-tree state where the 2026-05-02 debug session convert-missing-section-false had landed the patch). Plan 07-03 Task 2: Fixture 1 + Fixture 3 authored on Windows host, Save-As+Undo+Save-As pattern (because original save was post-conversion); transferred via OneDrive web; placed at canonical sibling-repo path. Fixture 2 redefined mid-flight as 18-element multi-storey positive path (8 cols + 8 beams + 2 bracings) — the planned 'broken element triggers missing-section' is unauthorable through Revit UI (Material=<None> rejected; closest reach is Material=Air which converts cleanly); skip taxonomy verified by code review of run_batch try/except ladder. UAT_RUNBOOK.md updated to match. Sibling-repo `22aef2a` for fixtures + runbook. Plan 07-03 Task 3: icon.png generated programmatically (PIL placeholder, 64x64 portal-frame outline + dashed brace + orange-red filled-circle nodes, visually distinct from ExportToPDA), sibling-repo `75b7634`; pushed to origin/main; engineer redeployed bundle to %APPDATA%\\\\pyRevit\\\\Extensions\\\\PDA_customRevit.extension\\\\PDA_Tools.tab\\\\Analytical.panel\\\\col1.stack\\\\ConvertToAnalytical.pushbutton\\\\ on Windows host; pyRevit Reload completed; ribbon button visible; tooltip matches; deploy verified. Plan 07-03 Task 4: empirical UAT all green — Fixture 1 (`converted: 7`, single-undo all 7 in one step, SectionTypeId+MaterialId non-null on browser spot-check), Fixture 2 (`converted: 18`, single-undo all 18 in one step — Pitfall 5 holds at scale), Fixture 3 (`converted: 0 | already-associated: 7`, no duplicates). ROADMAP success criterion 4 reframed mid-task from 'Tier 1 round-trip via Phase 5 ExportToPDA' to 'analytical model well-formed for Phase 8 Tier 2 exporter' — Phase 5 reads detail lines + DEFAULT_E/I/A and CANNOT validate Phase 7 metadata (verified by `_collect_detail_lines` filtering OST_Lines and `_build_json` writing hardcoded constants). Real round-trip is Phase 8. Three new memory entries: revit_ui_blocks_broken_structural_elements.md, revit_steel_analysis_info_inaccuracy.md, revit_phase5_export_uses_detail_lines_only.md. Phase 7 closes — REVIT-CONVERT-01/02/03/04 all closed; v1.3 progress 1/6 phases complete. Next entry: Phase 8 Tier 2 ExportToPDA (will read AnalyticalMembers directly + emit real section/material into the JSON)."
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 67
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -21,18 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 
 **Core value:** Engineers can define a structure (in browser or via Revit pushbutton), solve it, and get accurate displacement, reaction, and member force results through a clean API — reliably, without manual FEM setup.
-**Current focus:** Phase 07 — revit-element-to-analytical-conversion
+**Current focus:** Phase 8 — Revit Tier 2 Analytical Exporter (next entry point in v1.3 milestone)
 
 ## Current Position
 
-Phase: 07 (revit-element-to-analytical-conversion) — PAUSED at Plan 07-03 Task 2
-Plan: 3 of 3 (07-01 ✓, 07-02 ✓, 07-03 partial: Task 1 done, runbook drafted)
-Status: Paused — awaiting Revit access
-Last activity: 2026-05-05 -- 7 quick tasks + Phase 999.5 BACKLOG + 2 todos, all ✅ user-approved. Phase 999.5 ribbon-hierarchy CONTEXT.md captured (`bdb9e83`+`de81925`+`a6fab29`). Quick chain: sq0 light-mode contrast + token-driven UDL/Spring panels (`195ac08`+`e15392f`+`4639b65`+`c3d1434`); tke Bundle A Display vertical-stack + tighter cards (`77e2134`+`24e1867`); u2h smaller buttons + tighter min-width + bare-label flex-column (`7d2d671`+`2c85ec5`+`f98b06b`); uzg cards-closed-by-default + results panel above canvas (`6c60da8`+`349f4eb`); v7c results panel as right sidebar (`f6c086a`+`403082d`); vhi Display grid 2-column (had auto-placement bug, replaced by w2a) + multi-monitor todo `b13797c`; vxu checkbox-labels inline fix (`906badc`+`135652f`); w2a Display 2-column via explicit wrappers (`7984e97`+`97dc042`). All baselines preserve sq0 contrast tokens; pytest 61/61 throughout. BMD/SFD bug investigated — wiring clean at all layers; root cause was visual confusion from vhi misalignment, resolved by w2a top-alignment. Phase 07 still paused at plan 07-03 Task 2 awaiting Revit access.
+Phase: 07 (revit-element-to-analytical-conversion) — COMPLETE (3/3 plans)
+Plan: all closed (07-01 ✓, 07-02 ✓, 07-03 ✓)
+Status: Phase 7 closed 2026-05-06; ready for Phase 8 entry
+Milestone v1.3 progress: 1/6 phases complete (16.7%)
+Last activity: 2026-05-06 -- Phase 7 closed. Resume from 2026-05-02 pause. Plan 07-03 Tasks 1-4 all closed with two execution-time scope reframings: (a) Fixture 2 dropped the empirical broken-element test (Revit UI prevents authoring it; Material=<None> rejected, Material=Air converts cleanly) and was redefined as 18-element multi-storey positive path; (b) ROADMAP success criterion 4 reframed from 'Phase 5 Tier 1 round-trip' to 'analytical model well-formed for Phase 8 Tier 2 exporter' (code inspection of ExportToPDA.pushbutton/script.py confirmed it reads detail lines + DEFAULT_E/I/A, not analytical metadata, so it cannot validate Phase 7 deliverables). Sibling-repo commits `9342288` (Plan 7-02 fix from 2026-05-02 debug session convert-missing-section-false rescued and committed), `22aef2a` (3 RVT fixtures + UAT_RUNBOOK update), `75b7634` (icon.png placeholder, programmatically generated 64x64 PNG); all pushed to origin/main. Empirical UAT pass on all 3 fixtures: Fixture 1 `converted: 7` + single-undo all 7 in one step + SectionTypeId+MaterialId non-null spot-check; Fixture 2 `converted: 18` + single-undo all 18 (Pitfall 5 holds at scale); Fixture 3 `converted: 0 | already-associated: 7` no duplicates. Configurable filter (SUPPORTED_CATEGORIES dict) confirmed. Three new memory entries captured architectural findings.
 
-## Resume instructions (next session, when Revit is accessible)
+## Resume instructions (next session)
 
-Sibling repo `~/Documents/CustomRevitExtension/` is at HEAD `9e5e6af` with three Phase 7 commits (`6aa4156` + `5ac52b7`/`6101200`/`b9d3e07` + `9e5e6af`). Pause note: `.planning/notes/2026-05-02-phase07-paused-no-revit.md`.
+Phase 7 is closed. Next entry point is Phase 8 — Revit Tier 2 ExportToPDA hardening. Per memory `revit_phase5_export_uses_detail_lines_only.md`, Phase 8 must read `AnalyticalMember` directly (`SectionTypeId`, `MaterialId`, `GetCurve()` for endpoints) and emit real section/material values into the JSON — NOT the DEFAULT_E/I/A constants used by Phase 5 Tier 1. Per memory `revit_steel_analysis_info_inaccuracy.md`, Phase 8 should add validation against Eurocode/AISC catalogue values for steel sections, with diagnostics for divergence.
+
+Sibling repo `~/Documents/CustomRevitExtension/` is at HEAD `75b7634` (origin/main in sync). Phase 7 commits (chronological): `1abc870` + `381ae53` + `5ac52b7` + `6101200` + `b9d3e07` + `6aa4156` + `9e5e6af` + `9342288` + `22aef2a` + `75b7634`.
 
 Outstanding work (Plan 07-03):
 

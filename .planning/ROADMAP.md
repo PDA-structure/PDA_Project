@@ -50,7 +50,7 @@ Full archive: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md)
 
 ### 🟢 v1.3 — Revit Tier 2 + Results-Import (Active)
 
-- [ ] **Phase 7: Revit Element-to-Analytical Conversion** (0/3 plans) — pyRevit pushbutton converts user-selected physical columns/beams/bracings to AnalyticalMembers; foundation for Tier 2 export
+- [x] **Phase 7: Revit Element-to-Analytical Conversion** (3/3 plans) — pyRevit pushbutton converts user-selected physical columns/beams/bracings to AnalyticalMembers; foundation for Tier 2 export. Completed 2026-05-06.
 - [ ] **Phase 8: Revit Tier 2 — Analytical Exporter Hardening (Table Stakes + revit_meta)** (0/4 plans) — shared geometry pipeline, view-plane projection, section properties, supports, dual-key revit_meta emission, additive Pydantic passthrough, legacy retirement, round-trip UAT
 - [ ] **Phase 9: Revit Tier 2 — Differentiators (Springs, Pin-Releases, Loads)** (0/3 plans) — extract spring supports, member end-releases, and analytical loads into the canonical JSON
 - [ ] **Phase 10: Revit Results-Import — Table Stakes** (0/3 plans) — pyRevit pushbutton reads solver JSON; matches members via revit_meta dual-key; annotates members + reactions with TextNotes; transaction-safe + idempotent
@@ -87,7 +87,7 @@ Full archive: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md)
   1. Engineer selects physical columns/beams/bracings in a Revit 2025+ project, clicks "ConvertToAnalytical" pushbutton in `Analytical.panel/`, and sees AnalyticalMember instances generated for each selected element with section/material/parameter associations preserved
   2. Re-running the pushbutton on already-converted elements does not create duplicates (idempotent via `AnalyticalToPhysicalAssociationManager.GetAssociatedElementId` pre-check)
   3. Final TaskDialog summary reports `{converted: N, skipped: M, total: N+M}` with per-skip reasons (already-associated, unsupported category, missing physical-side data); a single bad element does not abort the whole batch
-  4. The converted output passes the Phase 5/v1.2 Tier 1 frame2d round-trip smoke test (Revit's analytical model is well-formed enough that a downstream Tier 2 exporter — Phase 8 — can read it)
+  4. The converted output is well-formed for downstream Tier 2 export (Phase 8): SectionTypeId + MaterialId non-null on every AnalyticalMember (verified Fixture 1 analytical-browser spot-check), 1:1 physical↔analytical associations intact (Fixture 3 idempotent re-run produces no duplicates), single-undo rollback succeeds at scale (Pitfall 5: TransactionGroup.Assimilate verified at 7 and 18 elements). The empirical round-trip exercising section + material flows through Phase 8 Tier 2 — not Phase 5 Tier 1, which reads detail lines + DEFAULT_E/I/A and cannot validate Phase 7's analytical metadata. Reframed during Plan 07-03 execution (2026-05-06) after code inspection of `ExportToPDA.pushbutton/script.py` confirmed it does not consume `AnalyticalMember.SectionTypeId` or `MaterialId`.
   5. Selection filter is a configurable list of categories (`OST_StructuralColumns`, `OST_StructuralFraming`) — NOT hard-coded — so v1.5+ Phase 15 can extend to `OST_Floors` / `OST_StructuralFoundation` without rewiring
 **Plans**: 3 plans
 **UI hint**: yes
@@ -95,7 +95,7 @@ Full archive: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md)
 Plans:
 - [x] 07-01-PLAN.md — Bundle + Selection + Category Filter (skeleton: bundle.yaml, script.py shell, hybrid input, SUPPORTED_CATEGORIES registry, ISelectionFilter)
 - [x] 07-02-PLAN.md — Conversion + Idempotency + Transactions (AnalyticalMember.Create + AddAssociation per D-11 reversal; TransactionGroup + per-element Tx; read-back verify; skip-reason taxonomy)
-- [ ] 07-03-PLAN.md — Diagnostics + UAT + Windows Deploy (TaskDialog + Output Window with linkify; 3 RVT fixtures; UAT_RUNBOOK.md; Phase 5 Tier 1 round-trip; Windows manual-copy deploy)
+- [x] 07-03-PLAN.md — Diagnostics + UAT + Windows Deploy (TaskDialog + Output Window with linkify; 3 RVT fixtures; UAT_RUNBOOK.md; Windows manual-copy deploy; Tier 1 round-trip deferred to Phase 8 — Phase 5 ExportToPDA reads detail lines + DEFAULT_E/I/A, not analytical metadata, so it cannot validate Phase 7 deliverables)
 
 ### Phase 8: Revit Tier 2 — Analytical Exporter Hardening (Table Stakes + revit_meta)
 **Goal**: Engineers can export a hardened canonical PDA JSON from a Revit 2025+ analytical model — including geometry, supports, section properties, and dual-key `revit_meta` for round-trip identity — and round-trip it back through the frame2d UI / `/solve/frame2d` endpoint without loss.
@@ -161,7 +161,7 @@ Plans:
 | 4. 2D Frame Solver + UI Hardening | v1.2 | 3/3 | Complete | 2026-04-20 |
 | 5. Revit Tier 1 — Geometry Exporter | v1.2 | 4/4 | Complete | 2026-04-21 |
 | 6. frame_v2 — Pure-Bar Joint Robustness | v1.2 | 3/3 | Complete | 2026-04-26 |
-| 7. Revit Element-to-Analytical Conversion | v1.3 | 0/3 | Not started | - |
+| 7. Revit Element-to-Analytical Conversion | v1.3 | 3/3 | Complete | 2026-05-06 |
 | 8. Revit Tier 2 — Hardening + revit_meta | v1.3 | 0/4 | Not started | - |
 | 9. Revit Tier 2 — Differentiators | v1.3 | 0/3 | Not started | - |
 | 10. Revit Results-Import — Table Stakes | v1.3 | 0/3 | Not started | - |
@@ -225,10 +225,12 @@ Plans:
 
 ---
 
-### Phase 999.5: Frame2D Ribbon Hierarchy UI (BACKLOG)
+### Phase 999.5: Frame2D Ribbon Hierarchy UI (BACKLOG — SCOPE PIVOTED 2026-05-06)
 
-**Goal:** Replace the current horizontal floating toolbar in the frame2d browser UI with a Revit-style ribbon hierarchy: a single-line of tabs at the top of the screen (FILE, EDIT, GEOMETRY, SUPPORTS, NODE LOADS, MEMBER LOADS, MEMBER PROPERTIES, DISPLAY, SOLVE — with future room for MATERIAL PROPERTIES, SECTION CALCULATOR, LOAD COMBINATIONS), each revealing a panel of buttons grouped by function. Panel constraint: max 2 buttons stacked vertically per panel, growing left-to-right as more buttons are added. Frame2d only for the spike; truss2d catches up later.
-**Context:** Identified 2026-05-05 from work-laptop UAT signal — current horizontal-wrap toolbar (rs3 spike, commit `9ef7eaa`) is approaching its density ceiling as v1.3 features (load combinations, section calculator, more support types) are about to be added. Establishing the tab→panel→button hierarchy now means: (a) it scales without re-layout when those features land, and (b) the mental model transfers cleanly to the eventual 3D / Revit-hosted UIs (Phase 12-13 Blender add-on, Phase 7-11 Revit pushbuttons), since Revit itself uses the same ribbon hierarchy. Sequenced AFTER v1.3 Revit milestone — UI modernisation waits for real-use signal, which is now arriving via work-laptop sessions.
+**⚠️ Scope pivot 2026-05-06:** Will NOT execute on the frame2d 2D browser UI. After yesterday's marathon polish session (sq0+tke+u2h+uzg+v7c+vhi+vxu+w2a), the 2D UI is in a "very close to good UX" state and user has explicitly chosen not to risk regression with another deep panel restructure. Bundle B (ribbon-prep wrappers in todo `2026-05-05-frame2d-panel-ux-cheap-wins-pre-ribbon-and-999-5-prep.md`) is also dropped — its entire rationale was reducing 999.5 migration cost on 2D, which is no longer happening. **The 11 locked decisions in `999.5-CONTEXT.md` will be re-applied as the panel/ribbon system for the v1.4 3D UI** (three.js browser-based — see project memory `project_3d_ui_threejs_primary.md`), since three.js + HTML/CSS preserves direct decision transferability. Revisit when v1.4 starts. Until then: keep CONTEXT.md as reference, do not promote.
+
+**Original goal (preserved for reference):** Replace the current horizontal floating toolbar in the frame2d browser UI with a Revit-style ribbon hierarchy: a single-line of tabs at the top of the screen (FILE, EDIT, GEOMETRY, SUPPORTS, NODE LOADS, MEMBER LOADS, MEMBER PROPERTIES, DISPLAY, SOLVE — with future room for MATERIAL PROPERTIES, SECTION CALCULATOR, LOAD COMBINATIONS), each revealing a panel of buttons grouped by function. Panel constraint: max 2 buttons stacked vertically per panel, growing left-to-right as more buttons are added. Frame2d only for the spike; truss2d catches up later.
+**Original context (preserved for reference):** Identified 2026-05-05 from work-laptop UAT signal — current horizontal-wrap toolbar (rs3 spike, commit `9ef7eaa`) is approaching its density ceiling as v1.3 features (load combinations, section calculator, more support types) are about to be added. Establishing the tab→panel→button hierarchy now means: (a) it scales without re-layout when those features land, and (b) the mental model transfers cleanly to the eventual 3D / Revit-hosted UIs (Phase 12-13 Blender add-on, Phase 7-11 Revit pushbuttons), since Revit itself uses the same ribbon hierarchy. Sequenced AFTER v1.3 Revit milestone — UI modernisation waits for real-use signal, which is now arriving via work-laptop sessions.
 **Requirements:** TBD
 **Plans:** 0 plans
 
