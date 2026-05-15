@@ -1,3 +1,15 @@
+> **RESOLVED 2026-05-15** (quick task 260515-vhr)
+>
+> Mirror of the frame2d setMode visibility-auto-enable pattern landed in `ui/truss2d/script.js`. Truss2d-specific mode-string sets:
+> - `SUPPORT_MODES = new Set(['pinned', 'rollerX', 'rollerY'])` (no 'fixed', no 'spring' — truss has 2 DOF/node)
+> - `LOAD_MODES = new Set(['load'])` (singular — truss2d uses one combined "Add Load" button that prompts inline for direction)
+>
+> Both UIs now share the same UX contract: clicking a support or load button auto-ticks the matching visibility checkbox and triggers a redraw so previously-invisible glyphs render immediately.
+>
+> Precedent: `.planning/quick/260504-ene-auto-enable-chksupports-chkloads-when-en/` (frame2d, commit 3797fe2).
+
+---
+
 ---
 created: 2026-05-04
 priority: P3
