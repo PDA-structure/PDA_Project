@@ -29,7 +29,7 @@ Phase: 07 (revit-element-to-analytical-conversion) — COMPLETE (3/3 plans)
 Plan: all closed (07-01 ✓, 07-02 ✓, 07-03 ✓)
 Status: Phase 7 closed 2026-05-06; ready for Phase 8 entry
 Milestone v1.3 progress: 1/6 phases complete (16.7%)
-Last activity: 2026-05-15 — Completed quick task 260515-vhr: mirror frame2d setMode visibility-auto-enable pattern to truss2d. Closes the truss2d follow-up captured at 260504-ene close-out. UI fix only (no solver/api/test changes); browser UAT deferred to user (Task 3 = checkpoint:human-verify). Earlier in session: sanitisation + housekeeping (SEED-012 planted sanitised, both repos PII-clean, STATE.md refreshed, 13 pending todos triaged, Package A end-to-end Tailscale validation queued for 2026-05-16). Phase 7 remains closed since 2026-05-06.
+Last activity: 2026-05-15 — Two truss2d quick wins closed: (1) Quick task 260515-vhr — mirror frame2d setMode visibility-auto-enable pattern to truss2d (commits 092fcb9 + bd91426, browser UAT passed). (2) Debug session `truss2d-load-scale-regressions` — Add Load silent fail + Scale-input stuck both confirmed phantom against current HEAD via user browser UAT; closed as `resolved_phantom`, no code changes. Earlier in session: sanitisation + housekeeping (SEED-012 planted sanitised, both repos PII-clean, STATE.md refreshed, 13 pending todos triaged, Package A end-to-end Tailscale validation queued for 2026-05-16). Phase 7 remains closed since 2026-05-06.
 
 ## Resume instructions (next session)
 
@@ -141,6 +141,7 @@ _None._
 |---|-------------|------|--------|
 | frame-v2-pin-release-multi | Fix pin-release member force recovery in multi-member structures (back-solve released θ via condensation relation; TRUST-12 regression added) | 2026-04-19 | 2dc028b |
 | truss-json-solver-mismatch | Truss2d UI rejected JSON from new ExportToPDA_Truss pyRevit pushbutton. Root cause: Windows Revit host uses manual-copy deployment (not git clone); the new truss bundle folder had never been copied to Windows, so the ribbon button clicked was actually the frame exporter. Fix: user downloaded script.py + bundle.yaml + icon.png from raw.githubusercontent.com and placed them in the Windows ExportToPDA_Truss.pushbutton/ folder, then pyRevit Reload. UI now accepts the JSON. | 2026-04-24 | (no code change — deploy-only fix) |
+| truss2d-load-scale-regressions | Add Load silent fail + Scale-factor input "stuck" after Solve, captured 2026-04-18 during Phase 3 verification. 2026-05-15 static-analysis-only debug session predicted phantom (no code-level mechanism existed in current HEAD to produce either symptom); user browser UAT against HEAD ~`2afd769` confirmed neither reproduces. 8 months of intervening UI commits (260418-vxi try/catch + error banner machinery; 317e69c zoom/pan; 71ede0f resetAll hardening; 092fcb9 setMode visibility-auto-enable) hardened the code paths cumulatively. Closed as `resolved_phantom`. Companion todo moved `pending → done/` same day. | 2026-05-15 | (no code change — resolved_phantom) |
 
 ### Blockers/Concerns
 

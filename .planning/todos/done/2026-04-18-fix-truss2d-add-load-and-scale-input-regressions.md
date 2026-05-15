@@ -2,10 +2,35 @@
 created: 2026-04-18T14:53:33.136Z
 title: Fix truss2d Add Load and Scale input regressions
 area: ui
+status: resolved_phantom
+resolved_date: 2026-05-15
+resolved_via: ".planning/debug/truss2d-load-scale-regressions.md"
 files:
   - ui/truss2d/script.js
   - ui/truss2d/index.html
 ---
+
+## RESOLVED PHANTOM 2026-05-15
+
+User browser UAT against current HEAD (~`2afd769`) confirmed **both regressions no longer reproduce**:
+
+1. **Add Load** — prompt appears as expected when clicking a node after pressing Add Load.
+2. **Scale factor input** — accepts changes after Solve, reactive `draw()` fires per keystroke.
+
+The 8-month gap between original capture (2026-04-18) and verification (2026-05-15) saw many UI commits land that hardened the relevant code paths cumulatively. No single targeted fix — most plausible contributors:
+
+- **260418-vxi** — try/catch wrapping + error banner machinery (same day as the original report). Any genuine exception now surfaces visibly instead of silently aborting the click handler.
+- **317e69c** — zoom/pan view transform with `findNodeAt` hit radius in world coords. The original symptom may have been "click slightly off the node" — affected by view scale at the time.
+- **71ede0f (260414-s3t)** — `resetAll` resets view + mode + clears panel state.
+- **092fcb9 (260515-vhr-01)** — `setMode` visibility auto-enable + `draw()` at end of `setMode`. Ensures the canvas refreshes immediately after entering Load mode.
+
+Static analysis (`.planning/debug/truss2d-load-scale-regressions.md` Evidence section) predicted this outcome — neither symptom had a code-level mechanism in current HEAD that could produce it. No fix code written. No tests added (no regression to lock down — the symptoms are not reproducible).
+
+Moved to `done/` 2026-05-15 during the day's housekeeping run.
+
+---
+
+## Original problem statement (preserved for record)
 
 ## Problem
 
