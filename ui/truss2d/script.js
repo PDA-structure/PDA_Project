@@ -87,6 +87,9 @@ const MODE_LABELS = {
   load: 'Add Load', editNode: 'Edit Node', delete: 'Delete',
 };
 
+const SUPPORT_MODES = new Set(['pinned', 'rollerX', 'rollerY']);
+const LOAD_MODES    = new Set(['load']);
+
 function setMode(m) {
   mode = m;
   currentMemberStart = null;
@@ -94,6 +97,17 @@ function setMode(m) {
     b.classList.toggle('active', b.dataset.mode === m)
   );
   document.getElementById('modeLabel').textContent = MODE_LABELS[m] || m;
+
+  // Auto-enable the matching visibility layer so clicks always produce
+  // visible feedback. Without this, supports/loads added with chkSupports/
+  // chkLoads unchecked land in the data array but render nothing.
+  // Mirrors the frame2d fix from quick task 260504-ene (commit 3797fe2).
+  if (SUPPORT_MODES.has(m)) {
+    document.getElementById('chkSupports').checked = true;
+  } else if (LOAD_MODES.has(m)) {
+    document.getElementById('chkLoads').checked = true;
+  }
+  draw();
 }
 
 // ── Canvas click ──────────────────────────────────────────────────────────
