@@ -17,3 +17,9 @@ dist/
 
 # pytest
 .pytest_cache/
+
+# Claude Code local state (personal allowlist, agent cache, worktrees)
+.claude/
+
+# Stale resume prompts — these belong in the conversation, not the repo
+RESUME_PROMPT.md

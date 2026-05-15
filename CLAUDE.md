@@ -4,6 +4,10 @@
 Long-term: cross-platform (Mac, Windows, Blender) structural engineering SaaS tool.
 Current focus: 2D truss and 2D frame/beam solvers with web API and browser UIs.
 
+## Sibling efforts (not in this repo)
+- **Custom Revit extension** — `~/Documents/CustomRevitExtension/` — pyRevit-based UI for 2D/3D model I/O against pda_project's API.
+- **Calc platform spike** — `~/Documents/handcals/marimo_spike/` — Marimo + handcalcs + forallpeople templates as a Tedds replacement (RC BS 8110, EC3 steel beam validated). Standalone until 3–4 templates + real-project use; will integrate as `design_core/checks/` + `calc_templates/` when criteria met.
+
 ## Repository layout
 ```
 pda_project/
