@@ -1,11 +1,27 @@
 ---
 title: "frame2d: resolve pure-bar joint instability in mixed beam/bar models"
-status: pending
+status: pending-partial
 priority: P1
 source: "promoted from /gsd-note"
 created: 2026-04-22
-updated: 2026-04-22
+updated: 2026-05-15
 theme: solver
+---
+
+## TRIAGE UPDATE 2026-05-15
+
+Partial progress shipped via **Phase 6 plan 06-03 (frame2d UI diagnostics)** between original capture and triage:
+
+- ✅ **Pre-solve UI warning** (acceptance criterion 6) — `validateBeforeSolve()` scan in `ui/frame2d/script.js` detects unstable configurations and renders `drawDiagnosticOverlays()` on the canvas before the user clicks Solve. Commits `38de9c7` + `6fe0065`.
+- ✅ **Descriptive 422 instead of generic "Structure is unstable"** (acceptance criterion 7) — structured 422 payload (`detail`, `cause`, `offending_nodes`, `offending_members`) added in v1.2; UI-contract test coverage in `105d8a3`. Backward-compat flat fallback preserved.
+- 🟡 **D-01 decision recorded** — STATE.md Decisions log captures: "Pure-bar θ-DOF auto-restraint as structural invariant (D-01, reject D-02 regularisation); user-supplied DOFs always win." Solver-side implementation status: needs code review to confirm whether `frame_v2.assemble_primary_stiffness_matrix` actually auto-restrains pure-bar θ DOFs, or if the diagnostic is the only line of defence.
+- ⚠️ **Memory cross-reference** — `solver_theta_dof_provenance` flags that "brittle θ handling causes pin-release + pure-bar bugs; tests must not rely on DOF zeroing" — testing-hygiene criterion 5 here is reinforced by that memory.
+- ❌ **Secondary finding** (acceptance criterion 5) — `apply_equivalent_nodal_actions` skips bars (`frame_v2.py:376` at original capture; line may have moved) — UDL on a bar still silently dropped. Status: unchanged, decision still owed.
+
+**Outstanding:** acceptance criteria 4 (solver-side auto-restraint), 5 (bar-UDL handling decision + impl), and the analytical verification test with anti-DOF-zeroing hygiene.
+
+**Recommendation:** when this surfaces next, start with a code review of `frame_v2.py` to determine whether D-01's auto-restraint is implemented — that determines whether this is now "verification + testing left" or "full solver fix + testing left."
+
 ---
 
 ## Goal

@@ -3,12 +3,41 @@ created: 2026-05-04T20:15:00.000Z
 title: frame2d horizontal toolbar — improve wrap behaviour on window resize
 area: ui
 priority: medium
+status: resolved
+resolved_date: 2026-05-05
+resolved_by:
+  - "260505-tke (commit 77e2134) — `.card { min-width: 180px → 140px }`, `summary { font-size: 11px → 10px }`"
+  - "260505-u2h (commit 7d2d671) — `.card { min-width: 140px → 110px }`, `.tool-btn` smaller padding + font-size 11px"
 files:
   - ui/frame2d/style.css
 related:
   - .planning/quick/260504-rs3-frame2d-ui-followup-3-horizontal-toolbar/260504-rs3-PLAN.md
   - .planning/quick/260504-rs3-frame2d-ui-followup-3-horizontal-toolbar/260504-rs3-SUMMARY.md
+  - .planning/quick/260505-tke-frame2d-bundle-a-display-section-density/
+  - .planning/quick/260505-u2h-frame2d-bundle-a-follow-up-button-card-d/
 ---
+
+## RESOLVED 2026-05-05
+
+Implemented in Bundle A (2026-05-05) over two atomic CSS-only commits:
+
+- **260505-tke** (`77e2134`) addressed the "smaller summary text in collapsed state" (option 2 in the original recommendation): `summary { font-size: 11px → 10px }`. Also dropped `.card { min-width: 180px → 140px }` per option 1.
+- **260505-u2h** (`7d2d671`) tightened further: `.card { min-width: 140px → 110px }` plus `.tool-btn` font-size 11px and reduced padding. Toolbar now stays on a single row across typical Mac and laptop viewports.
+
+UAT-approved 2026-05-05 as part of the session-end approval chain. Acceptance criteria met:
+- At ~1500-1900px: toolbar occupies ≤ 2 rows ✓
+- At ~1100px: toolbar readable, no buttons cut off ✓
+- No JS changes (script.js byte-equality preserved) ✓
+- No card content changes (10 cards locked from nwi) ✓
+- Token system + design language preserved (sq0 + tke + lti + nwi baselines all byte-equivalent) ✓
+
+Card consolidation (option 3) was the natural escalation if wrap was still ugly. Not needed — the 110px min-width + font-size tightening was sufficient on its own. Option 3 remains theoretically available if a future device class surfaces the issue again.
+
+Moved to `done/` 2026-05-15 during todo triage.
+
+---
+
+## Original problem statement (preserved for record)
 
 ## Problem
 
