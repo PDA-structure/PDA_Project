@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "solver": "truss2d",
+  "nodes": [
+    [0.0, 0.0],
+    [2.0, 0.0],
+    [4.0, 0.0],
+    [6.0, 0.0],
+    [8.0, 0.0],
+    [2.0, 1.5],
+    [4.0, 1.5],
+    [6.0, 1.5]
+  ],
+  "members": [
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [4, 5],
+    [6, 7],
+    [7, 8],
+    [1, 6],
+    [2, 6],
+    [3, 6],
+    [3, 7],
+    [3, 8],
+    [4, 8],
+    [5, 8]
+  ],
+  "E": 200000000000.0,
+  "A": 0.01,
+  "forceVector": [
+    0, 0,
+    0, 0,
+    0, 0,
+    0, 0,
+    0, 0,
+    0, -10000,
+    0, -10000,
+    0, -10000
+  ],
+  "restrainedDoF": [1, 2, 10],
+  "canvas": {
+    "origin": { "x": 100, "y": 400 },
+    "nodes": [
+      { "id": 0, "x": 100, "y": 400, "realX": 0.0, "realY": 0.0 },
+      { "id": 1, "x": 140, "y": 400, "realX": 2.0, "realY": 0.0 },
+      { "id": 2, "x": 180, "y": 400, "realX": 4.0, "realY": 0.0 },
+      { "id": 3, "x": 220, "y": 400, "realX": 6.0, "realY": 0.0 },
+      { "id": 4, "x": 260, "y": 400, "realX": 8.0, "realY": 0.0 },
+      { "id": 5, "x": 140, "y": 370, "realX": 2.0, "realY": 1.5 },
+      { "id": 6, "x": 180, "y": 370, "realX": 4.0, "realY": 1.5 },
+      { "id": 7, "x": 220, "y": 370, "realX": 6.0, "realY": 1.5 }
+    ],
+    "members": [
+      { "start": 0, "end": 1 },
+      { "start": 1, "end": 2 },
+      { "start": 2, "end": 3 },
+      { "start": 3, "end": 4 },
+      { "start": 5, "end": 6 },
+      { "start": 6, "end": 7 },
+      { "start": 0, "end": 5 },
+      { "start": 1, "end": 5 },
+      { "start": 2, "end": 5 },
+      { "start": 2, "end": 6 },
+      { "start": 2, "end": 7 },
+      { "start": 3, "end": 7 },
+      { "start": 4, "end": 7 }
+    ],
+    "supports": {
+      "0": "pinned",
+      "4": "rollerY"
+    },
+    "loads": [
+      { "nodeId": 5, "direction": "y", "magnitude": -10000 },
+      { "nodeId": 6, "direction": "y", "magnitude": -10000 },
+      { "nodeId": 7, "direction": "y", "magnitude": -10000 }
+    ]
+  },
+  "_notes": "Test fixture for quick task 260522-81l. 4-panel Pratt-style truss, 8m span, 1.5m depth. Bottom chord nodes 1-5 (0,2,4,6,8 m along x). Top chord nodes 6-8 (above bottom interior nodes). Pinned at node 1, roller-Y at node 5. 10 kN downward at each top-chord node. Expected: bottom chord in tension, top chord + verticals in compression, diagonals split. Load via the truss2d UI's 'Load JSON' button to drive tonight's visual iteration loop without geometry setup."
+}
