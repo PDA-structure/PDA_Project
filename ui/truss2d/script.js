@@ -366,6 +366,7 @@ function draw() {
   if (results) drawReactions();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
+  if (results) drawLegend();
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
     throw err;
@@ -653,6 +654,63 @@ function drawLoads() {
     ctx.textAlign = 'center';
     ctx.fillText((Math.abs(mag) / 1000).toFixed(1) + ' kN', n.x, n.y + (l.direction === 'y' ? arrowLen + 14*sc : -8));
   });
+}
+
+function drawLegend() {
+  if (!results) return;
+  const sc = getSymbolScale();
+
+  // Legend lives in screen space — reset transform so pan/zoom don't shift or scale it.
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  const fs      = Math.round(11 * sc);
+  const lh      = Math.round(16 * sc);
+  const swatchW = Math.round(22 * sc);
+  const padX    = Math.round(10 * sc);
+  const padY    = Math.round(8 * sc);
+  const gap     = Math.round(8 * sc);
+
+  const items = [
+    { color: '#1565c0', label: 'Tension (+)' },
+    { color: '#b71c1c', label: 'Compression (-)' },
+    { color: '#999',    label: 'Near-zero' },
+    { color: '#7b1fa2', label: 'Reaction' },
+  ];
+
+  ctx.font = `${fs}px Arial`;
+  let maxTextW = 0;
+  items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
+  const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
+  const boxH = padY * 2 + items.length * lh;
+
+  const margin = Math.round(10 * sc);
+  const x0 = canvas.width  - boxW - margin;
+  const y0 = margin;
+
+  ctx.fillStyle   = 'rgba(255, 255, 255, 0.92)';
+  ctx.strokeStyle = '#ccc';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.rect(x0, y0, boxW, boxH);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'middle';
+  items.forEach((it, i) => {
+    const rowY = y0 + padY + i * lh + Math.round(lh / 2);
+    ctx.strokeStyle = it.color;
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.moveTo(x0 + padX, rowY);
+    ctx.lineTo(x0 + padX + swatchW, rowY);
+    ctx.stroke();
+    ctx.fillStyle = '#222';
+    ctx.fillText(it.label, x0 + padX + swatchW + gap, rowY);
+  });
+
+  ctx.restore();
 }
 
 function drawReactions() {
