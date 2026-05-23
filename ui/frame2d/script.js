@@ -916,14 +916,14 @@ function drawMemberLabel(n1, n2, text, color) {
   ctx.save();
   ctx.translate(mx + nx*14, my + ny*14);
   ctx.rotate(Math.abs(angle) > Math.PI/2 ? angle + Math.PI : angle);
-  ctx.font = '500 ' + fs + 'px ' + LABEL_FONT_FAMILY;
+  ctx.font = '600 ' + fs + 'px ' + LABEL_FONT_FAMILY;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   // Halo so labels remain readable when they sit close to other labels or members.
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   ctx.lineJoin    = 'round';
   ctx.miterLimit  = 2;
-  ctx.lineWidth   = 3;
+  ctx.lineWidth   = 4;
   ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)';
   ctx.strokeText(text, 0, 0);
   ctx.fillStyle = color;
@@ -1187,8 +1187,27 @@ function drawHatch(from, to, base, dir) {
 // canvas export. Drops the Reaction row when chkReactions is unchecked.
 function drawLegend() {
   if (!results) return;
-  const sc = getSymbolScale();
 
+  // Each row appears only when its respective diagram / toggle is active.
+  // T/C/Z (axial) → chkAFD; BMD → chkBMD; SFD → chkSFD; Reaction → chkReactions.
+  const chkAFD = document.getElementById('chkAFD');
+  const chkBMD = document.getElementById('chkBMD');
+  const chkSFD = document.getElementById('chkSFD');
+  const chkR   = document.getElementById('chkReactions');
+
+  const items = [];
+  if (chkAFD && chkAFD.checked) {
+    items.push({ color: cssVar('--canvas-tension'),     label: 'Tension (+)' });
+    items.push({ color: cssVar('--canvas-compression'), label: 'Compression (-)' });
+    items.push({ color: cssVar('--canvas-zero'),        label: 'Near-zero' });
+  }
+  if (chkBMD && chkBMD.checked) items.push({ color: cssVar('--canvas-bmd'), label: 'Bending moment' });
+  if (chkSFD && chkSFD.checked) items.push({ color: cssVar('--canvas-sfd'), label: 'Shear force' });
+  if (!chkR || chkR.checked)    items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
+
+  if (items.length === 0) return;  // nothing to explain — don't draw an empty card
+
+  const sc = getSymbolScale();
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);  // screen-space — pan/zoom must NOT move/scale the legend
 
@@ -1200,17 +1219,7 @@ function drawLegend() {
   const gap     = Math.round(8 * sc);
   const margin  = Math.round(10 * sc);
 
-  const items = [
-    { color: cssVar('--canvas-tension'),     label: 'Tension (+)' },
-    { color: cssVar('--canvas-compression'), label: 'Compression (-)' },
-    { color: cssVar('--canvas-zero'),        label: 'Near-zero' },
-  ];
-  const chkR = document.getElementById('chkReactions');
-  if (!chkR || chkR.checked) {
-    items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
-  }
-
-  ctx.font = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
   let maxTextW = 0;
   items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
   const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
@@ -1219,12 +1228,21 @@ function drawLegend() {
   const y0 = margin;
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  ctx.fillStyle   = isDark ? 'rgba(22, 26, 32, 0.96)' : 'rgba(255, 255, 255, 0.97)';
-  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.28)' : '#888';
-  ctx.lineWidth   = 1.5;
+
+  // Subtle drop shadow so the card visually lifts off the canvas.
+  ctx.shadowColor   = isDark ? 'rgba(0, 0, 0, 0.55)' : 'rgba(0, 0, 0, 0.18)';
+  ctx.shadowBlur    = 6;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle     = isDark ? 'rgba(22, 26, 32, 0.97)' : 'rgba(255, 255, 255, 0.98)';
   ctx.beginPath();
   ctx.rect(x0, y0, boxW, boxH);
   ctx.fill();
+
+  // Clear shadow before stroking the border so the border itself doesn't blur.
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.38)' : '#555';
+  ctx.lineWidth   = 2;
   ctx.stroke();
 
   ctx.textAlign    = 'left';
@@ -1250,7 +1268,7 @@ function drawHaloedLabel(x, y, text, color) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   ctx.lineJoin    = 'round';
   ctx.miterLimit  = 2;
-  ctx.lineWidth   = 3;
+  ctx.lineWidth   = 4;
   ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)';
   ctx.strokeText(text, x, y);
   ctx.fillStyle = color;
@@ -1287,7 +1305,7 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font        = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
   ctx.textAlign   = 'center';
   ctx.textBaseline = 'middle';
 
@@ -1324,7 +1342,7 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font        = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
   ctx.textAlign   = 'center';
   ctx.textBaseline = 'middle';
 
