@@ -842,6 +842,15 @@ function drawGrid() {
 }
 
 function drawMembers() {
+  // Normalisation pass: compute max |axial force| once per draw so thickness scales linearly across members.
+  let maxAbsForce = 0;
+  if (results && results.member_forces) {
+    for (let i = 0; i < results.member_forces.length; i++) {
+      const af = Math.abs(results.member_forces[i]);
+      if (af > maxAbsForce) maxAbsForce = af;
+    }
+  }
+
   members.forEach((m, idx) => {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
@@ -850,6 +859,7 @@ function drawMembers() {
     // colour from results
     let color = m.type === 'bar' ? cssVar('--canvas-bar') : cssVar('--canvas-stroke');
     let forceLabel = null;
+    let thickness = 2;
 
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
@@ -857,10 +867,16 @@ function drawMembers() {
       color = isZero ? cssVar('--canvas-zero')
             : (f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression'));
       forceLabel = isZero ? null : (f / 1000).toFixed(2) + ' kN';
+
+      if (maxAbsForce > 1e-3) {
+        const af = Math.abs(f);
+        const ratio = af < 1e-3 ? 0 : (af / maxAbsForce);
+        thickness = 1.5 + 4.5 * ratio;
+      }
     }
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = thickness;
     if (m.type === 'bar') ctx.setLineDash([6, 4]);
     ctx.beginPath();
     ctx.moveTo(n1.x, n1.y);
