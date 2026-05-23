@@ -383,6 +383,15 @@ function drawGrid() {
 }
 
 function drawMembers() {
+  // Normalisation pass: compute max |axial force| once per draw so thickness scales linearly across members.
+  let maxAbsForce = 0;
+  if (results && results.member_forces) {
+    for (let i = 0; i < results.member_forces.length; i++) {
+      const af = Math.abs(results.member_forces[i]);
+      if (af > maxAbsForce) maxAbsForce = af;
+    }
+  }
+
   members.forEach((m, idx) => {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
@@ -390,6 +399,7 @@ function drawMembers() {
 
     let color = '#555';
     let label = null;
+    let thickness = 2;
 
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
@@ -397,10 +407,16 @@ function drawMembers() {
       else if (f > 0)                { color = '#1565c0'; }  // tension  = blue
       else                           { color = '#b71c1c'; }  // compression = red
       label = (f / 1000).toFixed(2) + ' kN';
+
+      if (maxAbsForce > 1e-3) {
+        const af = Math.abs(f);
+        const ratio = af < 1e-3 ? 0 : (af / maxAbsForce);
+        thickness = 1.5 + 4.5 * ratio;
+      }
     }
 
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = thickness;
     ctx.beginPath();
     ctx.moveTo(n1.x, n1.y);
     ctx.lineTo(n2.x, n2.y);
