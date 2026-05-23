@@ -363,7 +363,7 @@ function draw() {
   if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
   if (document.getElementById('chkSupports')?.checked) drawSupports();
   if (document.getElementById('chkLoads')?.checked) drawLoads();
-  if (results) drawReactions();
+  if (results && document.getElementById('chkReactions')?.checked) drawReactions();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
   if (results) drawLegend();
@@ -724,8 +724,10 @@ function drawLegend() {
     { color: '#1565c0', label: 'Tension (+)' },
     { color: '#b71c1c', label: 'Compression (-)' },
     { color: '#999',    label: 'Near-zero' },
-    { color: '#7b1fa2', label: 'Reaction' },
   ];
+  if (document.getElementById('chkReactions')?.checked) {
+    items.push({ color: '#7b1fa2', label: 'Reaction' });
+  }
 
   ctx.font = `${fs}px Arial`;
   let maxTextW = 0;
