@@ -911,16 +911,31 @@ function drawMemberLabel(n1, n2, text, color) {
   const mx = (n1.x + n2.x) / 2, my = (n1.y + n2.y) / 2;
   const dx = n2.x - n1.x, dy = n2.y - n1.y;
   const len = Math.hypot(dx, dy) || 1;
+
+  // Perpendicular sign chosen to point AWAY from the structure centroid so
+  // top-chord labels fan up, bottom-chord labels fan down, and diagonals fan
+  // outward — de-clusters member labels at converging nodes.
   let nx = -dy/len, ny = dx/len;
-  if (ny > 0) { nx = -nx; ny = -ny; }
+  let cx = 0, cy = 0;
+  for (let i = 0; i < nodes.length; i++) { cx += nodes[i].x; cy += nodes[i].y; }
+  cx /= nodes.length;
+  cy /= nodes.length;
+  if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
+
   const angle = Math.atan2(dy, dx);
+  const fs = Math.round((BASE_LABEL_SIZE - 1) * labelScale * getSymbolScale());
   ctx.save();
   ctx.translate(mx + nx*14, my + ny*14);
   ctx.rotate(Math.abs(angle) > Math.PI/2 ? angle + Math.PI : angle);
-  ctx.fillStyle = color;
-  ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY;
+  ctx.font = fs + 'px ' + LABEL_FONT_FAMILY;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  // Halo so labels remain readable when they sit close to other labels or members.
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.lineWidth   = 3;
+  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = color;
   ctx.fillText(text, 0, 0);
   ctx.restore();
 }
