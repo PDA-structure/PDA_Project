@@ -799,6 +799,10 @@ function draw() {
   drawDiagnosticOverlays();   // Phase 6 PUREBAR-04 — pre/post-solve red highlights
   if (document.getElementById('chkSupports').checked) drawSupports();
   if (document.getElementById('chkLoads').checked) drawNodeLoads();
+  if (results) {
+    const chkR = document.getElementById('chkReactions');
+    if (!chkR || chkR.checked) drawReactions();
+  }
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
     drawNodeLabels();
@@ -1173,56 +1177,163 @@ function drawHatch(from, to, base, dir) {
 }
 
 // ── Node loads ────────────────────────────────────────────────────────────
+// Halo-stroked label — used by every on-canvas value label so text stays readable
+// over support hatching, adjacent arrows, and in either light or dark mode.
+function drawHaloedLabel(x, y, text, color) {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.lineWidth   = 3;
+  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+}
+
+// Apex-at-node force arrow: head triangle touches the node, shaft extends OPPOSITE
+// to the force direction, label sits at the tail outside the structure. Used by
+// both drawNodeLoads (loads) and drawReactions (reactions).
+function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
+  const sc        = getSymbolScale();
+  const arrowLen  = 24 * sc;
+  const headDepth = 5 * sc;
+  const arrowHW   = 5 * sc;
+  const apexGap   = 2 * sc;     // pull-back so coincident X+Y arrows don't merge into a diamond
+  const fs        = Math.round(BASE_LABEL_SIZE * labelScale * sc);
+  const labelGap  = 12 * sc;
+
+  let dirX = 0, dirY = 0;
+  if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
+  else              dirX = forceValue > 0 ?  1 : -1;
+
+  const apexX = node.x - apexGap   * dirX;
+  const apexY = node.y - apexGap   * dirY;
+  const baseX = apexX - headDepth  * dirX;
+  const baseY = apexY - headDepth  * dirY;
+  const tailX = apexX - arrowLen   * dirX;
+  const tailY = apexY - arrowLen   * dirY;
+
+  const perpX = -dirY;
+  const perpY =  dirX;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
+  ctx.lineWidth   = 2;
+  ctx.font        = `${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.beginPath();
+  ctx.moveTo(tailX, tailY);
+  ctx.lineTo(baseX, baseY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(apexX, apexY);
+  ctx.lineTo(baseX + perpX * arrowHW, baseY + perpY * arrowHW);
+  ctx.lineTo(baseX - perpX * arrowHW, baseY - perpY * arrowHW);
+  ctx.closePath();
+  ctx.fill();
+
+  drawHaloedLabel(tailX - dirX * labelGap, tailY - dirY * labelGap, label, labelColor);
+
+  ctx.restore();
+}
+
+// Moment arc with V-style arrowhead at the end of the arc. Used by both
+// drawNodeLoads (moment loads, kind='load', r=14*sc — unchanged geometry from
+// pre-cyp) and drawReactions (moment reactions, kind='reaction', r=18*sc — bigger
+// so the two visually differ when adjacent at the same node).
+function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
+  const sc      = getSymbolScale();
+  const kind    = (opts && opts.kind) || 'reaction';
+  const r       = (kind === 'load' ? 14 : 18) * sc;
+  const arrowSz = 5 * sc;
+  const fs      = Math.round(BASE_LABEL_SIZE * labelScale * sc);
+  const sign    = momentValue > 0 ? 1 : -1;  // + = CCW (mathematical / world convention)
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
+  ctx.lineWidth   = 2;
+  ctx.font        = `${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Arc geometry mirrors the pre-cyp moment-load arc so kind='load' stays
+  // byte-identical to the previous visual.
+  const startAngle = sign > 0 ? 0.3 : Math.PI + 0.3;
+  const endAngle   = sign > 0 ? Math.PI * 1.7 : Math.PI * 2.7;
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, r, startAngle, endAngle);
+  ctx.stroke();
+
+  // V-style arrowhead at end of arc (open V, not filled triangle — matches existing moment-load style)
+  const ax   = node.x + r * Math.cos(endAngle);
+  const ay   = node.y + r * Math.sin(endAngle);
+  const tang = endAngle + sign * Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(ax + arrowSz * Math.cos(tang - 0.5), ay + arrowSz * Math.sin(tang - 0.5));
+  ctx.lineTo(ax, ay);
+  ctx.lineTo(ax + arrowSz * Math.cos(tang + 0.5), ay + arrowSz * Math.sin(tang + 0.5));
+  ctx.fill();
+
+  drawHaloedLabel(node.x, node.y - r - 6, label, labelColor);
+
+  ctx.restore();
+}
+
 function drawNodeLoads() {
-  const sc = getSymbolScale();
-  const arrowLen = 24 * sc;
-  const arrowTip = 19 * sc;
-  const arrowHW = 5 * sc;
   nodeLoads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
-    ctx.strokeStyle = cssVar('--canvas-load'); ctx.fillStyle = cssVar('--canvas-load'); ctx.lineWidth = 2;
-
-    if (l.direction === 'y') {
-      const sign = l.magnitude < 0 ? 1 : -1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(n.x - arrowHW, n.y + sign*arrowTip); ctx.lineTo(n.x, n.y + sign*arrowLen); ctx.lineTo(n.x + arrowHW, n.y + sign*arrowTip);
-      ctx.fill();
-      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
-      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x, n.y + sign*(arrowLen + 14*sc));
-
-    } else if (l.direction === 'x') {
-      const sign = l.magnitude < 0 ? -1 : 1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(n.x + sign*arrowTip, n.y - arrowHW); ctx.lineTo(n.x + sign*arrowLen, n.y); ctx.lineTo(n.x + sign*arrowTip, n.y + arrowHW);
-      ctx.fill();
-      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-label');
-      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kN', n.x + sign*(arrowLen + 12*sc), n.y - 6);
-
-    } else if (l.direction === 'moment') {
-      // curved arrow for moment
-      const r = 14 * sc;
-      const sign = l.magnitude > 0 ? 1 : -1;  // + = CCW
-      ctx.strokeStyle = cssVar('--canvas-load-moment'); ctx.fillStyle = cssVar('--canvas-load-moment'); ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, r, sign > 0 ? 0.3 : Math.PI + 0.3, sign > 0 ? Math.PI * 1.7 : Math.PI * 2.7);
-      ctx.stroke();
-      // arrowhead at end of arc
-      const endAngle = sign > 0 ? Math.PI * 1.7 : Math.PI * 2.7;
-      const ax = n.x + r * Math.cos(endAngle);
-      const ay = n.y + r * Math.sin(endAngle);
-      const tang = endAngle + sign * Math.PI/2;
-      const arrowSz = 5 * sc;
-      ctx.beginPath();
-      ctx.moveTo(ax + arrowSz*Math.cos(tang - 0.5), ay + arrowSz*Math.sin(tang - 0.5));
-      ctx.lineTo(ax, ay);
-      ctx.lineTo(ax + arrowSz*Math.cos(tang + 0.5), ay + arrowSz*Math.sin(tang + 0.5));
-      ctx.fill();
-      ctx.font = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-load-moment-label');
-      ctx.fillText((Math.abs(l.magnitude)/1000).toFixed(1)+' kNm', n.x, n.y - r - 6);
+    if (l.direction === 'moment') {
+      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kNm';
+      drawMomentArc(n, l.magnitude, cssVar('--canvas-load-moment'), cssVar('--canvas-load-moment-label'), label, { kind: 'load' });
+    } else {
+      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
+      drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), cssVar('--canvas-load-label'), label);
     }
+  });
+}
+
+function drawReactions() {
+  if (!results || !results.FG) return;
+  const FG    = results.FG;
+  const ZERO  = 1e-3;
+  const fcol  = cssVar('--canvas-reaction');
+  const flbl  = cssVar('--canvas-reaction-label');
+  const mcol  = cssVar('--canvas-reaction-moment');
+
+  supports.forEach(s => {
+    const n = nodes.find(nd => nd.id === s.nodeId);
+    if (!n) return;
+    const base = s.nodeId * 3;  // frame2d: 3 DOF/node — [Fx, Fy, Mz]
+
+    let restrained = [];
+    switch (s.type) {
+      case 'fixed':   restrained = ['x', 'y', 'm']; break;
+      case 'pinned':  restrained = ['x', 'y']; break;
+      case 'rollerX': restrained = ['x']; break;
+      case 'rollerY': restrained = ['y']; break;
+      case 'spring':
+        if (s.Kx     != null) restrained.push('x');
+        if (s.Ky     != null) restrained.push('y');
+        if (s.Ktheta != null) restrained.push('m');
+        break;
+    }
+
+    restrained.forEach(dof => {
+      const idx = dof === 'x' ? base + 0 : dof === 'y' ? base + 1 : base + 2;
+      const r   = FG[idx];
+      if (Math.abs(r) < ZERO) return;
+      if (dof === 'm') {
+        const label = (Math.abs(r) / 1000).toFixed(2) + ' kNm';
+        drawMomentArc(n, r, mcol, flbl, label, { kind: 'reaction' });
+      } else {
+        const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
+        drawForceArrow(n, dof, r, fcol, flbl, label);
+      }
+    });
   });
 }
 
