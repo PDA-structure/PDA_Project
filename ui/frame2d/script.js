@@ -2123,9 +2123,66 @@ function dockCard(card) {
   }
 }
 
-// Placeholder — T3 lands the real drag handler. Until then a click on a
-// floated card's summary just no-ops and lets the native disclosure toggle.
-function onCardDragStart(_e, _card) { /* T3 */ }
+// Drag handler — mousedown on a floated card's <summary> starts a potential
+// drag. A 3 px move threshold separates "drag" from "click-to-toggle-disclosure"
+// so the native <summary> behaviour (open/close the details) is preserved when
+// the user clicks without moving the mouse. Clamp keeps ≥40 px of the card
+// visible on every viewport edge so a card can't be dragged off-screen.
+function onCardDragStart(e, card) {
+  if (card.dataset.state !== 'floating') return;
+  if (e.target && e.target.classList && e.target.classList.contains('card-float-btn')) return;
+
+  const startX    = e.clientX;
+  const startY    = e.clientY;
+  const startLeft = parseFloat(card.style.left) || 0;
+  const startTop  = parseFloat(card.style.top)  || 0;
+  let moved = false;
+
+  // Bring-to-top on drag-start (D-7 — same monotonic counter as floatCard).
+  card.style.zIndex = String(++_floatZIndex);
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) > 3) {
+      moved = true;
+      card.classList.add('dragging');
+      document.body.classList.add('card-dragging');
+    }
+    if (!moved) return;
+    ev.preventDefault();   // suppress disclosure-toggle from the trailing mouseup
+
+    // Clamp to viewport with ≥40 px visible on every edge (D-8). Card sits
+    // inside #cardFloatLayer; left/top are layer-local but the clamp is
+    // expressed in viewport coords, so we translate via the layer's rect.
+    const layer = document.getElementById('cardFloatLayer');
+    const layerRect = layer ? layer.getBoundingClientRect() : { left: 0, top: 0 };
+    const w = card.offsetWidth;
+    const h = card.offsetHeight;
+    const minLeft = 40 - w - layerRect.left;
+    const maxLeft = window.innerWidth  - 40 - layerRect.left;
+    const minTop  = 40 - h - layerRect.top;
+    const maxTop  = window.innerHeight - 40 - layerRect.top;
+    const left = Math.max(minLeft, Math.min(maxLeft, startLeft + dx));
+    const top  = Math.max(minTop,  Math.min(maxTop,  startTop  + dy));
+    card.style.left = left + 'px';
+    card.style.top  = top  + 'px';
+  }
+
+  function onUp(_ev) {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onUp);
+    if (moved) {
+      card.classList.remove('dragging');
+      document.body.classList.remove('card-dragging');
+    }
+    // If !moved, the trailing native click on <summary> toggles disclosure —
+    // exactly the desired "single click = toggle, drag = move" UX.
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onUp);
+}
 
 document.addEventListener('DOMContentLoaded', setupCardFloat);
 
