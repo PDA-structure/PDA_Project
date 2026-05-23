@@ -376,11 +376,23 @@ function draw() {
 function drawGrid() {
   ctx.strokeStyle = '#eee';
   ctx.lineWidth = 0.5;
-  for (let x = 0; x < canvas.width; x += GRID) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+
+  // Compute the visible window in the CURRENT (transformed) coordinate system,
+  // so the grid covers wherever the user has panned/zoomed to — including
+  // negative-coordinate regions for models imported from Revit etc.
+  const x0 = (-view.tx)               / view.scale;
+  const y0 = (-view.ty)               / view.scale;
+  const x1 = (canvas.width  - view.tx) / view.scale;
+  const y1 = (canvas.height - view.ty) / view.scale;
+
+  const startX = Math.floor(x0 / GRID) * GRID;
+  const startY = Math.floor(y0 / GRID) * GRID;
+
+  for (let x = startX; x <= x1; x += GRID) {
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
   }
-  for (let y = 0; y < canvas.height; y += GRID) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  for (let y = startY; y <= y1; y += GRID) {
+    ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
   }
 }
 
