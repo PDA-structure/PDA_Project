@@ -1839,16 +1839,20 @@ function drawSFD() {
   }
 }
 
-// Cap a raw scaleFactor so the largest-magnitude polygon's perpendicular offset
-// never exceeds minMbrLen — applied GLOBALLY so the whole diagram shrinks
-// proportionally instead of being clamped per-point (which would flatten UDL
-// peaks into a table-top instead of a smooth parabola). Returns the adjusted
-// scaleFactor that the diagram should actually render with.
+// Soft-cap a raw scaleFactor so the largest-magnitude polygon stays within a
+// sensible perpendicular range. Linear up to a "knee" at minMbrLen, then
+// asymptotically approaches 1.5*minMbrLen via tanh — preserves smooth UDL
+// curvature (no table-tops) AND gives the slider's 5..10 range visible (if
+// diminishing) headroom instead of plateauing dead at the knee.
 function capScaleFactor(rawScaleFactor, maxValue, minMbrLen) {
   if (maxValue < 1e-10) return rawScaleFactor;
   const peakOffset = rawScaleFactor * maxValue;
-  if (peakOffset <= minMbrLen) return rawScaleFactor;
-  return minMbrLen / maxValue;
+  const knee     = minMbrLen;          // linear growth up to here
+  const headroom = 0.5 * minMbrLen;    // asymptotic range above the knee
+  if (peakOffset <= knee) return rawScaleFactor;
+  const excess     = peakOffset - knee;
+  const compressed = knee + headroom * Math.tanh(excess / headroom);
+  return compressed / maxValue;
 }
 
 // Hex (#RRGGBB) -> rgba(r,g,b,alpha) helper for diagram fills derived from token hex.
