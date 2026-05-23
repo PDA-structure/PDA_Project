@@ -450,7 +450,7 @@ function drawMemberLabel(n1, n2, text, color) {
   const oy = my + ny * 18;
 
   const angle = Math.atan2(dy, dx);
-  const fs = Math.round(10 * getSymbolScale());
+  const fs = Math.round(9 * getSymbolScale());
   ctx.save();
   ctx.translate(ox, oy);
   ctx.rotate(Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle);
@@ -639,7 +639,7 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   const headDepth = 5 * sc;
   const arrowHW   = 5 * sc;
   const apexGap   = 2 * sc;     // tiny pull-back so coincident X+Y arrows at one node don't merge into a single shape
-  const fs        = Math.round(10 * sc);
+  const fs        = Math.round(9 * sc);
   const labelGap  = 12 * sc;
 
   // Unit vector in canvas coords pointing in the direction of the force.
