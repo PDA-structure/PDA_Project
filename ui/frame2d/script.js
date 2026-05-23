@@ -2005,6 +2005,130 @@ syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
   draw();
 });
 
+// ── Floating cards (i52) ──────────────────────────────────────────────────
+// Each toolbar card carries a small float button injected into its <summary>.
+// Clicking the button moves the <details> from the toolbar into #cardFloatLayer
+// (inside .canvas-area), where it sits position: absolute and is draggable by
+// its <summary>. Clicking again returns it to its original toolbar slot.
+
+let _floatZIndex = 100;  // monotonic counter for D-7 bring-to-top
+
+function setupCardFloat() {
+  const canvasArea = document.querySelector('.canvas-area');
+  if (!canvasArea) return;
+
+  // Create the absolute-positioning layer once.
+  let layer = document.getElementById('cardFloatLayer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'cardFloatLayer';
+    canvasArea.appendChild(layer);
+  }
+
+  const cards = document.querySelectorAll('details.card');
+  cards.forEach((card, i) => {
+    card.dataset.originalIndex = String(i);
+    card.dataset.state = 'docked';
+
+    const summary = card.querySelector('summary');
+    if (!summary) return;
+
+    // Avoid double-injection if setupCardFloat happens to be called twice.
+    if (summary.querySelector('.card-float-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'card-float-btn';
+    btn.title = 'Float panel';
+    btn.textContent = '↗';   // ↗
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();        // don't toggle the <details> disclosure
+      if (card.dataset.state === 'docked') floatCard(card);
+      else                                  dockCard(card);
+    });
+    summary.appendChild(btn);
+  });
+}
+
+function floatCard(card) {
+  const layer = document.getElementById('cardFloatLayer');
+  if (!layer) return;
+
+  // Initial position: top-right of #cardFloatLayer (which fills .canvas-area).
+  // 12 px inner margin per D-2.
+  const w = card.offsetWidth || 180;
+  const layerRect = layer.getBoundingClientRect();
+  card.style.left = Math.max(12, layerRect.width - w - 12) + 'px';
+  card.style.top  = '12px';
+  card.style.zIndex = String(++_floatZIndex);
+
+  layer.appendChild(card);                       // move (NOT clone) — listeners survive
+  card.classList.add('floating');
+  card.dataset.state = 'floating';
+
+  const btn = card.querySelector('.card-float-btn');
+  if (btn) {
+    btn.textContent = '↙';                  // ↙
+    btn.title = 'Dock to toolbar';
+  }
+
+  const summary = card.querySelector('summary');
+  if (summary) {
+    summary._cardDragHandler = (e) => onCardDragStart(e, card);
+    summary.addEventListener('mousedown', summary._cardDragHandler);
+  }
+}
+
+function dockCard(card) {
+  const panel = document.querySelector('aside.panel');
+  if (!panel) return;
+
+  // Find the correct insertion point so the card returns to its original slot
+  // even when other cards are currently floated. Look for the first sibling
+  // whose data-original-index is greater than this card's; insert before it.
+  // Fall back to the first .panel-section if no docked card with a higher
+  // original-index exists, else appendChild.
+  const myIndex = parseInt(card.dataset.originalIndex || '0', 10);
+  const siblings = Array.from(panel.children);
+  let target = null;
+  for (const el of siblings) {
+    if (el === card) continue;
+    if (el.matches && el.matches('details.card')) {
+      const idx = parseInt(el.dataset.originalIndex || '-1', 10);
+      if (idx > myIndex) { target = el; break; }
+    }
+  }
+  if (!target) {
+    target = siblings.find(el => el.matches && el.matches('section.panel-section')) || null;
+  }
+  if (target) panel.insertBefore(card, target);
+  else        panel.appendChild(card);
+
+  card.classList.remove('floating');
+  card.dataset.state = 'docked';
+  card.style.left = '';
+  card.style.top  = '';
+  card.style.zIndex = '';
+
+  const btn = card.querySelector('.card-float-btn');
+  if (btn) {
+    btn.textContent = '↗';                  // ↗
+    btn.title = 'Float panel';
+  }
+
+  const summary = card.querySelector('summary');
+  if (summary && summary._cardDragHandler) {
+    summary.removeEventListener('mousedown', summary._cardDragHandler);
+    delete summary._cardDragHandler;
+  }
+}
+
+// Placeholder — T3 lands the real drag handler. Until then a click on a
+// floated card's summary just no-ops and lets the native disclosure toggle.
+function onCardDragStart(_e, _card) { /* T3 */ }
+
+document.addEventListener('DOMContentLoaded', setupCardFloat);
+
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {
   if (_lastBlobUrl) URL.revokeObjectURL(_lastBlobUrl);
