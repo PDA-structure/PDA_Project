@@ -916,13 +916,15 @@ function drawMemberLabel(n1, n2, text, color) {
   ctx.save();
   ctx.translate(mx + nx*14, my + ny*14);
   ctx.rotate(Math.abs(angle) > Math.PI/2 ? angle + Math.PI : angle);
-  ctx.font = fs + 'px ' + LABEL_FONT_FAMILY;
+  ctx.font = '500 ' + fs + 'px ' + LABEL_FONT_FAMILY;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   // Halo so labels remain readable when they sit close to other labels or members.
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.lineJoin    = 'round';
+  ctx.miterLimit  = 2;
   ctx.lineWidth   = 3;
-  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)';
   ctx.strokeText(text, 0, 0);
   ctx.fillStyle = color;
   ctx.fillText(text, 0, 0);
@@ -1208,7 +1210,7 @@ function drawLegend() {
     items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
   }
 
-  ctx.font = `${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
   let maxTextW = 0;
   items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
   const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
@@ -1217,9 +1219,9 @@ function drawLegend() {
   const y0 = margin;
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  ctx.fillStyle   = isDark ? 'rgba(22, 26, 32, 0.88)' : 'rgba(255, 255, 255, 0.92)';
-  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : '#ccc';
-  ctx.lineWidth   = 1;
+  ctx.fillStyle   = isDark ? 'rgba(22, 26, 32, 0.96)' : 'rgba(255, 255, 255, 0.97)';
+  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.28)' : '#888';
+  ctx.lineWidth   = 1.5;
   ctx.beginPath();
   ctx.rect(x0, y0, boxW, boxH);
   ctx.fill();
@@ -1246,8 +1248,10 @@ function drawLegend() {
 // over support hatching, adjacent arrows, and in either light or dark mode.
 function drawHaloedLabel(x, y, text, color) {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.lineJoin    = 'round';
+  ctx.miterLimit  = 2;
   ctx.lineWidth   = 3;
-  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 0.85)' : 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)';
   ctx.strokeText(text, x, y);
   ctx.fillStyle = color;
   ctx.fillText(text, x, y);
@@ -1283,7 +1287,7 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font        = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
   ctx.textAlign   = 'center';
   ctx.textBaseline = 'middle';
 
@@ -1320,7 +1324,7 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font        = `500 ${fs}px ${LABEL_FONT_FAMILY}`;
   ctx.textAlign   = 'center';
   ctx.textBaseline = 'middle';
 
