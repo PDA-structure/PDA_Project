@@ -434,22 +434,34 @@ function drawMemberLabel(n1, n2, text, color) {
   const dx = n2.x - n1.x;
   const dy = n2.y - n1.y;
   const len = Math.hypot(dx, dy) || 1;
-  // perpendicular unit vector (flip so label is always above)
+
+  // Perpendicular unit vector; sign chosen to point AWAY from the structure
+  // centroid so top-chord labels go up, bottom-chord labels go down, and
+  // diagonals fan outward — de-clusters member labels at converging nodes.
   let nx = -dy / len;
   let ny =  dx / len;
-  if (ny > 0) { nx = -nx; ny = -ny; }
-  const ox = mx + nx * 14;
-  const oy = my + ny * 14;
+  let cx = 0, cy = 0;
+  for (let i = 0; i < nodes.length; i++) { cx += nodes[i].x; cy += nodes[i].y; }
+  cx /= nodes.length;
+  cy /= nodes.length;
+  if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
+
+  const ox = mx + nx * 18;
+  const oy = my + ny * 18;
 
   const angle = Math.atan2(dy, dx);
   const fs = Math.round(10 * getSymbolScale());
   ctx.save();
   ctx.translate(ox, oy);
   ctx.rotate(Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle);
-  ctx.fillStyle = color;
   ctx.font = `${fs}px Arial`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  // White halo so labels remain readable when they sit close to other labels or members.
+  ctx.lineWidth   = 3;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeText(text, 0, 0);
+  ctx.fillStyle = color;
   ctx.fillText(text, 0, 0);
   ctx.restore();
 }
