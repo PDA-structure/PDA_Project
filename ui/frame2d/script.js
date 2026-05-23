@@ -759,6 +759,7 @@ async function solve() {
     setStatus('Solved ✓', false);
     document.getElementById('chkBMD').disabled = false;
     document.getElementById('chkSFD').disabled = false;
+    document.getElementById('chkAFD').disabled = false;
     renderResults(results);
     draw();
   } catch {
@@ -778,6 +779,8 @@ function clearDiagramState() {
   document.getElementById('chkBMD').disabled = true;
   document.getElementById('chkSFD').checked  = false;
   document.getElementById('chkSFD').disabled = true;
+  document.getElementById('chkAFD').checked  = false;
+  document.getElementById('chkAFD').disabled = true;
 }
 
 function draw() {
@@ -791,6 +794,7 @@ function draw() {
   if (results) {
     if (document.getElementById('chkBMD').checked) drawBMD();
     if (document.getElementById('chkSFD').checked) drawSFD();
+    if (document.getElementById('chkAFD').checked) drawAFD();
     if (document.getElementById('chkDeflected').checked) drawDeflected();
   } else {
     clearDiagramState();
@@ -1819,12 +1823,104 @@ function drawSFD() {
   }
 }
 
+// Hex (#RRGGBB) -> rgba(r,g,b,alpha) helper for diagram fills derived from token hex.
+function hexToRgba(hex, alpha) {
+  const c = (hex || '').trim().replace('#', '');
+  if (c.length !== 6) return `rgba(0,0,0,${alpha})`;
+  const r = parseInt(c.substr(0, 2), 16);
+  const g = parseInt(c.substr(2, 2), 16);
+  const b = parseInt(c.substr(4, 2), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// AFD — Axial Force Diagram. Axial is constant per member (no distributed
+// axial loads in the solver), so each diagram is a perpendicular RECTANGLE
+// alongside the member rather than a curve. Tension = blue, compression =
+// red; matches the member-line colour code. Drawn on the OPPOSITE side of
+// the member from BMD/SFD (negative-perp direction) so the three diagrams
+// don't overlap on a simple beam.
+function drawAFD() {
+  const axial = results && results.member_forces;
+  if (!axial) return;
+
+  // First pass: find max |F| + min member length for scaling.
+  let minMbrLen = Infinity, maxAbs = 0;
+  members.forEach((m, idx) => {
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    if (!n1 || !n2) return;
+    minMbrLen = Math.min(minMbrLen, Math.hypot(n2.x - n1.x, n2.y - n1.y));
+    maxAbs    = Math.max(maxAbs, Math.abs(axial[idx]));
+  });
+  if (maxAbs < 1e-10) return;
+
+  const diagMult    = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
+  const scaleFactor = (0.2 * minMbrLen) / maxAbs * diagMult;
+
+  const tensionStroke     = cssVar('--canvas-tension');
+  const compressionStroke = cssVar('--canvas-compression');
+  const tensionFill       = hexToRgba(tensionStroke, 0.25);
+  const compressionFill   = hexToRgba(compressionStroke, 0.25);
+
+  members.forEach((m, idx) => {
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    if (!n1 || !n2) return;
+    const f = axial[idx];
+    if (Math.abs(f) < 1e-3) return;
+
+    const dx = n2.x - n1.x, dy = n2.y - n1.y;
+    const angle = Math.atan2(dy, dx);
+    // Negative perpendicular (opposite side to BMD/SFD).
+    const perpX =  Math.sin(angle);
+    const perpY = -Math.cos(angle);
+    const off   = Math.abs(f) * scaleFactor;
+
+    const isTension = f > 0;
+    ctx.fillStyle   = isTension ? tensionFill   : compressionFill;
+    ctx.strokeStyle = isTension ? tensionStroke : compressionStroke;
+    ctx.lineWidth   = 1.5;
+
+    // Rectangle: baseline (n1 -> n2) and offset side (n2+perp*off -> n1+perp*off).
+    ctx.beginPath();
+    ctx.moveTo(n1.x, n1.y);
+    ctx.lineTo(n2.x, n2.y);
+    ctx.lineTo(n2.x + perpX * off, n2.y + perpY * off);
+    ctx.lineTo(n1.x + perpX * off, n1.y + perpY * off);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // Optional value labels — respects chkDiagLabels like BMD/SFD do.
+  if (document.getElementById('chkDiagLabels').checked) {
+    const fmtN = v => (v / 1000).toFixed(2) + ' kN';
+    const nudge = 8 * getSymbolScale();
+    members.forEach((m, idx) => {
+      const n1 = nodes.find(n => n.id === m.start);
+      const n2 = nodes.find(n => n.id === m.end);
+      if (!n1 || !n2) return;
+      const f = axial[idx];
+      if (Math.abs(f) < maxAbs * 0.01) return;
+      const angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
+      const perpX =  Math.sin(angle);
+      const perpY = -Math.cos(angle);
+      const off   = Math.abs(f) * scaleFactor + nudge;
+      const mx    = (n1.x + n2.x) / 2;
+      const my    = (n1.y + n2.y) / 2;
+      const stroke = f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression');
+      labelText(fmtN(f), mx + perpX * off, my + perpY * off, stroke);
+    });
+  }
+}
+
 document.getElementById('chkSupports').addEventListener('change', draw);
 document.getElementById('chkLoads').addEventListener('change', draw);
 document.getElementById('chkReactions').addEventListener('change', draw);
 document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
+document.getElementById('chkAFD').addEventListener('change', draw);
 document.getElementById('chkDiagLabels').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
 // Two-way bind a slider + number input pair so each updates the other and triggers a callback.
