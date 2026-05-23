@@ -178,7 +178,10 @@
               </span>
             </label>
             <label class="panel-label">Symbol size
-              <input type="number" id="inputSymbolScale" value="1.0" min="0.5" max="2.0" step="0.1">
+              <span class="scale-row">
+                <input type="range"  id="inputSymbolScaleRange" min="0.5" max="2.0" step="0.1" value="1.0">
+                <input type="number" id="inputSymbolScale"      min="0.5" max="2.0" step="0.1" value="1.0">
+              </span>
             </label>
             <label class="panel-label">Label size
               <span class="scale-row">

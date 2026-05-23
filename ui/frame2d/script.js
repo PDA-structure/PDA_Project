@@ -1843,11 +1843,11 @@ function syncScaleControls(rangeId, numberId, onChange) {
 
 syncScaleControls('inputScaleRange',         'inputScale',         draw);
 syncScaleControls('inputDiagramScaleRange',  'inputDiagramScale',  draw);
+syncScaleControls('inputSymbolScaleRange',   'inputSymbolScale',   draw);
 syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
   labelScale = parseFloat(document.getElementById('inputLabelScale').value) || 1.0;
   draw();
 });
-document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {

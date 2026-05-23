@@ -325,17 +325,19 @@ details.card:has(#chkDeflected) .display-col > label.panel-label input[type="ran
   padding: 2px 5px;
 }
 
-/* Slider + number combo for scale controls (Deflection / BMD-SFD / Label size). */
+/* Slider + number combo for scale controls (Deflection / BMD-SFD / Symbol size / Label size). */
 .scale-row {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
 }
 .scale-row input[type="range"] {
   flex: 1 1 auto;
   min-width: 0;
 }
-.scale-row input[type="number"] {
+/* Specificity > .panel-label input[type="number"] { width: 100% } so the number box doesn't eat the slider's space inside a panel-label. */
+label .scale-row input[type="number"] {
   flex: 0 0 auto;
   width: 4.5em;
 }
