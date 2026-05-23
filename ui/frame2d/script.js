@@ -1215,12 +1215,16 @@ function drawLegend() {
 
   if (items.length === 0) return;  // nothing to explain — don't draw an empty card
 
-  const sc = getSymbolScale();
+  // Legend uses its OWN scale: floored at 1.0 so Symbol size below default
+  // (down to 0.5) doesn't shrink the legend into a squint. Symbol size > 1.0
+  // still grows it. Keeps the legend readable at zoom-out / minimum symbol
+  // size without freezing the larger-text use case.
+  const sc = Math.max(1.0, getSymbolScale());
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);  // screen-space — pan/zoom must NOT move/scale the legend
 
-  const fs      = Math.round(11 * sc);
-  const lh      = Math.round(16 * sc);
+  const fs      = Math.round(12 * sc);
+  const lh      = Math.round(17 * sc);
   const swatchW = Math.round(22 * sc);
   const padX    = Math.round(10 * sc);
   const padY    = Math.round(8 * sc);
