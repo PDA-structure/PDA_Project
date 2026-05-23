@@ -807,6 +807,7 @@ function draw() {
   if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
     drawNodeLabels();
   }
+  if (results) drawLegend();
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
     throw err;
@@ -1192,6 +1193,67 @@ function drawHatch(from, to, base, dir) {
 }
 
 // ── Node loads ────────────────────────────────────────────────────────────
+// Canvas-drawn legend pinned to the top-right. Captured in any right-click-save
+// canvas export. Drops the Reaction row when chkReactions is unchecked.
+function drawLegend() {
+  if (!results) return;
+  const sc = getSymbolScale();
+
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);  // screen-space — pan/zoom must NOT move/scale the legend
+
+  const fs      = Math.round(11 * sc);
+  const lh      = Math.round(16 * sc);
+  const swatchW = Math.round(22 * sc);
+  const padX    = Math.round(10 * sc);
+  const padY    = Math.round(8 * sc);
+  const gap     = Math.round(8 * sc);
+  const margin  = Math.round(10 * sc);
+
+  const items = [
+    { color: cssVar('--canvas-tension'),     label: 'Tension (+)' },
+    { color: cssVar('--canvas-compression'), label: 'Compression (-)' },
+    { color: cssVar('--canvas-zero'),        label: 'Near-zero' },
+  ];
+  const chkR = document.getElementById('chkReactions');
+  if (!chkR || chkR.checked) {
+    items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
+  }
+
+  ctx.font = `${fs}px ${LABEL_FONT_FAMILY}`;
+  let maxTextW = 0;
+  items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
+  const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
+  const boxH = padY * 2 + items.length * lh;
+  const x0 = canvas.width - boxW - margin;
+  const y0 = margin;
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  ctx.fillStyle   = isDark ? 'rgba(22, 26, 32, 0.88)' : 'rgba(255, 255, 255, 0.92)';
+  ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.15)' : '#ccc';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.rect(x0, y0, boxW, boxH);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'middle';
+  items.forEach((it, i) => {
+    const rowY = y0 + padY + i * lh + Math.round(lh / 2);
+    ctx.strokeStyle = it.color;
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.moveTo(x0 + padX, rowY);
+    ctx.lineTo(x0 + padX + swatchW, rowY);
+    ctx.stroke();
+    ctx.fillStyle = cssVar('--canvas-label');
+    ctx.fillText(it.label, x0 + padX + swatchW + gap, rowY);
+  });
+
+  ctx.restore();
+}
+
 // Halo-stroked label — used by every on-canvas value label so text stays readable
 // over support hatching, adjacent arrows, and in either light or dark mode.
 function drawHaloedLabel(x, y, text, color) {
@@ -1759,6 +1821,7 @@ function drawSFD() {
 
 document.getElementById('chkSupports').addEventListener('change', draw);
 document.getElementById('chkLoads').addEventListener('change', draw);
+document.getElementById('chkReactions').addEventListener('change', draw);
 document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
