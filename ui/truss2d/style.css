@@ -220,4 +220,4 @@ td:first-child, td:nth-child(2) { text-align: center; }
 
 .tension     { color: #1565c0; font-weight: bold; }
 .compression { color: #b71c1c; font-weight: bold; }
-.zero-force  { color: #777; }
+.zero-force  { color: #999; }
