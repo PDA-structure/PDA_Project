@@ -878,7 +878,10 @@ function drawMembers() {
     ctx.setLineDash([]);
 
     // Member kN labels gated on chkDiagLabels for consistency with BMD/SFD/AFD value annotations.
-    if (forceLabel && document.getElementById('chkDiagLabels')?.checked) {
+    // Suppress when chkAFD is on — AFD draws its own labels next to the polygon (would otherwise duplicate).
+    if (forceLabel
+        && document.getElementById('chkDiagLabels')?.checked
+        && !document.getElementById('chkAFD')?.checked) {
       drawMemberLabel(n1, n2, forceLabel, color);
     }
 
