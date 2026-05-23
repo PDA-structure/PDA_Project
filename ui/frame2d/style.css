@@ -395,6 +395,7 @@ details.card:has(#chkDeflected) .display-col {
   flex-direction: column;
   padding: var(--space-2);
   gap: var(--space-1);
+  position: relative;   /* i52: anchors #cardFloatLayer for absolute-positioned floated cards */
 }
 .canvas-topbar {
   display: flex;
@@ -640,3 +641,57 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
   --canvas-member-preview: #6b8acc;
   --canvas-diagnostic: #ff7373;
 }
+
+/* ── Floating cards (i52) ─────────────────────────────────── */
+/* Each toolbar card carries a small float button. Clicking the button moves the
+   <details class="card"> from .panel into #cardFloatLayer (inside .canvas-area),
+   where it sits position: absolute and is draggable by its <summary>. */
+
+#cardFloatLayer {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;   /* empty layer doesn't intercept canvas clicks */
+  z-index: 50;
+}
+
+.card.floating {
+  position: absolute;
+  pointer-events: auto;
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--color-border-hover);
+  z-index: 100;           /* JS overrides via inline style for bring-to-top */
+}
+
+.card-float-btn {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 3px;
+  color: var(--color-fg-faint);
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-float-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-fg-strong);
+}
+.card-float-btn:focus-visible {
+  outline: 2px solid var(--color-border-hover);
+  outline-offset: 1px;
+}
+
+.card.floating > summary { cursor: grab; }
+.card.floating.dragging > summary { cursor: grabbing; }
+
+/* Suppress canvas pointer-events during an active drag so the canvas doesn't
+   intercept the document mousemove and break the drag mid-stream. */
+body.card-dragging canvas { pointer-events: none; }
