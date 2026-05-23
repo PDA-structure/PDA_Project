@@ -877,7 +877,10 @@ function drawMembers() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    if (forceLabel) drawMemberLabel(n1, n2, forceLabel, color);
+    // Member kN labels gated on chkDiagLabels for consistency with BMD/SFD/AFD value annotations.
+    if (forceLabel && document.getElementById('chkDiagLabels')?.checked) {
+      drawMemberLabel(n1, n2, forceLabel, color);
+    }
 
     // override indicator — blue outline when member has per-member E/I/A
     if (m.E_override != null || m.I_override != null || m.A_override != null) {
@@ -1864,7 +1867,7 @@ function drawAFD() {
   });
   if (maxAbs < 1e-10) return;
 
-  const diagMult    = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
+  const diagMult    = parseFloat(document.getElementById('inputAFDScale').value) || 1;
   const scaleFactor = (0.2 * minMbrLen) / maxAbs * diagMult;
 
   const tensionStroke     = cssVar('--canvas-tension');
@@ -1940,12 +1943,14 @@ document.getElementById('chkNodeLabels').addEventListener('change', draw);
 function updateScaleVisibility() {
   const defLabel  = document.getElementById('deflectionScaleLabel');
   const diagLabel = document.getElementById('diagramScaleLabel');
+  const afdLabel  = document.getElementById('afdScaleLabel');
   const chkDef = document.getElementById('chkDeflected');
   const chkBMD = document.getElementById('chkBMD');
   const chkSFD = document.getElementById('chkSFD');
   const chkAFD = document.getElementById('chkAFD');
   if (defLabel)  defLabel.style.display  = (chkDef && chkDef.checked) ? '' : 'none';
-  if (diagLabel) diagLabel.style.display = ((chkBMD && chkBMD.checked) || (chkSFD && chkSFD.checked) || (chkAFD && chkAFD.checked)) ? '' : 'none';
+  if (diagLabel) diagLabel.style.display = ((chkBMD && chkBMD.checked) || (chkSFD && chkSFD.checked)) ? '' : 'none';
+  if (afdLabel)  afdLabel.style.display  = (chkAFD && chkAFD.checked) ? '' : 'none';
 }
 ['chkDeflected', 'chkBMD', 'chkSFD', 'chkAFD'].forEach(id => {
   document.getElementById(id).addEventListener('change', updateScaleVisibility);
@@ -1967,6 +1972,7 @@ function syncScaleControls(rangeId, numberId, onChange) {
 
 syncScaleControls('inputScaleRange',         'inputScale',         draw);
 syncScaleControls('inputDiagramScaleRange',  'inputDiagramScale',  draw);
+syncScaleControls('inputAFDScaleRange',      'inputAFDScale',      draw);
 syncScaleControls('inputSymbolScaleRange',   'inputSymbolScale',   draw);
 syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
   labelScale = parseFloat(document.getElementById('inputLabelScale').value) || 1.0;
