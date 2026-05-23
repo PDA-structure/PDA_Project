@@ -1203,6 +1203,8 @@ function drawLegend() {
   }
   if (chkBMD && chkBMD.checked) items.push({ color: cssVar('--canvas-bmd'), label: 'Bending moment' });
   if (chkSFD && chkSFD.checked) items.push({ color: cssVar('--canvas-sfd'), label: 'Shear force' });
+  const chkDef = document.getElementById('chkDeflected');
+  if (chkDef && chkDef.checked) items.push({ color: cssVar('--canvas-deflected'), label: 'Deflected shape', dashed: true });
   if (!chkR || chkR.checked)    items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
 
   if (items.length === 0) return;  // nothing to explain — don't draw an empty card
@@ -1251,10 +1253,12 @@ function drawLegend() {
     const rowY = y0 + padY + i * lh + Math.round(lh / 2);
     ctx.strokeStyle = it.color;
     ctx.lineWidth   = 3;
+    if (it.dashed) ctx.setLineDash([4, 3]);
     ctx.beginPath();
     ctx.moveTo(x0 + padX, rowY);
     ctx.lineTo(x0 + padX + swatchW, rowY);
     ctx.stroke();
+    if (it.dashed) ctx.setLineDash([]);
     ctx.fillStyle = cssVar('--canvas-label');
     ctx.fillText(it.label, x0 + padX + swatchW + gap, rowY);
   });
@@ -1929,6 +1933,24 @@ document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkAFD').addEventListener('change', draw);
 document.getElementById('chkDiagLabels').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
+
+// Conditional visibility for diagram-specific scale controls.
+// Deflection scale slider only appears when chkDeflected is on.
+// BMD/SFD scale slider only appears when chkBMD / chkSFD / chkAFD is on (all three share it).
+function updateScaleVisibility() {
+  const defLabel  = document.getElementById('deflectionScaleLabel');
+  const diagLabel = document.getElementById('diagramScaleLabel');
+  const chkDef = document.getElementById('chkDeflected');
+  const chkBMD = document.getElementById('chkBMD');
+  const chkSFD = document.getElementById('chkSFD');
+  const chkAFD = document.getElementById('chkAFD');
+  if (defLabel)  defLabel.style.display  = (chkDef && chkDef.checked) ? '' : 'none';
+  if (diagLabel) diagLabel.style.display = ((chkBMD && chkBMD.checked) || (chkSFD && chkSFD.checked) || (chkAFD && chkAFD.checked)) ? '' : 'none';
+}
+['chkDeflected', 'chkBMD', 'chkSFD', 'chkAFD'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateScaleVisibility);
+});
+updateScaleVisibility();
 // Two-way bind a slider + number input pair so each updates the other and triggers a callback.
 function syncScaleControls(rangeId, numberId, onChange) {
   const range  = document.getElementById(rangeId);
