@@ -325,6 +325,21 @@ details.card:has(#chkDeflected) .display-col > label.panel-label input[type="ran
   padding: 2px 5px;
 }
 
+/* Slider + number combo for scale controls (Deflection / BMD-SFD / Label size). */
+.scale-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.scale-row input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.scale-row input[type="number"] {
+  flex: 0 0 auto;
+  width: 4.5em;
+}
+
 /* Display body — 2 explicit column wrappers (w2a, replaces vhi grid auto-placement).
    Two <div class="display-col"> children render side-by-side via flex-row;
    each col is itself a flex-column. Deterministic row alignment — first item

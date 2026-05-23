@@ -1827,20 +1827,27 @@ document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkDiagLabels').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
-document.getElementById('inputScale').addEventListener('input', function () {
-  try {
-    draw();
-  } catch (err) {
-    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
-    throw err;
-  }
-});
-document.getElementById('inputDiagramScale').addEventListener('input', draw);
-document.getElementById('inputSymbolScale').addEventListener('input', draw);
-document.getElementById('inputLabelScale').addEventListener('input', function (e) {
-  labelScale = parseFloat(e.target.value) || 1.0;
+// Two-way bind a slider + number input pair so each updates the other and triggers a callback.
+function syncScaleControls(rangeId, numberId, onChange) {
+  const range  = document.getElementById(rangeId);
+  const number = document.getElementById(numberId);
+  if (!range || !number) return;
+  const sync = (src, dst) => () => {
+    dst.value = src.value;
+    try { onChange(); }
+    catch (err) { showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err); throw err; }
+  };
+  range.addEventListener('input', sync(range, number));
+  number.addEventListener('input', sync(number, range));
+}
+
+syncScaleControls('inputScaleRange',         'inputScale',         draw);
+syncScaleControls('inputDiagramScaleRange',  'inputDiagramScale',  draw);
+syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
+  labelScale = parseFloat(document.getElementById('inputLabelScale').value) || 1.0;
   draw();
 });
+document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Results tables ────────────────────────────────────────────────────────
 function createDownloadLink(res) {
