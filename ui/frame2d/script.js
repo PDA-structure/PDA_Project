@@ -1692,7 +1692,7 @@ function drawBMD() {
       const xi = k / NSEG;
       let M = Mi*(1-xi) - Mj*xi;
       if (m.udl && m.type !== 'bar') M += m.udl * L_m * L_m / 2 * xi * (1-xi);
-      pts.push({ bx: n1.x + xi*dx, by: n1.y + xi*dy, off: M * scaleFactor });
+      pts.push({ bx: n1.x + xi*dx, by: n1.y + xi*dy, off: clampDiagOffset(M * scaleFactor, minMbrLen) });
     }
 
     // Draw filled polygon: forward along baseline then back along offset contour
@@ -1723,12 +1723,12 @@ function drawBMD() {
       const Mi = moments[idx][0], Mj = moments[idx][1];
       const L_m = memberLengthReal(m);
       if (Math.abs(Mi) > maxMoment * 0.01) {
-        const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
+        const off = clampDiagOffset(Mi * scaleFactor, minMbrLen) + nudgeM * Math.sign(Mi);
         labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-bmd'));
       }
       const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
       if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
-        const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
+        const off = clampDiagOffset(Mj_bmd * scaleFactor, minMbrLen) + nudgeM * Math.sign(Mj_bmd);
         labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-bmd'));
       }
       if (m.udl && m.type !== 'bar') {
@@ -1740,7 +1740,7 @@ function drawBMD() {
         }
         if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
           const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
-          const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
+          const off = clampDiagOffset(peakM * scaleFactor, minMbrLen) + nudgeM * Math.sign(peakM);
           labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, cssVar('--canvas-bmd'));
         }
       }
@@ -1787,7 +1787,7 @@ function drawSFD() {
     for (let k = 0; k <= NSEG; k++) {
       const xi = k / NSEG;
       const V = Vi*(1-xi) + Vj*xi;
-      pts.push({ bx: n1.x + xi*dx, by: n1.y + xi*dy, off: V * scaleFactor });
+      pts.push({ bx: n1.x + xi*dx, by: n1.y + xi*dy, off: clampDiagOffset(V * scaleFactor, minMbrLen) });
     }
 
     ctx.beginPath();
@@ -1816,11 +1816,11 @@ function drawSFD() {
       const perpX = -Math.sin(angle), perpY = Math.cos(angle);
       const Vi = shears[idx][0], Vj = -shears[idx][1];
       if (Math.abs(Vi) > maxShear * 0.01) {
-        const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
+        const off = clampDiagOffset(Vi * scaleFactor, minMbrLen) + nudgeV * Math.sign(Vi);
         labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-sfd'));
       }
       if (Math.abs(Vj) > maxShear * 0.01) {
-        const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
+        const off = clampDiagOffset(Vj * scaleFactor, minMbrLen) + nudgeV * Math.sign(Vj);
         labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-sfd'));
       }
       if (Vi * Vj < 0) {
@@ -1837,6 +1837,13 @@ function drawSFD() {
       }
     });
   }
+}
+
+// Clamp a diagram polygon's perpendicular offset to the shortest member length.
+// Prevents BMD / SFD / AFD polygons from extending past adjacent nodes at high slider
+// values — raw offset can otherwise hit ~2x minMbrLen when the scale slider sits at 10.
+function clampDiagOffset(raw, minMbrLen) {
+  return Math.sign(raw) * Math.min(Math.abs(raw), minMbrLen);
 }
 
 // Hex (#RRGGBB) -> rgba(r,g,b,alpha) helper for diagram fills derived from token hex.
@@ -1890,7 +1897,7 @@ function drawAFD() {
     // Negative perpendicular (opposite side to BMD/SFD).
     const perpX =  Math.sin(angle);
     const perpY = -Math.cos(angle);
-    const off   = Math.abs(f) * scaleFactor;
+    const off   = clampDiagOffset(Math.abs(f) * scaleFactor, minMbrLen);
 
     const isTension = f > 0;
     ctx.fillStyle   = isTension ? tensionFill   : compressionFill;
@@ -1921,7 +1928,7 @@ function drawAFD() {
       const angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
       const perpX =  Math.sin(angle);
       const perpY = -Math.cos(angle);
-      const off   = Math.abs(f) * scaleFactor + nudge;
+      const off   = clampDiagOffset(Math.abs(f) * scaleFactor, minMbrLen) + nudge;
       const mx    = (n1.x + n2.x) / 2;
       const my    = (n1.y + n2.y) / 2;
       const stroke = f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression');
