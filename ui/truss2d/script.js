@@ -630,41 +630,74 @@ function drawHatch(from, to, base, dir) {
   }
 }
 
+// Apex-at-node force arrow: head triangle touches the node and the shaft extends
+// OPPOSITE to the force direction, so the arrow visually communicates "this force
+// pushes into the node from outside". Used for both applied loads and reactions.
+function drawForceArrow(node, axis, forceValue, color, label) {
+  const sc        = getSymbolScale();
+  const arrowLen  = 24 * sc;
+  const headDepth = 5 * sc;
+  const arrowHW   = 5 * sc;
+  const fs        = Math.round(10 * sc);
+  const labelGap  = 12 * sc;
+
+  // Unit vector in canvas coords pointing in the direction of the force.
+  // Canvas y is flipped relative to world y (positive world y = upward = canvas -y).
+  let dirX = 0, dirY = 0;
+  if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
+  else              dirX = forceValue > 0 ?  1 : -1;
+
+  // Shaft extends OPPOSITE to the force direction; tail sits outside the structure.
+  const tailX = node.x - arrowLen  * dirX;
+  const tailY = node.y - arrowLen  * dirY;
+  const baseX = node.x - headDepth * dirX;
+  const baseY = node.y - headDepth * dirY;
+
+  // Perpendicular to dir in the canvas frame.
+  const perpX = -dirY;
+  const perpY =  dirX;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle   = color;
+  ctx.lineWidth   = 2;
+  ctx.font        = `${fs}px Arial`;
+  ctx.textAlign   = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Shaft: tail -> base of head (apex itself is filled by the triangle).
+  ctx.beginPath();
+  ctx.moveTo(tailX, tailY);
+  ctx.lineTo(baseX, baseY);
+  ctx.stroke();
+
+  // Head: filled triangle with apex at node.
+  ctx.beginPath();
+  ctx.moveTo(node.x, node.y);
+  ctx.lineTo(baseX + perpX * arrowHW, baseY + perpY * arrowHW);
+  ctx.lineTo(baseX - perpX * arrowHW, baseY - perpY * arrowHW);
+  ctx.closePath();
+  ctx.fill();
+
+  // Label sits just beyond the tail, with a white halo so it remains readable
+  // when it lands over support hatching or near other arrows.
+  const labelX = tailX - dirX * labelGap;
+  const labelY = tailY - dirY * labelGap;
+  ctx.lineWidth   = 3;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.strokeText(label, labelX, labelY);
+  ctx.fillStyle = color;
+  ctx.fillText(label, labelX, labelY);
+
+  ctx.restore();
+}
+
 function drawLoads() {
-  const sc = getSymbolScale();
-  const arrowLen = 24 * sc;
-  const arrowTip = 19 * sc;
-  const arrowHW  = 5 * sc;
   loads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
-    const mag = l.magnitude;
-    ctx.strokeStyle = '#2e7d32';
-    ctx.fillStyle   = '#2e7d32';
-    ctx.lineWidth   = 2;
-
-    if (l.direction === 'y') {
-      const sign = mag < 0 ? 1 : -1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(n.x - arrowHW, n.y + sign * arrowTip);
-      ctx.lineTo(n.x, n.y + sign * arrowLen);
-      ctx.lineTo(n.x + arrowHW, n.y + sign * arrowTip);
-      ctx.fill();
-    } else {
-      const sign = mag < 0 ? -1 : 1;
-      ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign * arrowLen, n.y); ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(n.x + sign * arrowTip, n.y - arrowHW);
-      ctx.lineTo(n.x + sign * arrowLen, n.y);
-      ctx.lineTo(n.x + sign * arrowTip, n.y + arrowHW);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = '#1b5e20';
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText((Math.abs(mag) / 1000).toFixed(1) + ' kN', n.x, n.y + (l.direction === 'y' ? arrowLen + 14*sc : -8));
+    const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
+    drawForceArrow(n, l.direction, l.magnitude, '#2e7d32', label);
   });
 }
 
@@ -727,20 +760,8 @@ function drawLegend() {
 
 function drawReactions() {
   if (!results || !results.FG) return;
-  const sc       = getSymbolScale();
-  const arrowLen = 24 * sc;
-  const arrowTip = 19 * sc;
-  const arrowHW  = 5 * sc;
-  const fs       = Math.round(10 * sc);
-  const ZERO     = 1e-3;
-  const FG       = results.FG;
-
-  ctx.save();
-  ctx.strokeStyle = '#7b1fa2';
-  ctx.fillStyle   = '#7b1fa2';
-  ctx.lineWidth   = 2;
-  ctx.font        = `${fs}px Arial`;
-  ctx.textAlign   = 'center';
+  const FG   = results.FG;
+  const ZERO = 1e-3;
 
   supports.forEach(s => {
     const n = nodes.find(nd => nd.id === s.nodeId);
@@ -754,35 +775,10 @@ function drawReactions() {
       const idx = base + (dir === 'y' ? 1 : 0);
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
-
-      if (dir === 'y') {
-        // Canvas y is flipped: positive Y reaction (world +y, upward) draws as -y in canvas.
-        const sign = r > 0 ? -1 : 1;
-        ctx.strokeStyle = '#7b1fa2';
-        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(n.x - arrowHW, n.y + sign * arrowTip);
-        ctx.lineTo(n.x, n.y + sign * arrowLen);
-        ctx.lineTo(n.x + arrowHW, n.y + sign * arrowTip);
-        ctx.fill();
-        const labelY = n.y + sign * (arrowLen + 12 * sc);
-        ctx.fillText((Math.abs(r) / 1000).toFixed(2) + ' kN', n.x, labelY);
-      } else {
-        const sign = r > 0 ? 1 : -1;
-        ctx.strokeStyle = '#7b1fa2';
-        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign * arrowLen, n.y); ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(n.x + sign * arrowTip, n.y - arrowHW);
-        ctx.lineTo(n.x + sign * arrowLen, n.y);
-        ctx.lineTo(n.x + sign * arrowTip, n.y + arrowHW);
-        ctx.fill();
-        const labelX = n.x + sign * (arrowLen + 18 * sc);
-        ctx.fillText((Math.abs(r) / 1000).toFixed(2) + ' kN', labelX, n.y + 4);
-      }
+      const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
+      drawForceArrow(n, dir, r, '#7b1fa2', label);
     });
   });
-
-  ctx.restore();
 }
 
 function drawDeflected() {
