@@ -363,6 +363,7 @@ function draw() {
   if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
   if (document.getElementById('chkSupports')?.checked) drawSupports();
   if (document.getElementById('chkLoads')?.checked) drawLoads();
+  if (results) drawReactions();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
   } catch (err) {
@@ -652,6 +653,66 @@ function drawLoads() {
     ctx.textAlign = 'center';
     ctx.fillText((Math.abs(mag) / 1000).toFixed(1) + ' kN', n.x, n.y + (l.direction === 'y' ? arrowLen + 14*sc : -8));
   });
+}
+
+function drawReactions() {
+  if (!results || !results.FG) return;
+  const sc       = getSymbolScale();
+  const arrowLen = 24 * sc;
+  const arrowTip = 19 * sc;
+  const arrowHW  = 5 * sc;
+  const fs       = Math.round(10 * sc);
+  const ZERO     = 1e-3;
+  const FG       = results.FG;
+
+  ctx.save();
+  ctx.strokeStyle = '#7b1fa2';
+  ctx.fillStyle   = '#7b1fa2';
+  ctx.lineWidth   = 2;
+  ctx.font        = `${fs}px Arial`;
+  ctx.textAlign   = 'center';
+
+  supports.forEach(s => {
+    const n = nodes.find(nd => nd.id === s.nodeId);
+    if (!n) return;
+    const base = s.nodeId * 2;
+    const dirs = s.type === 'pinned'  ? ['x', 'y']
+               : s.type === 'rollerX' ? ['x']
+               : s.type === 'rollerY' ? ['y']
+               : [];
+    dirs.forEach(dir => {
+      const idx = base + (dir === 'y' ? 1 : 0);
+      const r   = FG[idx];
+      if (Math.abs(r) < ZERO) return;
+
+      if (dir === 'y') {
+        // Canvas y is flipped: positive Y reaction (world +y, upward) draws as -y in canvas.
+        const sign = r > 0 ? -1 : 1;
+        ctx.strokeStyle = '#7b1fa2';
+        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x, n.y + sign * arrowLen); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(n.x - arrowHW, n.y + sign * arrowTip);
+        ctx.lineTo(n.x, n.y + sign * arrowLen);
+        ctx.lineTo(n.x + arrowHW, n.y + sign * arrowTip);
+        ctx.fill();
+        const labelY = n.y + sign * (arrowLen + 12 * sc);
+        ctx.fillText((Math.abs(r) / 1000).toFixed(2) + ' kN', n.x, labelY);
+      } else {
+        const sign = r > 0 ? 1 : -1;
+        ctx.strokeStyle = '#7b1fa2';
+        ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(n.x + sign * arrowLen, n.y); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(n.x + sign * arrowTip, n.y - arrowHW);
+        ctx.lineTo(n.x + sign * arrowLen, n.y);
+        ctx.lineTo(n.x + sign * arrowTip, n.y + arrowHW);
+        ctx.fill();
+        const labelX = n.x + sign * (arrowLen + 18 * sc);
+        ctx.fillText((Math.abs(r) / 1000).toFixed(2) + ' kN', labelX, n.y + 4);
+      }
+    });
+  });
+
+  ctx.restore();
 }
 
 function drawDeflected() {
