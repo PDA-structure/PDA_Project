@@ -1666,7 +1666,7 @@ function drawBMD() {
     }
   });
   if (maxMoment < 1e-10) return;
-  const diagMult = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
+  const diagMult = parseFloat(document.getElementById('inputBMDScale').value) || 1;
   const scaleFactor = (0.2 * minMbrLen) / maxMoment * diagMult;
 
   ctx.fillStyle = cssVar('--canvas-bmd-fill');
@@ -1762,7 +1762,7 @@ function drawSFD() {
     maxShear = Math.max(maxShear, Math.abs(shears[idx][0]), Math.abs(shears[idx][1]));
   });
   if (maxShear < 1e-10) return;
-  const diagMult = parseFloat(document.getElementById('inputDiagramScale').value) || 1;
+  const diagMult = parseFloat(document.getElementById('inputSFDScale').value) || 1;
   const scaleFactor = (0.2 * minMbrLen) / maxShear * diagMult;
 
   ctx.fillStyle = cssVar('--canvas-sfd-fill');
@@ -1941,16 +1941,18 @@ document.getElementById('chkNodeLabels').addEventListener('change', draw);
 // Deflection scale slider only appears when chkDeflected is on.
 // BMD/SFD scale slider only appears when chkBMD / chkSFD / chkAFD is on (all three share it).
 function updateScaleVisibility() {
-  const defLabel  = document.getElementById('deflectionScaleLabel');
-  const diagLabel = document.getElementById('diagramScaleLabel');
-  const afdLabel  = document.getElementById('afdScaleLabel');
+  const defLabel = document.getElementById('deflectionScaleLabel');
+  const bmdLabel = document.getElementById('bmdScaleLabel');
+  const sfdLabel = document.getElementById('sfdScaleLabel');
+  const afdLabel = document.getElementById('afdScaleLabel');
   const chkDef = document.getElementById('chkDeflected');
   const chkBMD = document.getElementById('chkBMD');
   const chkSFD = document.getElementById('chkSFD');
   const chkAFD = document.getElementById('chkAFD');
-  if (defLabel)  defLabel.style.display  = (chkDef && chkDef.checked) ? '' : 'none';
-  if (diagLabel) diagLabel.style.display = ((chkBMD && chkBMD.checked) || (chkSFD && chkSFD.checked)) ? '' : 'none';
-  if (afdLabel)  afdLabel.style.display  = (chkAFD && chkAFD.checked) ? '' : 'none';
+  if (defLabel) defLabel.style.display = (chkDef && chkDef.checked) ? '' : 'none';
+  if (bmdLabel) bmdLabel.style.display = (chkBMD && chkBMD.checked) ? '' : 'none';
+  if (sfdLabel) sfdLabel.style.display = (chkSFD && chkSFD.checked) ? '' : 'none';
+  if (afdLabel) afdLabel.style.display = (chkAFD && chkAFD.checked) ? '' : 'none';
 }
 ['chkDeflected', 'chkBMD', 'chkSFD', 'chkAFD'].forEach(id => {
   document.getElementById(id).addEventListener('change', updateScaleVisibility);
@@ -1971,7 +1973,8 @@ function syncScaleControls(rangeId, numberId, onChange) {
 }
 
 syncScaleControls('inputScaleRange',         'inputScale',         draw);
-syncScaleControls('inputDiagramScaleRange',  'inputDiagramScale',  draw);
+syncScaleControls('inputBMDScaleRange',      'inputBMDScale',      draw);
+syncScaleControls('inputSFDScaleRange',      'inputSFDScale',      draw);
 syncScaleControls('inputAFDScaleRange',      'inputAFDScale',      draw);
 syncScaleControls('inputSymbolScaleRange',   'inputSymbolScale',   draw);
 syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
