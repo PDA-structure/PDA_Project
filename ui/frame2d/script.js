@@ -878,10 +878,14 @@ function drawMembers() {
     ctx.setLineDash([]);
 
     // Member kN labels gated on chkDiagLabels for consistency with BMD/SFD/AFD value annotations.
-    // Suppress when chkAFD is on — AFD draws its own labels next to the polygon (would otherwise duplicate).
+    // Suppress when ANY diagram is on — each diagram has its own annotations (BMD end moments,
+    // SFD endpoint shears, AFD midpoint axial); the member-line label becomes background noise
+    // competing for visual attention with the active diagram's labels.
     if (forceLabel
         && document.getElementById('chkDiagLabels')?.checked
-        && !document.getElementById('chkAFD')?.checked) {
+        && !document.getElementById('chkAFD')?.checked
+        && !document.getElementById('chkBMD')?.checked
+        && !document.getElementById('chkSFD')?.checked) {
       drawMemberLabel(n1, n2, forceLabel, color);
     }
 
