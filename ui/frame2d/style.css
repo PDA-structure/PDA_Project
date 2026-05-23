@@ -76,6 +76,9 @@
   --canvas-tension: var(--color-info);              /* member force > 0 (aliases #1565c0) */
   --canvas-compression: var(--color-danger-strong); /* member force < 0 (aliases #b71c1c) */
   --canvas-zero: #999999;                           /* member force ~0 + diagram baselines */
+  --canvas-reaction: #ef6c00;                       /* support reaction force arrows (orange — distinct from #6a1b9a moment-load purple) */
+  --canvas-reaction-label: #bf360c;                 /* reaction kN / kNm value text */
+  --canvas-reaction-moment: #ef6c00;                /* moment-reaction arc + arrowhead (same hue as force reaction) */
   --canvas-bmd: #1565c0;                            /* BMD outline colour */
   --canvas-bmd-fill: rgba(33, 150, 243, 0.25);      /* BMD polygon fill */
   --canvas-sfd: #2e7d32;                            /* SFD outline colour */
@@ -605,6 +608,9 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
   /* --canvas-tension omitted — aliases var(--color-info) already overridden */
   /* --canvas-compression omitted — aliases var(--color-danger-strong) already overridden */
   --canvas-zero: #6f747c;                    /* zero-force grey — visible on dark */
+  --canvas-reaction: #ffb74d;                /* reaction orange — lifted for dark */
+  --canvas-reaction-label: #ffcc80;
+  --canvas-reaction-moment: #ffb74d;
   --canvas-bmd: #5aa9e6;
   --canvas-bmd-fill: rgba(90, 169, 230, 0.30);
   --canvas-sfd: #6abf6e;
