@@ -638,6 +638,7 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   const arrowLen  = 24 * sc;
   const headDepth = 5 * sc;
   const arrowHW   = 5 * sc;
+  const apexGap   = 2 * sc;     // tiny pull-back so coincident X+Y arrows at one node don't merge into a single shape
   const fs        = Math.round(10 * sc);
   const labelGap  = 12 * sc;
 
@@ -647,11 +648,14 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
   else              dirX = forceValue > 0 ?  1 : -1;
 
-  // Shaft extends OPPOSITE to the force direction; tail sits outside the structure.
-  const tailX = node.x - arrowLen  * dirX;
-  const tailY = node.y - arrowLen  * dirY;
-  const baseX = node.x - headDepth * dirX;
-  const baseY = node.y - headDepth * dirY;
+  // Apex sits a small gap outside the node along the force direction; everything else
+  // is measured back from the apex along the OPPOSITE direction.
+  const apexX = node.x - apexGap   * dirX;
+  const apexY = node.y - apexGap   * dirY;
+  const baseX = apexX - headDepth  * dirX;
+  const baseY = apexY - headDepth  * dirY;
+  const tailX = apexX - arrowLen   * dirX;
+  const tailY = apexY - arrowLen   * dirY;
 
   // Perpendicular to dir in the canvas frame.
   const perpX = -dirY;
@@ -671,9 +675,9 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   ctx.lineTo(baseX, baseY);
   ctx.stroke();
 
-  // Head: filled triangle with apex at node.
+  // Head: filled triangle with apex pulled just outside the node.
   ctx.beginPath();
-  ctx.moveTo(node.x, node.y);
+  ctx.moveTo(apexX, apexY);
   ctx.lineTo(baseX + perpX * arrowHW, baseY + perpY * arrowHW);
   ctx.lineTo(baseX - perpX * arrowHW, baseY - perpY * arrowHW);
   ctx.closePath();
