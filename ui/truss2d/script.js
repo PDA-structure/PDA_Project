@@ -446,8 +446,8 @@ function drawMemberLabel(n1, n2, text, color) {
   cy /= nodes.length;
   if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
 
-  const ox = mx + nx * 18;
-  const oy = my + ny * 18;
+  const ox = mx + nx * 14;
+  const oy = my + ny * 14;
 
   const angle = Math.atan2(dy, dx);
   const fs = Math.round(9 * getSymbolScale());
