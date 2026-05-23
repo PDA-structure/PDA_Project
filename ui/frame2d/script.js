@@ -877,12 +877,11 @@ function drawMembers() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Member kN labels gated on chkDiagLabels for consistency with BMD/SFD/AFD value annotations.
-    // Suppress when ANY diagram is on — each diagram has its own annotations (BMD end moments,
-    // SFD endpoint shears, AFD midpoint axial); the member-line label becomes background noise
-    // competing for visual attention with the active diagram's labels.
+    // Member-line kN labels render whenever NO diagram is active. Each diagram
+    // (BMD / SFD / AFD) carries its own value annotations; when any of them is
+    // on, the active diagram's labels are authoritative and the member-line
+    // labels would duplicate / compete.
     if (forceLabel
-        && document.getElementById('chkDiagLabels')?.checked
         && !document.getElementById('chkAFD')?.checked
         && !document.getElementById('chkBMD')?.checked
         && !document.getElementById('chkSFD')?.checked) {
@@ -1717,8 +1716,8 @@ function drawBMD() {
     ctx.fillStyle = cssVar('--canvas-bmd-fill'); ctx.strokeStyle = cssVar('--canvas-bmd'); ctx.lineWidth = 1.5;
   });
 
-  if (document.getElementById('chkDiagLabels').checked) {
-    // ── Annotate end moments and UDL midspan peak ─────────────────────────
+  {
+    // ── Annotate end moments and UDL midspan peak (always — chkDiagLabels retired) ─────────────────────────
     const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
     const nudgeM = 8 * getSymbolScale();
     members.forEach((m, idx) => {
@@ -1811,8 +1810,8 @@ function drawSFD() {
     ctx.fillStyle = cssVar('--canvas-sfd-fill'); ctx.strokeStyle = cssVar('--canvas-sfd'); ctx.lineWidth = 1.5;
   });
 
-  if (document.getElementById('chkDiagLabels').checked) {
-    // ── Annotate end shears and zero crossings ────────────────────────────
+  {
+    // ── Annotate end shears and zero crossings (always — chkDiagLabels retired) ────────────────────────────
     const fmtV = v => (v / 1000).toFixed(2) + ' kN';
     const nudgeV = 8 * getSymbolScale();
     members.forEach((m, idx) => {
@@ -1932,8 +1931,8 @@ function drawAFD() {
     ctx.stroke();
   });
 
-  // Optional value labels — respects chkDiagLabels like BMD/SFD do.
-  if (document.getElementById('chkDiagLabels').checked) {
+  // Value labels at the polygon midpoint (always — chkDiagLabels retired).
+  {
     const fmtN = v => (v / 1000).toFixed(2) + ' kN';
     const nudge = 8 * getSymbolScale();
     members.forEach((m, idx) => {
@@ -1961,7 +1960,6 @@ document.getElementById('chkDeflected').addEventListener('change', draw);
 document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkAFD').addEventListener('change', draw);
-document.getElementById('chkDiagLabels').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
 
 // Conditional visibility for diagram-specific scale controls.
