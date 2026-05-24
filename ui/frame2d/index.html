@@ -62,11 +62,13 @@
         <button class="tool-btn" data-mode="loadX"      onclick="setMode('loadX')"      title="Apply horizontal force at a node">→ Force X</button>
         <button class="tool-btn" data-mode="loadY"      onclick="setMode('loadY')"      title="Apply vertical force at a node">↓ Force Y</button>
         <button class="tool-btn" data-mode="loadMoment" onclick="setMode('loadMoment')" title="Apply moment at a node">↺ Moment</button>
+        <button class="tool-btn" data-mode="editNodeLoad" onclick="setMode('editNodeLoad')" title="Click a node to edit its existing load magnitude">✏️ Edit Load</button>
       </details>
 
       <details class="card">
         <summary>Member Loads</summary>
         <button class="tool-btn" data-mode="udl" onclick="setMode('udl')" title="Apply uniform distributed load to a member (vertical and/or horizontal)">▤ UDL</button>
+        <button class="tool-btn" data-mode="editUdl" onclick="setMode('editUdl')" title="Click a member to edit its existing UDL">✏️ Edit UDL</button>
       </details>
 
       <details class="card">

@@ -171,14 +171,15 @@ const MODE_LABELS = {
   rollerX: 'Roller (X fixed)', rollerY: 'Roller (Y fixed)',
   spring: 'Spring Support',
   loadX: 'Force X', loadY: 'Force Y', loadMoment: 'Moment',
-  udl: 'UDL on Member',
+  editNodeLoad: 'Edit Node Load',
+  udl: 'UDL on Member', editUdl: 'Edit UDL',
   toggleBar: 'Toggle Beam / Bar',
   pinLeft: 'Pin — Left End', pinRight: 'Pin — Right End',
   editNode: 'Edit Node', delete: 'Delete',
 };
 
 const SUPPORT_MODES = new Set(['fixed', 'pinned', 'rollerX', 'rollerY', 'spring']);
-const LOAD_MODES    = new Set(['loadX', 'loadY', 'loadMoment', 'udl']);
+const LOAD_MODES    = new Set(['loadX', 'loadY', 'loadMoment', 'udl', 'editNodeLoad', 'editUdl']);
 
 function setMode(m) {
   mode = m;
@@ -297,6 +298,43 @@ canvas.addEventListener('click', e => {
       document.getElementById('udlWx').value = m.udl_x !== null && m.udl_x !== undefined ? m.udl_x : '';
       document.getElementById('udlPanel').style.display = 'block';
       document.getElementById('udlWy').focus();
+    }
+
+  // ---- Edit existing node load ----
+  } else if (mode === 'editNodeLoad') {
+    const n = findNodeAt(px, py);
+    if (n) {
+      const existing = nodeLoads.filter(l => l.nodeId === n.id);
+      if (existing.length === 0) { setStatus('No loads on node ' + (n.id + 1), true); }
+      else {
+        existing.forEach(l => {
+          const label = l.direction === 'moment' ? 'Moment (N·m, + = CCW):' : 'Force ' + l.direction.toUpperCase() + ' (N):';
+          const mag = parseFloat(prompt('Node ' + (n.id + 1) + ' — ' + label, String(l.magnitude)));
+          if (!isNaN(mag)) {
+            saveHistory();
+            l.magnitude = mag;
+            results = null;
+          }
+        });
+      }
+    }
+
+  // ---- Edit existing UDL ----
+  } else if (mode === 'editUdl') {
+    const mi = findMemberAt(px, py);
+    if (mi !== null) {
+      const m = members[mi];
+      if ((m.udl === null || m.udl === undefined || m.udl === 0) &&
+          (m.udl_x === null || m.udl_x === undefined || m.udl_x === 0)) {
+        setStatus('No UDL on member ' + (mi + 1), true);
+      } else {
+        _udlActiveMemberIdx = mi;
+        document.getElementById('udlPanelTitle').textContent = 'Edit UDL — Member ' + (mi + 1);
+        document.getElementById('udlWy').value = m.udl !== null && m.udl !== undefined ? m.udl : '';
+        document.getElementById('udlWx').value = m.udl_x !== null && m.udl_x !== undefined ? m.udl_x : '';
+        document.getElementById('udlPanel').style.display = 'block';
+        document.getElementById('udlWy').focus();
+      }
     }
 
   // ---- Member property toggles ----
