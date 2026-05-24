@@ -176,12 +176,12 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: 0.5px; }
 
 /* ── Collapsible card disclosure (nwi) ─────────────────────── */
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-md);
-  padding: var(--space-3);
-  margin-bottom: var(--space-3);
-  box-shadow: var(--shadow-sm);
+  padding: var(--space-2);
+  margin-bottom: 0;
+  box-shadow: none;
 }
 
 /* ── Horizontal-toolbar sizing for cards + surviving sections (rs3) */
@@ -196,14 +196,14 @@ summary {
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 10px;
+  font-size: 9px;
   text-transform: uppercase;
   font-weight: 600;
   color: var(--color-fg-faint);
   letter-spacing: 0.5px;
-  margin: calc(-1 * var(--space-3));   /* extend click-target to full card padding */
-  margin-bottom: var(--space-2);
-  padding: var(--space-3);
+  margin: calc(-1 * var(--space-2));   /* extend click-target to full card padding */
+  margin-bottom: var(--space-1);
+  padding: var(--space-2);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   user-select: none;
   transition: background 0.15s;
@@ -657,8 +657,10 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
 .card.floating {
   position: absolute;
   pointer-events: auto;
+  background: var(--color-surface);
   box-shadow: var(--shadow-lg);
   border: 1.5px solid var(--color-border-hover);
+  padding: var(--space-3);
   z-index: 100;           /* JS overrides via inline style for bring-to-top */
 }
 
