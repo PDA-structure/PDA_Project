@@ -367,28 +367,46 @@ canvas.addEventListener('click', e => {
     const mi = findMemberAt(px, py);
     if (mi !== null) {
       const m = members[mi];
-      const eInput = prompt('Member ' + (mi+1) + ' \u2014 E (GPa), blank = use global:', m.E_override != null ? m.E_override : '');
-      if (eInput !== null) {
-        if (eInput.trim() !== '') {
-          const val = parseFloat(eInput);
-          m.E_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.E_override) : val;
-        } else { m.E_override = null; }
+      const globalE = parseFloat(document.getElementById('inputE').value) || 200;
+      const globalI = parseFloat(document.getElementById('inputI').value) || 10000;
+      const globalA = parseFloat(document.getElementById('inputA').value) || 100;
+      const curE = m.E_override != null ? m.E_override : globalE;
+      const curI = m.I_override != null ? m.I_override : globalI;
+      const curA = m.A_override != null ? m.A_override : globalA;
+      const srcE = m.E_override != null ? 'override' : 'global';
+      const srcI = m.I_override != null ? 'override' : 'global';
+      const srcA = m.A_override != null ? 'override' : 'global';
+      var info = 'Member ' + (mi + 1) + ' current values:\n'
+        + '  E = ' + curE + ' GPa (' + srcE + ')\n'
+        + '  I = ' + curI + ' cm\u2074 (' + srcI + ')\n'
+        + '  A = ' + curA + ' cm\u00B2 (' + srcA + ')\n\n'
+        + 'Choose action:';
+      var action = prompt(info + '\n\nType "edit" to change values, "reset" to clear overrides, or Cancel to keep as-is.', 'edit');
+      if (action === null) { /* cancelled */ }
+      else if (action.trim().toLowerCase() === 'reset') {
+        saveHistory();
+        m.E_override = null;
+        m.I_override = null;
+        m.A_override = null;
+        results = null;
+        setStatus('Member ' + (mi + 1) + ' reset to global values');
+      } else {
+        var eInput = prompt('Member ' + (mi + 1) + ' \u2014 E (GPa):', String(curE));
+        if (eInput !== null && eInput.trim() !== '') {
+          var val = parseFloat(eInput);
+          if (!isNaN(val)) { saveHistory(); m.E_override = val; results = null; }
+        }
+        var iInput = prompt('Member ' + (mi + 1) + ' \u2014 I (cm\u2074):', String(curI));
+        if (iInput !== null && iInput.trim() !== '') {
+          var val = parseFloat(iInput);
+          if (!isNaN(val)) { saveHistory(); m.I_override = val; results = null; }
+        }
+        var aInput = prompt('Member ' + (mi + 1) + ' \u2014 A (cm\u00B2):', String(curA));
+        if (aInput !== null && aInput.trim() !== '') {
+          var val = parseFloat(aInput);
+          if (!isNaN(val)) { saveHistory(); m.A_override = val; results = null; }
+        }
       }
-      const iInput = prompt('Member ' + (mi+1) + ' \u2014 I (cm\u2074), blank = use global:', m.I_override != null ? m.I_override : '');
-      if (iInput !== null) {
-        if (iInput.trim() !== '') {
-          const val = parseFloat(iInput);
-          m.I_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.I_override) : val;
-        } else { m.I_override = null; }
-      }
-      const aInput = prompt('Member ' + (mi+1) + ' \u2014 A (cm\u00B2), blank = use global:', m.A_override != null ? m.A_override : '');
-      if (aInput !== null) {
-        if (aInput.trim() !== '') {
-          const val = parseFloat(aInput);
-          m.A_override = isNaN(val) ? (alert('Invalid \u2014 keeping previous.'), m.A_override) : val;
-        } else { m.A_override = null; }
-      }
-      results = null;
       draw();
     }
 
