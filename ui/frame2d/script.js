@@ -607,6 +607,12 @@ function memberLengthReal(m) {
   return Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY);
 }
 
+function memberAngle(m) {
+  const n1 = nodes.find(n => n.id === m.start);
+  const n2 = nodes.find(n => n.id === m.end);
+  return Math.atan2(n2.realY - n1.realY, n2.realX - n1.realX);
+}
+
 function reindexNodes() {
   const idMap = {};
   nodes.forEach((n, i) => { idMap[n.id] = i; n.id = i; });
@@ -765,15 +771,20 @@ async function solve() {
   });
 
   // ENForces & ENMoments from UDLs (fixed-end forces, positive UDL = downward)
+  // For vertical (gravity) UDL on inclined members, decompose to local transverse component
   const ENForces  = members.map(m => {
     if (!m.udl || m.type === 'bar') return [0, 0];
     const L = memberLengthReal(m);
-    return [-(m.udl * L) / 2, -(m.udl * L) / 2];
+    const theta = memberAngle(m);
+    const w_local = m.udl * Math.cos(theta);  // vertical UDL → local transverse component
+    return [-(w_local * L) / 2, -(w_local * L) / 2];
   });
   const ENMoments = members.map(m => {
     if (!m.udl || m.type === 'bar') return [0, 0];
     const w = m.udl, L = memberLengthReal(m);
-    return [w * L * L / 12, -(w * L * L) / 12];
+    const theta = memberAngle(m);
+    const w_local = w * Math.cos(theta);  // vertical UDL → local transverse component
+    return [w_local * L * L / 12, -(w_local * L * L) / 12];
   });
 
   const bars        = members.map((m,i) => m.type === 'bar'   ? i+1 : null).filter(Boolean);
