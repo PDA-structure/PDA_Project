@@ -144,14 +144,18 @@ function resetView() {
     if (nodes[i].x > maxX) maxX = nodes[i].x;
     if (nodes[i].y > maxY) maxY = nodes[i].y;
   }
-  var pad = 60;
   var bw = (maxX - minX) || 1;
   var bh = (maxY - minY) || 1;
-  var sx = (canvas.width  - 2 * pad) / bw;
-  var sy = (canvas.height - 2 * pad) / bh;
+  var margin = 0.15;
+  minX -= bw * margin; maxX += bw * margin;
+  minY -= bh * margin; maxY += bh * margin;
+  bw = maxX - minX;
+  bh = maxY - minY;
+  var sx = canvas.width  / bw;
+  var sy = canvas.height / bh;
   view.scale = Math.min(sx, sy);
-  view.tx = pad - minX * view.scale + (canvas.width  - 2 * pad - bw * view.scale) / 2;
-  view.ty = pad - minY * view.scale + (canvas.height - 2 * pad - bh * view.scale) / 2;
+  view.tx = (canvas.width  - bw * view.scale) / 2 - minX * view.scale;
+  view.ty = (canvas.height - bh * view.scale) / 2 - minY * view.scale;
   draw();
 }
 
