@@ -35,7 +35,7 @@ Expected reactions (Robot Structural Analysis):
 import numpy as np
 import math
 import pytest
-from pda_analysis_software.models.frame_model import FrameModel2D
+from pda_analysis_software.models.frame2d_model import FrameModel2D
 from pda_analysis_software.adapters.frame_adapters import FrameV2Adapter
 
 
@@ -92,47 +92,62 @@ def test_mckenzie_5_3_vertical_udl_decomposition():
     assert abs(theta_DE - (-math.pi/2)) < 1e-9
 
     # --- UDL Equivalent Nodal Actions (ENA) ---
-    # Key insight: For a VERTICAL (gravity) UDL on an inclined member,
-    # the local transverse component = w * cos(theta)
-    # the local axial component = w * sin(theta) (but cancels in ENA for uniform load)
+    # For VERTICAL (gravity) UDL on inclined member:
+    #   - Local transverse component: w * cos(theta) → handled by ENForces/ENMoments
+    #   - Local axial component: w * sin(theta) → must add to forceVector in global coords
+    # For HORIZONTAL UDL (global X direction):
+    #   - Decompose to local transverse: wx * (-sin(theta)) → handled by ENForces/ENMoments
+    #   - Axial component for non-vertical members: would need special handling, but not in this test
 
-    # Member 0 (AB): 4 kN/m HORIZONTAL (will be handled separately via udl_x)
-    # ENForces/ENMoments = 0 for horizontal UDL (handled by API)
+    # Member 0 (AB): 4 kN/m HORIZONTAL rightward (vertical member, theta=90°)
+    wx_AB = 4000  # N/m
+    q_AB_local_y = wx_AB * (-s_AB)  # = 4000 * (-1) = -4000 N/m
+    ENF_AB_i = q_AB_local_y * L_AB / 2  # = -12000
+    ENF_AB_j = q_AB_local_y * L_AB / 2  # = -12000
+    ENM_AB_i = q_AB_local_y * L_AB**2 / 12   # = -12000
+    ENM_AB_j = -q_AB_local_y * L_AB**2 / 12  # = +12000
 
     # Member 1 (BC): 8 kN/m VERTICAL downward
     w_BC = 8000  # N/m (vertical)
-    w_BC_local = w_BC * c_BC  # local transverse component
-    ENF_BC_i = -(w_BC_local * L_BC) / 2
-    ENF_BC_j = -(w_BC_local * L_BC) / 2
-    ENM_BC_i = (w_BC_local * L_BC**2) / 12
-    ENM_BC_j = -(w_BC_local * L_BC**2) / 12
+    w_BC_local_y = w_BC * c_BC  # local transverse component
+    w_BC_local_x = -w_BC * s_BC  # local axial component (negative = compressive)
+    ENF_BC_i = -(w_BC_local_y * L_BC) / 2
+    ENF_BC_j = -(w_BC_local_y * L_BC) / 2
+    ENM_BC_i = (w_BC_local_y * L_BC**2) / 12
+    ENM_BC_j = -(w_BC_local_y * L_BC**2) / 12
 
     # Member 2 (CD): 8 kN/m VERTICAL downward
     w_CD = 8000  # N/m (vertical)
-    w_CD_local = w_CD * c_CD  # local transverse component (same magnitude as BC due to symmetry)
-    ENF_CD_i = -(w_CD_local * L_CD) / 2
-    ENF_CD_j = -(w_CD_local * L_CD) / 2
-    ENM_CD_i = (w_CD_local * L_CD**2) / 12
-    ENM_CD_j = -(w_CD_local * L_CD**2) / 12
+    w_CD_local_y = w_CD * c_CD  # local transverse component
+    w_CD_local_x = -w_CD * s_CD  # local axial component (for downward-right member, θ<0, so -w*sin(θ) > 0 = tensile)
+    ENF_CD_i = -(w_CD_local_y * L_CD) / 2
+    ENF_CD_j = -(w_CD_local_y * L_CD) / 2
+    ENM_CD_i = (w_CD_local_y * L_CD**2) / 12
+    ENM_CD_j = -(w_CD_local_y * L_CD**2) / 12
 
-    # Member 3 (DE): 2 kN/m HORIZONTAL (will be handled separately via udl_x)
-    # ENForces/ENMoments = 0 for horizontal UDL (handled by API)
+    # Member 3 (DE): 2 kN/m HORIZONTAL rightward (vertical member, theta=-90°)
+    wx_DE = 2000  # N/m
+    q_DE_local_y = wx_DE * (-s_DE)  # = 2000 * (-(-1)) = +2000 N/m
+    ENF_DE_i = q_DE_local_y * L_DE / 2  # = +6000
+    ENF_DE_j = q_DE_local_y * L_DE / 2  # = +6000
+    ENM_DE_i = q_DE_local_y * L_DE**2 / 12   # = +6000
+    ENM_DE_j = -q_DE_local_y * L_DE**2 / 12  # = -6000
 
     ENForces = np.array([
-        [0.0, 0.0],           # AB (horizontal UDL handled separately)
-        [ENF_BC_i, ENF_BC_j], # BC
-        [ENF_CD_i, ENF_CD_j], # CD
-        [0.0, 0.0],           # DE (horizontal UDL handled separately)
+        [ENF_AB_i, ENF_AB_j],
+        [ENF_BC_i, ENF_BC_j],
+        [ENF_CD_i, ENF_CD_j],
+        [ENF_DE_i, ENF_DE_j],
     ], float)
 
     ENMoments = np.array([
-        [0.0, 0.0],             # AB
-        [ENM_BC_i, ENM_BC_j],   # BC
-        [ENM_CD_i, ENM_CD_j],   # CD
-        [0.0, 0.0],             # DE
+        [ENM_AB_i, ENM_AB_j],
+        [ENM_BC_i, ENM_BC_j],
+        [ENM_CD_i, ENM_CD_j],
+        [ENM_DE_i, ENM_DE_j],
     ], float)
 
-    # --- Point loads ---
+    # --- Point loads + axial components of vertical UDL ---
     # DOF numbering: node i has DOF [3i+1, 3i+2, 3i+3] (1-based)
     # Node 0 (A): DOF 1,2,3
     # Node 1 (B): DOF 4,5,6
@@ -146,28 +161,21 @@ def test_mckenzie_5_3_vertical_udl_decomposition():
     forceVector[7, 0] = -40000  # Node 2 (C) Fy = 40 kN down
     forceVector[10, 0] = -20000 # Node 3 (D) Fy = 20 kN down
 
-    # --- Horizontal UDL handling (mimic API behavior) ---
-    # AB: 4 kN/m horizontal rightward
-    wx_AB = 4000  # N/m
-    fx_AB_each = wx_AB * L_AB / 2
-    mi_AB = -wx_AB * s_AB * L_AB**2 / 12
-    mj_AB = wx_AB * s_AB * L_AB**2 / 12
+    # Axial component of vertical UDL on BC (node 1→2, inclined)
+    # For distributed axial load, equivalent nodal forces point toward each other (compression)
+    # Node i: force along +local_x, Node j: force along -local_x
+    f_BC_axial = w_BC_local_x * L_BC / 2  # local axial load magnitude
+    forceVector[3, 0] += f_BC_axial * c_BC  # Node 1 (B) Fx: along +local_x
+    forceVector[4, 0] += f_BC_axial * s_BC  # Node 1 (B) Fy
+    forceVector[6, 0] -= f_BC_axial * c_BC  # Node 2 (C) Fx: along -local_x (opposite)
+    forceVector[7, 0] -= f_BC_axial * s_BC  # Node 2 (C) Fy
 
-    forceVector[0, 0] += fx_AB_each  # Node 0 (A) Fx
-    forceVector[3, 0] += fx_AB_each  # Node 1 (B) Fx
-    ENMoments[0, 0] += mi_AB
-    ENMoments[0, 1] += mj_AB
-
-    # DE: 2 kN/m horizontal rightward
-    wx_DE = 2000  # N/m
-    fx_DE_each = wx_DE * L_DE / 2
-    mi_DE = -wx_DE * s_DE * L_DE**2 / 12
-    mj_DE = wx_DE * s_DE * L_DE**2 / 12
-
-    forceVector[9, 0] += fx_DE_each   # Node 3 (D) Fx
-    forceVector[12, 0] += fx_DE_each  # Node 4 (E) Fx
-    ENMoments[3, 0] += mi_DE
-    ENMoments[3, 1] += mj_DE
+    # Axial component of vertical UDL on CD (node 2→3, inclined)
+    f_CD_axial = w_CD_local_x * L_CD / 2  # local axial load magnitude
+    forceVector[6, 0] += f_CD_axial * c_CD  # Node 2 (C) Fx: along +local_x
+    forceVector[7, 0] += f_CD_axial * s_CD  # Node 2 (C) Fy
+    forceVector[9, 0] -= f_CD_axial * c_CD  # Node 3 (D) Fx: along -local_x (opposite)
+    forceVector[10, 0] -= f_CD_axial * s_CD # Node 3 (D) Fy
 
     # --- Supports ---
     # Node A (0): fixed → DOF 1,2,3
@@ -202,12 +210,6 @@ def test_mckenzie_5_3_vertical_udl_decomposition():
 
     # Extract reactions (global force vector FG)
     FG = result.FG.flatten()
-
-    # Subtract horizontal UDL direct forces (mirrors API post-solve correction)
-    FG[0] -= fx_AB_each   # Node 0 (A) Fx
-    FG[3] -= fx_AB_each   # Node 1 (B) Fx
-    FG[9] -= fx_DE_each   # Node 3 (D) Fx
-    FG[12] -= fx_DE_each  # Node 4 (E) Fx
 
     # Node A reactions (DOF 1,2,3 → indices 0,1,2)
     Fx_A = FG[0]
