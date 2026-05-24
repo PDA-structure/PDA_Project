@@ -115,6 +115,38 @@
 
     </aside>
 
+    <div class="canvas-col">
+
+    <div class="results-panel" id="resultsPanel" style="display:none">
+      <div class="results-grid">
+
+        <div class="results-table-wrap">
+          <h3>Member Forces</h3>
+          <table id="tableMemberForces">
+            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th><th>&sigma; (MPa)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="results-table-wrap">
+          <h3>Reactions</h3>
+          <table id="tableReactions">
+            <thead><tr><th>Node</th><th>Direction</th><th>Reaction (kN)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="results-table-wrap">
+          <h3>Nodal Displacements</h3>
+          <table id="tableDisplacements">
+            <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
     <main class="canvas-area">
       <div class="canvas-topbar">
         <span class="mode-indicator">Mode: <span id="modeLabel">Add Node</span></span>
@@ -123,36 +155,8 @@
       <canvas id="canvas" width="1000" height="600"></canvas>
     </main>
 
-  </div>
+    </div><!-- .canvas-col -->
 
-  <div class="results-panel" id="resultsPanel" style="display:none">
-    <div class="results-grid">
-
-      <div class="results-table-wrap">
-        <h3>Member Forces</h3>
-        <table id="tableMemberForces">
-          <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th><th>&sigma; (MPa)</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="results-table-wrap">
-        <h3>Reactions</h3>
-        <table id="tableReactions">
-          <thead><tr><th>Node</th><th>Direction</th><th>Reaction (kN)</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="results-table-wrap">
-        <h3>Nodal Displacements</h3>
-        <table id="tableDisplacements">
-          <thead><tr><th>Node</th><th>Ux (mm)</th><th>Uy (mm)</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-    </div>
   </div>
 
   <script src="script.js"></script>
