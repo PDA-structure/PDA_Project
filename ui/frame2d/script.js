@@ -926,14 +926,11 @@ function drawMembers() {
 
     // colour from results
     let color = m.type === 'bar' ? cssVar('--canvas-bar') : cssVar('--canvas-stroke');
-    let forceLabel = null;
-
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
       const isZero = Math.abs(f) < 1e-3;
       color = isZero ? cssVar('--canvas-zero')
             : (f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression'));
-      forceLabel = isZero ? null : (f / 1000).toFixed(2) + ' kN';
     }
 
     ctx.strokeStyle = color;
@@ -944,17 +941,6 @@ function drawMembers() {
     ctx.lineTo(n2.x, n2.y);
     ctx.stroke();
     ctx.setLineDash([]);
-
-    // Member-line kN labels render whenever NO diagram is active. Each diagram
-    // (BMD / SFD / AFD) carries its own value annotations; when any of them is
-    // on, the active diagram's labels are authoritative and the member-line
-    // labels would duplicate / compete.
-    if (forceLabel
-        && !document.getElementById('chkAFD')?.checked
-        && !document.getElementById('chkBMD')?.checked
-        && !document.getElementById('chkSFD')?.checked) {
-      drawMemberLabel(n1, n2, forceLabel, color);
-    }
 
     // override indicator — blue outline when member has per-member E/I/A
     if (m.E_override != null || m.I_override != null || m.A_override != null) {
