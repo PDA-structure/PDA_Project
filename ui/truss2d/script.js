@@ -838,7 +838,16 @@ function drawDeflected() {
 }
 
 // ── Deflected shape toggle ────────────────────────────────────────────────
-document.getElementById('chkDeflected').addEventListener('change', draw);
+function updateScaleVisibility() {
+  var defLabel = document.getElementById('deflectionScaleLabel');
+  var chkDef   = document.getElementById('chkDeflected');
+  if (defLabel) defLabel.style.display = (chkDef && chkDef.checked) ? '' : 'none';
+}
+document.getElementById('chkDeflected').addEventListener('change', function () {
+  updateScaleVisibility();
+  draw();
+});
+updateScaleVisibility();
 
 // ── Coordinate display + pan ──────────────────────────────────────────────
 canvas.addEventListener('mousemove', e => {
