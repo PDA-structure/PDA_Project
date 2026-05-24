@@ -885,14 +885,22 @@ canvas.addEventListener('mousedown', e => {
 canvas.addEventListener('mouseup',    () => { isPanning = false; });
 canvas.addEventListener('mouseleave', () => { isPanning = false; });
 
-document.getElementById('inputScale').addEventListener('input', function () {
-  try {
-    draw();
-  } catch (err) {
-    showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
-    throw err;
-  }
-});
+function syncScaleControls(rangeId, numberId, onChange) {
+  const range  = document.getElementById(rangeId);
+  const number = document.getElementById(numberId);
+  if (!range || !number) return;
+  const sync = function (src, dst) {
+    return function () {
+      dst.value = src.value;
+      try { onChange(); }
+      catch (err) { showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err); throw err; }
+    };
+  };
+  range.addEventListener('input',  sync(range, number));
+  number.addEventListener('input', sync(number, range));
+}
+
+syncScaleControls('inputScaleRange', 'inputScale', draw);
 document.getElementById('inputSymbolScale').addEventListener('input', draw);
 
 // ── Save / Load model (Phase 3 interchange format) ────────────────────────
