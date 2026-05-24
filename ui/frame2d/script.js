@@ -135,11 +135,29 @@ function toWorld(clientX, clientY) {
   return { x: (px - view.tx) / view.scale, y: (py - view.ty) / view.scale };
 }
 
-function resetView() { view = { scale: 1, tx: 0, ty: 0 }; draw(); }
+function resetView() {
+  if (nodes.length === 0) { view = { scale: 1, tx: 0, ty: 0 }; draw(); return; }
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].x < minX) minX = nodes[i].x;
+    if (nodes[i].y < minY) minY = nodes[i].y;
+    if (nodes[i].x > maxX) maxX = nodes[i].x;
+    if (nodes[i].y > maxY) maxY = nodes[i].y;
+  }
+  var pad = 60;
+  var bw = (maxX - minX) || 1;
+  var bh = (maxY - minY) || 1;
+  var sx = (canvas.width  - 2 * pad) / bw;
+  var sy = (canvas.height - 2 * pad) / bh;
+  view.scale = Math.min(sx, sy);
+  view.tx = pad - minX * view.scale + (canvas.width  - 2 * pad - bw * view.scale) / 2;
+  view.ty = pad - minY * view.scale + (canvas.height - 2 * pad - bh * view.scale) / 2;
+  draw();
+}
 
 // ── Mode management ───────────────────────────────────────────────────────
 const MODE_LABELS = {
-  node: 'Add Node', member: 'Add Member',
+  view: 'View', node: 'Add Node', member: 'Add Member',
   fixed: 'Fixed Support', pinned: 'Pinned Support',
   rollerX: 'Roller (X fixed)', rollerY: 'Roller (Y fixed)',
   spring: 'Spring Support',
@@ -405,7 +423,7 @@ document.addEventListener('keydown', e => {
     const sp = document.getElementById('springPanel');
     if (sp) sp.style.display = 'none';
     _springActiveNodeId = null;
-    setMode('node');
+    setMode('view');
   }
 });
 
@@ -443,7 +461,7 @@ function resetAll() {
   if (existingDl) existingDl.remove();
   clearDiagramState();
   setStatus('');
-  setMode('node');
+  setMode('view');
   updateSaveButtonState();
   draw();
 }
@@ -2717,6 +2735,6 @@ document.getElementById('udlCancelBtn').addEventListener('click', function() {
 });
 
 // ── Init ──────────────────────────────────────────────────────────────────
-setMode('node');
+setMode('view');
 updateSaveButtonState();
 draw();
