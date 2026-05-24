@@ -179,7 +179,9 @@ canvas.addEventListener('click', e => {
     if (n) {
       const dir = prompt('Direction (x or y):', 'y');
       if (!dir) return;
-      const mag = parseFloat(prompt('Magnitude in N (negative = down/left):', '-10000'));
+      const existing = loads.find(l => l.nodeId === n.id && l.direction === dir.toLowerCase());
+      const defaultVal = existing ? String(existing.magnitude) : '-10000';
+      const mag = parseFloat(prompt('Magnitude in N (negative = down/left):', defaultVal));
       if (!isNaN(mag)) {
         saveHistory();
         loads = loads.filter(l => !(l.nodeId === n.id && l.direction === dir.toLowerCase()));

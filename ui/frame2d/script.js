@@ -274,7 +274,9 @@ canvas.addEventListener('click', e => {
     if (n) {
       const dir   = mode === 'loadX' ? 'x' : mode === 'loadY' ? 'y' : 'moment';
       const label = dir === 'moment' ? 'Magnitude in N·m (+ = CCW):' : 'Magnitude in N (negative = down/left):';
-      const mag   = parseFloat(prompt(label, dir === 'moment' ? '10000' : '-10000'));
+      const existing = nodeLoads.find(l => l.nodeId === n.id && l.direction === dir);
+      const defaultVal = existing ? String(existing.magnitude) : (dir === 'moment' ? '10000' : '-10000');
+      const mag   = parseFloat(prompt(label, defaultVal));
       if (!isNaN(mag)) {
         saveHistory();
         // replace any existing load in same direction at same node
