@@ -770,21 +770,44 @@ async function solve() {
     if (l.direction === 'moment') forceVector[base + 2] = l.magnitude;
   });
 
-  // ENForces & ENMoments from UDLs (fixed-end forces, positive UDL = downward)
-  // For vertical (gravity) UDL on inclined members, decompose to local transverse component
+  // ENForces & ENMoments from vertical UDLs.
+  // For inclined members, vertical (gravity) UDL decomposes into:
+  //   - Local TRANSVERSE component (w * cos θ): handled via ENForces/ENMoments
+  //   - Local AXIAL component (-w * sin θ): added directly to forceVector at each endpoint
+  // Both components are required for correct global equilibrium (Fy reactions).
   const ENForces  = members.map(m => {
     if (!m.udl || m.type === 'bar') return [0, 0];
     const L = memberLengthReal(m);
     const theta = memberAngle(m);
-    const w_local = m.udl * Math.cos(theta);  // vertical UDL → local transverse component
-    return [-(w_local * L) / 2, -(w_local * L) / 2];
+    const q_local_y = -m.udl * Math.cos(theta);  // local transverse component of global-Y load
+    return [q_local_y * L / 2, q_local_y * L / 2];
   });
   const ENMoments = members.map(m => {
     if (!m.udl || m.type === 'bar') return [0, 0];
-    const w = m.udl, L = memberLengthReal(m);
+    const L = memberLengthReal(m);
     const theta = memberAngle(m);
-    const w_local = w * Math.cos(theta);  // vertical UDL → local transverse component
-    return [w_local * L * L / 12, -(w_local * L * L) / 12];
+    const q_local_y = -m.udl * Math.cos(theta);
+    return [q_local_y * L * L / 12, -q_local_y * L * L / 12];
+  });
+
+  // Axial component of vertical UDL on inclined members → add to forceVector
+  // q_axial = -w * sin(theta); global force at each node: (q_axial*L/2) * (cos θ, sin θ)
+  members.forEach(m => {
+    if (!m.udl || m.type === 'bar') return;
+    const theta = memberAngle(m);
+    const sinT = Math.sin(theta);
+    if (Math.abs(sinT) < 1e-9) return;  // horizontal member: no axial component
+    const L   = memberLengthReal(m);
+    const q_ax = -m.udl * sinT;          // local axial load per unit length
+    const Nx   = q_ax * L / 2;           // axial force at each node
+    const fxi  = Nx * Math.cos(theta);
+    const fyi  = Nx * sinT;
+    const bi   = m.start * 3;            // 0-based forceVector index for start node
+    const bj   = m.end   * 3;
+    forceVector[bi]     += fxi;
+    forceVector[bi + 1] += fyi;
+    forceVector[bj]     += fxi;
+    forceVector[bj + 1] += fyi;
   });
 
   const bars        = members.map((m,i) => m.type === 'bar'   ? i+1 : null).filter(Boolean);

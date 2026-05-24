@@ -110,13 +110,27 @@ class Frame2DRequest(BaseModel):
 def solve_frame2d(req: Frame2DRequest):
     # --- Horizontal UDL (w_x) assembly ---
     # Global-X load convention: wx (N/m) acts in the global +X direction regardless of member angle.
-    # Consistent load vector for any orientation: fx = wx*L/2 at each node (global X), fy = 0.
-    # Moments from the transverse component: mi = -wx*sin(θ)*L²/12, mj = +wx*sin(θ)*L²/12.
-    # Direct fv contributions are subtracted from FG post-solve (mirrors solver's remove_ENA step).
+    #
+    # Correct FEM treatment via ENForces/ENMoments only (no direct fv additions):
+    #
+    #   For a global-X distributed load wx (N/m) on a member at angle theta:
+    #   1. Project onto local-y axis: q_local_y = wx * (-sin(theta))
+    #      (local-y unit vector in global = [-sin(theta), cos(theta)])
+    #   2. Fixed-end transverse forces (local): ENForces_i = ENForces_j = q_local_y * L / 2
+    #   3. Fixed-end moments (local):  ENMoments_i = q_local_y * L^2 / 12
+    #                                  ENMoments_j = -q_local_y * L^2 / 12
+    #   4. The solver's T.T transformation converts these to global automatically.
+    #      No direct forceVector additions are needed.
+    #      No post-solve FG corrections are needed.
+    #
+    # Axial component of horizontal UDL on inclined members (wx*cos(theta)) is NOT handled
+    # here because horizontal UDLs are only applied to vertical columns in typical frame models.
+    # For the general case on inclined members with horizontal UDL, axial forces would also need
+    # to be added to forceVector at the free nodes — but this is outside current scope.
     fv = list(req.forceVector)          # mutable copy (flat, length = 3*n_nodes)
+    en_forces = [list(row) for row in req.ENForces]   # mutable copy
     en_moments = [list(row) for row in req.ENMoments]  # mutable copy
 
-    wx_fv_to_remove = []   # track direct-fv contributions for FG post-correction
     if req.udl_x:
         nodes_arr = req.nodes           # list of [x,y]
         for ei, wx in enumerate(req.udl_x):
@@ -129,31 +143,26 @@ def solve_frame2d(req: Frame2DRequest):
             if L == 0:
                 continue
 
-            # Consistent load vector for global-X uniform load (wx N/m):
-            # By the FEM work-equivalent principle, for ANY member orientation:
-            #   Global-X force at each node = wx * L / 2  (never negative, independent of angle)
-            #   Global-Y force at each node = 0
-            # Moment from the transverse (local-y) component only:
-            #   mi = -wx * sin(theta) * L² / 12  (same value in local and global frames)
-            #   mj = +wx * sin(theta) * L² / 12
             theta = math.atan2(yj - yi, xj - xi)
             s = math.sin(theta)
-            fx_each = wx * L / 2
-            mi_g =  -wx * s * L * L / 12
-            mj_g =   wx * s * L * L / 12
 
-            fv[ni * 3 + 0] += fx_each
-            fv[nj * 3 + 0] += fx_each
-            en_moments[ei][0] += mi_g
-            en_moments[ei][1] += mj_g
+            # Local-y component of global-X load
+            q_local_y = wx * (-s)
 
-            # Record so we can subtract from FG after solve (mirrors remove_ENA pattern)
-            wx_fv_to_remove.append((ni, nj, fx_each))
+            # Fixed-end transverse forces and moments (local coords)
+            enf = q_local_y * L / 2
+            enm_i = q_local_y * L * L / 12
+            enm_j = -q_local_y * L * L / 12
+
+            en_forces[ei][0] += enf
+            en_forces[ei][1] += enf
+            en_moments[ei][0] += enm_i
+            en_moments[ei][1] += enm_j
 
     model = FrameModel2D(
         nodes=np.array(req.nodes, float),
         members=np.array(req.members, int),
-        ENForces=np.array(req.ENForces, float),
+        ENForces=np.array(en_forces, float),
         ENMoments=np.array(en_moments, float),
         forceVector=np.array(fv, float).reshape(-1, 1),
         E=req.E,
@@ -172,12 +181,6 @@ def solve_frame2d(req: Frame2DRequest):
     )
 
     result = engine.solve(model, solver_name=req.solver)
-
-    # Subtract wx direct-fv contributions from FG (mirrors remove_equivalent_nodal_actions).
-    # Forces added to fv are not auto-removed by the solver's ENA mechanism, so we do it here.
-    for ni, nj, fx_each in wx_fv_to_remove:
-        result.FG[ni * 3 + 0, 0] -= fx_each
-        result.FG[nj * 3 + 0, 0] -= fx_each
 
     # Return JSON-friendly lists
     return {
