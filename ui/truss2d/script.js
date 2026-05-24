@@ -61,26 +61,31 @@ function toWorld(clientX, clientY) {
 }
 
 function resetView() {
-  if (nodes.length === 0) { view = { scale: 1, tx: 0, ty: 0 }; draw(); return; }
-  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  if (nodes.length === 0 || !origin) { view = { scale: 1, tx: 0, ty: 0 }; draw(); return; }
+  var rMinX = Infinity, rMinY = Infinity, rMaxX = -Infinity, rMaxY = -Infinity;
   for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i].x < minX) minX = nodes[i].x;
-    if (nodes[i].y < minY) minY = nodes[i].y;
-    if (nodes[i].x > maxX) maxX = nodes[i].x;
-    if (nodes[i].y > maxY) maxY = nodes[i].y;
+    var rx = nodes[i].realX, ry = nodes[i].realY;
+    if (rx < rMinX) rMinX = rx;
+    if (ry < rMinY) rMinY = ry;
+    if (rx > rMaxX) rMaxX = rx;
+    if (ry > rMaxY) rMaxY = ry;
   }
-  var bw = (maxX - minX) || 1;
-  var bh = (maxY - minY) || 1;
-  var margin = 0.15;
-  minX -= bw * margin; maxX += bw * margin;
-  minY -= bh * margin; maxY += bh * margin;
-  bw = maxX - minX;
-  bh = maxY - minY;
-  var sx = canvas.width  / bw;
-  var sy = canvas.height / bh;
+  var rw = (rMaxX - rMinX) || 1;
+  var rh = (rMaxY - rMinY) || 1;
+  var margin = 0.20;
+  rMinX -= rw * margin; rMaxX += rw * margin;
+  rMinY -= rh * margin; rMaxY += rh * margin;
+  rw = rMaxX - rMinX;
+  rh = rMaxY - rMinY;
+  var pw = rw / UNIT * GRID;
+  var ph = rh / UNIT * GRID;
+  var sx = canvas.width  / pw;
+  var sy = canvas.height / ph;
   view.scale = Math.min(sx, sy);
-  view.tx = (canvas.width  - bw * view.scale) / 2 - minX * view.scale;
-  view.ty = (canvas.height - bh * view.scale) / 2 - minY * view.scale;
+  var cx = origin.x + (rMinX + rw / 2) / UNIT * GRID;
+  var cy = origin.y - (rMinY + rh / 2) / UNIT * GRID;
+  view.tx = canvas.width  / 2 - cx * view.scale;
+  view.ty = canvas.height / 2 - cy * view.scale;
   draw();
 }
 
