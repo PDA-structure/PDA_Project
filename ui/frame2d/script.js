@@ -405,6 +405,7 @@ document.addEventListener('keydown', e => {
     const sp = document.getElementById('springPanel');
     if (sp) sp.style.display = 'none';
     _springActiveNodeId = null;
+    setMode('node');
   }
 });
 

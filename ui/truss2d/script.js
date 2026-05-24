@@ -236,6 +236,9 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     undoLastAction();
   }
+  if (e.key === 'Escape') {
+    setMode('node');
+  }
 });
 
 // ── Reset ─────────────────────────────────────────────────────────────────
