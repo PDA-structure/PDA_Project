@@ -25,6 +25,7 @@
         <summary>Geometry</summary>
         <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
         <button class="tool-btn" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">🔗 Add Member</button>
+        <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
       </details>
 
       <details class="card">
@@ -78,7 +79,6 @@
 
       <details class="card">
         <summary>Edit</summary>
-        <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
         <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
         <button class="tool-btn" data-mode="delete" onclick="setMode('delete')"  title="Delete a node or member">🗑 Delete</button>
         <button class="tool-btn danger" onclick="resetAll()">🔄 Reset All</button>
