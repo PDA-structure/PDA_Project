@@ -946,6 +946,8 @@ document.getElementById('inputSymbolScale').addEventListener('input', draw);
 function updateSaveButtonState() {
   const btn = document.getElementById('btnSave');
   if (btn) btn.disabled = nodes.length === 0;
+  var exp = document.getElementById('btnExport');
+  if (exp) exp.disabled = !results;
 }
 
 function saveModel() {
@@ -1021,6 +1023,112 @@ function saveModel() {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
     throw err;
   }
+}
+
+function exportAnalysis() {
+  if (!results) return;
+  var E_GPa = parseFloat(document.getElementById('inputE').value);
+  var A_cm2 = parseFloat(document.getElementById('inputA').value);
+
+  var tensionMembers = [];
+  var compressionMembers = [];
+  if (results.member_forces) {
+    var rows = [];
+    results.member_forces.forEach(function (f, idx) {
+      var m = members[idx];
+      var n1 = nodes.find(function (n) { return n.id === m.start; });
+      var n2 = nodes.find(function (n) { return n.id === m.end; });
+      var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
+      var stress = results.meta && results.meta.member_stresses ? results.meta.member_stresses[idx] : null;
+      rows.push({
+        member: idx + 1,
+        nodes: [m.start + 1, m.end + 1],
+        length_m: parseFloat(L.toFixed(4)),
+        force_kN: parseFloat((f / 1000).toFixed(3)),
+        force_N: f,
+        stress_MPa: stress !== null ? parseFloat((stress / 1e6).toFixed(2)) : null
+      });
+    });
+    rows.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
+    rows.forEach(function (r) {
+      if (Math.abs(r.force_N) < 1e-3) return;
+      if (r.force_N > 0) tensionMembers.push(r);
+      else compressionMembers.push(r);
+    });
+  }
+
+  var reactions = [];
+  if (results.FG) {
+    supports.forEach(function (s) {
+      var base = s.nodeId * 2;
+      var dirs = s.type === 'pinned' ? ['x', 'y'] : s.type === 'rollerX' ? ['x'] : ['y'];
+      dirs.forEach(function (dir) {
+        var idx = base + (dir === 'y' ? 1 : 0);
+        reactions.push({
+          node: s.nodeId + 1,
+          direction: dir.toUpperCase(),
+          reaction_kN: parseFloat((results.FG[idx] / 1000).toFixed(3))
+        });
+      });
+    });
+  }
+
+  var displacements = [];
+  if (results.UG) {
+    nodes.forEach(function (n, i) {
+      displacements.push({
+        node: i + 1,
+        ux_mm: parseFloat((results.UG[i * 2] * 1000).toFixed(4)),
+        uy_mm: parseFloat((results.UG[i * 2 + 1] * 1000).toFixed(4))
+      });
+    });
+  }
+
+  var now = new Date();
+  var ts = now.getFullYear() + '-'
+    + String(now.getMonth() + 1).padStart(2, '0') + '-'
+    + String(now.getDate()).padStart(2, '0') + 'T'
+    + String(now.getHours()).padStart(2, '0') + '-'
+    + String(now.getMinutes()).padStart(2, '0') + '-'
+    + String(now.getSeconds()).padStart(2, '0');
+
+  var pkg = {
+    schema_version: '1.0',
+    type: 'truss2d-analysis',
+    timestamp: now.toISOString(),
+    metadata: {
+      solver: 'truss2d',
+      n_nodes: nodes.length,
+      n_members: members.length,
+      E_GPa: E_GPa,
+      A_cm2: A_cm2,
+      E_Pa: E_GPa * 1e9,
+      A_m2: A_cm2 * 1e-4
+    },
+    nodes: nodes.map(function (n) {
+      return { id: n.id + 1, x: n.realX, y: n.realY };
+    }),
+    members: members.map(function (m, i) {
+      var n1 = nodes.find(function (n) { return n.id === m.start; });
+      var n2 = nodes.find(function (n) { return n.id === m.end; });
+      var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
+      return { member: i + 1, nodes: [m.start + 1, m.end + 1], length_m: parseFloat(L.toFixed(4)) };
+    }),
+    tension_members: tensionMembers,
+    compression_members: compressionMembers,
+    reactions: reactions,
+    displacements: displacements
+  };
+
+  var blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'truss2d-analysis-' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function triggerLoad() {
