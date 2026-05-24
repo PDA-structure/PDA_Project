@@ -55,6 +55,8 @@ header h1 {
   color: #888;
   letter-spacing: 0.5px;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
 }
 
 .tool-btn {
@@ -152,6 +154,7 @@ header h1 {
   flex-direction: column;
   padding: 8px;
   gap: 4px;
+  position: relative;
 }
 
 .mode-indicator {
@@ -221,3 +224,56 @@ td:first-child, td:nth-child(2) { text-align: center; }
 .tension     { color: #1565c0; font-weight: bold; }
 .compression { color: #b71c1c; font-weight: bold; }
 .zero-force  { color: #999; }
+
+/* -- Floating panels (port of frame2d i52) ------------ */
+#cardFloatLayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.panel-section.floating {
+  position: absolute;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1.5px solid #bbb;
+  background: #fff;
+  border-radius: 4px;
+  z-index: 100;
+}
+
+.card-float-btn {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  color: #888;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-float-btn:hover {
+  background: #e8eaf6;
+  border-color: #9fa8da;
+  color: #555;
+}
+.card-float-btn:focus-visible {
+  outline: 2px solid #3f51b5;
+  outline-offset: 1px;
+}
+
+.panel-section.floating > h3 { cursor: grab; }
+.panel-section.floating.dragging > h3 { cursor: grabbing; }
+
+body.card-dragging canvas { pointer-events: none; }
