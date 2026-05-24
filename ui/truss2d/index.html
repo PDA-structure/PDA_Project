@@ -120,10 +120,18 @@
     <div class="results-panel" id="resultsPanel" style="display:none">
       <div class="results-grid">
 
-        <div class="results-table-wrap">
-          <h3>Member Forces</h3>
-          <table id="tableMemberForces">
-            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>Type</th><th>&sigma; (MPa)</th></tr></thead>
+        <div class="results-table-wrap results-tension">
+          <h3>Tension Members</h3>
+          <table id="tableTension">
+            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>&sigma; (MPa)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="results-table-wrap results-compression">
+          <h3>Compression Members</h3>
+          <table id="tableCompression">
+            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th>&sigma; (MPa)</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>

@@ -252,6 +252,11 @@ td:first-child, td:nth-child(2) { text-align: center; }
 .compression { color: #b71c1c; font-weight: bold; }
 .zero-force  { color: #999; }
 
+.results-tension h3    { color: #1565c0; }
+.results-tension th    { background: #e3f2fd; color: #1565c0; }
+.results-compression h3 { color: #b71c1c; }
+.results-compression th { background: #fce4ec; color: #b71c1c; }
+
 /* -- Floating panels (port of frame2d i52) ------------ */
 #cardFloatLayer {
   position: absolute;

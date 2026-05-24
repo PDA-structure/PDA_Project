@@ -1138,24 +1138,30 @@ function renderResults(res) {
   const downloadLink = createDownloadLink(res);
   panel.insertBefore(downloadLink, panel.firstChild);
 
-  // Member forces
-  const mBody = document.querySelector('#tableMemberForces tbody');
-  mBody.innerHTML = '';
+  // Split member forces into tension / compression tables sorted by |F| descending
+  var tBody = document.querySelector('#tableTension tbody');
+  var cBody = document.querySelector('#tableCompression tbody');
+  tBody.innerHTML = '';
+  cBody.innerHTML = '';
   if (res.member_forces) {
-    res.member_forces.forEach((f, idx) => {
-      const m = members[idx];
-      const fkN = f / 1000;
-      const type = Math.abs(f) < 1e-3 ? 'Zero' : (f > 0 ? 'Tension' : 'Compression');
-      const cls  = Math.abs(f) < 1e-3 ? 'zero-force' : (f > 0 ? 'tension' : 'compression');
-      const stress = res.meta?.member_stresses?.[idx];
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${idx + 1}</td>
-        <td>${m.start + 1} – ${m.end + 1}</td>
-        <td class="${cls}">${fkN.toFixed(3)}</td>
-        <td class="${cls}">${type}</td>
-        <td>${stress !== undefined ? (stress / 1e6).toFixed(2) : '—'}</td>`;
-      mBody.appendChild(tr);
+    var rows = [];
+    res.member_forces.forEach(function (f, idx) {
+      var m = members[idx];
+      var stress = res.meta && res.meta.member_stresses ? res.meta.member_stresses[idx] : undefined;
+      rows.push({ idx: idx, f: f, m: m, stress: stress });
+    });
+    rows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
+    rows.forEach(function (r) {
+      if (Math.abs(r.f) < 1e-3) return;
+      var fkN = r.f / 1000;
+      var tr = document.createElement('tr');
+      var stressStr = r.stress !== undefined ? (r.stress / 1e6).toFixed(2) : '—';
+      tr.innerHTML = '<td>' + (r.idx + 1) + '</td>'
+        + '<td>' + (r.m.start + 1) + ' – ' + (r.m.end + 1) + '</td>'
+        + '<td>' + fkN.toFixed(3) + '</td>'
+        + '<td>' + stressStr + '</td>';
+      if (r.f > 0) tBody.appendChild(tr);
+      else         cBody.appendChild(tr);
     });
   }
 
