@@ -1145,6 +1145,179 @@ function renderResults(res) {
   document.getElementById('resultsPanel').style.display = 'block';
 }
 
+// -- Floating panels (port of frame2d i52) -----------------------------------------
+let _floatZIndex = 100;  // monotonic counter for D-7 bring-to-top
+
+function setupCardFloat() {
+  const canvasArea = document.querySelector('.canvas-area');
+  if (!canvasArea) return;
+
+  // Create the absolute-positioning layer once (idempotent).
+  let layer = document.getElementById('cardFloatLayer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'cardFloatLayer';
+    canvasArea.appendChild(layer);
+  }
+
+  const sections = document.querySelectorAll('.panel-section');
+  // Iterate all except the last one (Solve section — always docked at bottom).
+  for (let i = 0; i < sections.length - 1; i++) {
+    const section = sections[i];
+    section.dataset.originalIndex = String(i);
+    section.dataset.state = 'docked';
+
+    const h3 = section.querySelector('h3');
+    if (!h3) continue;
+
+    // Avoid double-injection if setupCardFloat is called twice.
+    if (h3.querySelector('.card-float-btn')) continue;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'card-float-btn';
+    btn.title = 'Float panel';
+    btn.textContent = '↗';  // ↗
+    btn.addEventListener('click', function () {
+      if (section.dataset.state === 'docked') floatCard(section);
+      else                                     dockCard(section);
+    });
+    h3.appendChild(btn);
+  }
+}
+
+function floatCard(section) {
+  const layer = document.getElementById('cardFloatLayer');
+  if (!layer) return;
+
+  // Initial position: top-right of #cardFloatLayer (12 px inner margin per D-2).
+  const w = section.offsetWidth || 180;
+  const layerRect = layer.getBoundingClientRect();
+  section.style.left = Math.max(12, layerRect.width - w - 12) + 'px';
+  section.style.top  = '12px';
+  section.style.zIndex = String(++_floatZIndex);
+
+  layer.appendChild(section);  // move (NOT clone) — listeners survive
+  section.classList.add('floating');
+  section.dataset.state = 'floating';
+
+  const btn = section.querySelector('.card-float-btn');
+  if (btn) {
+    btn.textContent = '↙';  // ↙
+    btn.title = 'Dock to toolbar';
+  }
+
+  const h3 = section.querySelector('h3');
+  if (h3) {
+    h3._cardDragHandler = function (e) { onCardDragStart(e, section); };
+    h3.addEventListener('mousedown', h3._cardDragHandler);
+  }
+}
+
+function dockCard(section) {
+  const panel = document.querySelector('aside.panel');
+  if (!panel) return;
+
+  const myIndex = parseInt(section.dataset.originalIndex || '0', 10);
+  const siblings = Array.from(panel.children);
+
+  // Find the first docked .panel-section whose originalIndex > myIndex.
+  let target = null;
+  for (const el of siblings) {
+    if (el === section) continue;
+    if (el.matches && el.matches('.panel-section') && el.dataset.originalIndex !== undefined) {
+      const idx = parseInt(el.dataset.originalIndex, 10);
+      if (idx > myIndex) { target = el; break; }
+    }
+  }
+
+  // Fallback: insert before the Solve section (last .panel-section, which has
+  // no data-original-index because it was skipped during setup).
+  if (!target) {
+    const allSections = Array.from(panel.querySelectorAll('.panel-section'));
+    const solveSection = allSections.find(function (el) {
+      return el.dataset.originalIndex === undefined || el.dataset.originalIndex === '';
+    });
+    target = solveSection || null;
+  }
+
+  if (target) panel.insertBefore(section, target);
+  else        panel.appendChild(section);
+
+  section.classList.remove('floating');
+  section.dataset.state = 'docked';
+  section.style.left    = '';
+  section.style.top     = '';
+  section.style.zIndex  = '';
+
+  const btn = section.querySelector('.card-float-btn');
+  if (btn) {
+    btn.textContent = '↗';  // ↗
+    btn.title = 'Float panel';
+  }
+
+  const h3 = section.querySelector('h3');
+  if (h3 && h3._cardDragHandler) {
+    h3.removeEventListener('mousedown', h3._cardDragHandler);
+    delete h3._cardDragHandler;
+  }
+}
+
+// Drag handler — mousedown on a floated section's h3 starts a potential drag.
+// A 3 px move threshold separates "drag" from a plain click. Clamp keeps
+// ≥40 px of the section visible on every viewport edge.
+function onCardDragStart(e, section) {
+  if (section.dataset.state !== 'floating') return;
+  if (e.target && e.target.classList && e.target.classList.contains('card-float-btn')) return;
+
+  const startX    = e.clientX;
+  const startY    = e.clientY;
+  const startLeft = parseFloat(section.style.left) || 0;
+  const startTop  = parseFloat(section.style.top)  || 0;
+  let moved = false;
+
+  // Bring-to-top on drag-start (D-7).
+  section.style.zIndex = String(++_floatZIndex);
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    const dy = ev.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) > 3) {
+      moved = true;
+      section.classList.add('dragging');
+      document.body.classList.add('card-dragging');
+    }
+    if (!moved) return;
+    ev.preventDefault();
+
+    // Clamp so ≥40 px of the section remains visible on every viewport edge (D-8).
+    const layer = document.getElementById('cardFloatLayer');
+    const layerRect = layer ? layer.getBoundingClientRect() : { left: 0, top: 0 };
+    const w = section.offsetWidth;
+    const h = section.offsetHeight;
+    const minLeft = 40 - w - layerRect.left;
+    const maxLeft = window.innerWidth  - 40 - layerRect.left;
+    const minTop  = 40 - h - layerRect.top;
+    const maxTop  = window.innerHeight - 40 - layerRect.top;
+    section.style.left = Math.max(minLeft, Math.min(maxLeft, startLeft + dx)) + 'px';
+    section.style.top  = Math.max(minTop,  Math.min(maxTop,  startTop  + dy)) + 'px';
+  }
+
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onUp);
+    if (moved) {
+      section.classList.remove('dragging');
+      document.body.classList.remove('card-dragging');
+    }
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onUp);
+}
+
+document.addEventListener('DOMContentLoaded', setupCardFloat);
+
 // ── Init ──────────────────────────────────────────────────────────────────
 setMode('node');
 updateSaveButtonState();
