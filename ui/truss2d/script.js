@@ -785,18 +785,19 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   ctx.restore();
 
-  // Only add label if text is non-empty (reactions now labelled separately below supports)
   if (label) {
-    const lblX = tailX;
-    const lblY = tailY;
+    // Vertical arrows: label at tail, centred. Horizontal arrows: offset above shaft.
+    const isHoriz = Math.abs(dirX) > 0.5;
+    const lblX = isHoriz ? tailX : tailX;
+    const lblY = isHoriz ? tailY - 10 * sc : tailY;
     labelManager.add({
       text: label, anchorX: node.x, anchorY: node.y,
       preferredX: lblX, preferredY: lblY,
       priority: 30, color,
       font: fs + 'px Arial', fontSize: fs,
       haloColor: 'rgba(255, 255, 255, 0.9)', haloWidth: 3,
-      textAlign: 'center', textBaseline: 'middle',
-      type: 'load',
+      textAlign: 'center', textBaseline: isHoriz ? 'bottom' : 'middle',
+      type: 'load', skipCollision: true,
     });
   }
 }
@@ -893,7 +894,7 @@ function drawReactions(labelManager) {
       drawForceArrow(n, dir, r, '#7b1fa2', '', labelManager, true);
     });
 
-    // Collect reaction values and label below support as Rx/Ry
+    // Collect reaction values
     const lines = [];
     dirs.forEach(dir => {
       const idx = base + (dir === 'y' ? 1 : 0);
@@ -903,20 +904,27 @@ function drawReactions(labelManager) {
       lines.push(tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN');
     });
 
-    // Place labels below the support glyph, stacked vertically
-    const baseY = n.y + 28 * sc;
+    // Position outside the structure: left supports → label left, right supports → label right
+    let cx = 0;
+    for (let i = 0; i < nodes.length; i++) cx += nodes[i].x;
+    cx /= nodes.length;
+    const isLeft = n.x <= cx;
+    const offsetX = isLeft ? -20 * sc : 20 * sc;
+    const align = isLeft ? 'right' : 'left';
+    const baseY = n.y + 20 * sc;
+
     lines.forEach((txt, i) => {
       labelManager.add({
         text: txt,
         anchorX: n.x, anchorY: n.y,
-        preferredX: n.x, preferredY: baseY + i * (fs + 4),
+        preferredX: n.x + offsetX, preferredY: baseY + i * (fs + 4),
         priority: 20,
         color: '#7b1fa2',
         font: fs + 'px Arial',
         fontSize: fs,
         bgColor: 'rgba(255, 255, 255, 0.85)',
         bgPadding: 1,
-        textAlign: 'center',
+        textAlign: align,
         textBaseline: 'top',
         type: 'reaction',
         skipCollision: true,
