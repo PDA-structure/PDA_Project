@@ -89,7 +89,8 @@ function resetView() {
   draw();
 }
 
-// ── Symbol scale helper ───────────────────────────────────────────────────
+// ── Symbol & label scale helpers ──────────────────────────────────────────
+let labelScale = 1.0;
 function getSymbolScale() {
   return parseFloat(document.getElementById('inputSymbolScale').value) || 1.0;
 }
@@ -511,11 +512,11 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
   cy /= nodes.length;
   if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
 
-  const ox = mx + nx * 20;
-  const oy = my + ny * 20;
+  const ox = mx + nx * 14;
+  const oy = my + ny * 14;
 
   const angle = Math.atan2(dy, dx);
-  const fs = Math.round(7 * getSymbolScale());
+  const fs = Math.round(8 * labelScale * getSymbolScale());
 
   labelManager.add({
     text,
@@ -538,7 +539,7 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
 function drawMemberIdLabel(n1, n2, idx, labelManager) {
   const mx = (n1.x + n2.x) / 2;
   const my = (n1.y + n2.y) / 2;
-  const fs = Math.round(7 * getSymbolScale());
+  const fs = Math.round(8 * labelScale * getSymbolScale());
   labelManager.add({
     text: 'M' + (idx + 1),
     anchorX: mx, anchorY: my,
@@ -558,7 +559,7 @@ function drawMemberIdLabel(n1, n2, idx, labelManager) {
 
 function drawNodes(labelManager) {
   const r = 5 * getSymbolScale();
-  const fs = Math.round(9 * getSymbolScale());
+  const fs = Math.round(8 * labelScale * getSymbolScale());
   const showNodeIds = document.getElementById('chkNodeIds')?.checked;
   nodes.forEach(n => {
     ctx.beginPath();
@@ -757,8 +758,8 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
   const arrowLen  = 24 * sc;
   const headDepth = 5 * sc;
   const arrowHW   = 5 * sc;
-  const apexGap   = 2 * sc;     // tiny pull-back so coincident X+Y arrows at one node don't merge into a single shape
-  const fs        = Math.round(9 * sc);
+  const apexGap   = 2 * sc;
+  const fs        = Math.round(8 * labelScale * sc);
   const labelGap  = 12 * sc;
 
   // Unit vector in canvas coords pointing in the direction of the force.
@@ -801,9 +802,10 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   ctx.restore();
 
-  // Label goes through the LabelManager for collision avoidance
-  const labelX = tailX - dirX * labelGap;
-  const labelY = tailY - dirY * labelGap;
+  // Label preferred position: beside the arrow tail, offset perpendicular
+  // so horizontal arrows label sideways (not below where they look vertical)
+  const labelX = tailX - dirX * labelGap + perpX * labelGap;
+  const labelY = tailY - dirY * labelGap + perpY * labelGap;
   labelManager.add({
     text: label,
     anchorX: node.x, anchorY: node.y,
