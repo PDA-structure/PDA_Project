@@ -1095,10 +1095,39 @@ function exportAnalysis() {
     + String(now.getMinutes()).padStart(2, '0') + '-'
     + String(now.getSeconds()).padStart(2, '0');
 
+  // Capture canvas image with consistent overlay state
+  var chkIds = ['chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions', 'chkDeflected'];
+  var saved = {};
+  chkIds.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) saved[id] = el.checked;
+  });
+  ['chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.checked = true;
+  });
+  var defEl = document.getElementById('chkDeflected');
+  if (defEl) defEl.checked = false;
+  draw();
+  var offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  var offCtx = offscreen.getContext('2d');
+  offCtx.fillStyle = '#ffffff';
+  offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+  offCtx.drawImage(canvas, 0, 0);
+  var canvasImage = offscreen.toDataURL('image/png');
+  Object.keys(saved).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.checked = saved[id];
+  });
+  draw();
+
   var pkg = {
     schema_version: '1.0',
     type: 'truss2d-analysis',
     timestamp: now.toISOString(),
+    canvas_image: canvasImage,
     metadata: {
       solver: 'truss2d',
       n_nodes: nodes.length,
