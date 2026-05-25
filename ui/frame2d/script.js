@@ -90,6 +90,7 @@ const UNIT = 1;
 // canvas labels independently of the symbol-size slider.
 const BASE_LABEL_SIZE = 10;
 const LABEL_FONT_FAMILY = 'Inter, system-ui, sans-serif';
+const MONO_FONT_FAMILY = "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace";
 let labelScale = 1.0;
 
 let _lastBlobUrl = null;
@@ -1044,7 +1045,7 @@ function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
     preferredX: mx, preferredY: my,
     priority: 40,
     color,
-    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
     bgColor: cssVar('--canvas-label-bg'),
     bgPadding: 1,
@@ -1327,7 +1328,7 @@ function drawSpring(x, y, Kx, Ky, Ktheta, labelManager) {
       preferredX: x + 10 * sc, preferredY: y - 10 * sc,
       priority: 70,
       color: cssVar('--canvas-spring'),
-      font: fs + 'px ' + LABEL_FONT_FAMILY,
+      font: fs + 'px ' + MONO_FONT_FAMILY,
       fontSize: fs,
       textAlign: 'left',
       textBaseline: 'middle',
@@ -1513,7 +1514,7 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
     preferredX: lblX, preferredY: lblY,
     priority: isReaction ? 20 : 30,
     color: labelColor,
-    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
     bgColor: isReaction ? cssVar('--canvas-label-bg') : null,
     bgPadding: 1,
@@ -1570,7 +1571,7 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts, labelM
     preferredX: node.x, preferredY: node.y - r - 6,
     priority: isReaction ? 20 : 30,
     color: labelColor,
-    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
     haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
     haloWidth: 4,
@@ -1655,7 +1656,7 @@ function drawReactions(labelManager, isDark) {
           text: tag, anchorX: n.x, anchorY: n.y,
           preferredX: n.x + offsetX, preferredY: n.y,
           priority: 20, color: lblCol,
-          font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY, fontSize: fs,
+          font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: isLeft ? 'right' : 'left', textBaseline: 'middle',
           type: 'reaction', skipCollision: true,
@@ -1668,7 +1669,7 @@ function drawReactions(labelManager, isDark) {
           text: tag, anchorX: n.x, anchorY: n.y,
           preferredX: n.x, preferredY: belowY,
           priority: 20, color: lblCol,
-          font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY, fontSize: fs,
+          font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: 'center', textBaseline: 'top',
           type: 'reaction', skipCollision: true,
@@ -1757,7 +1758,7 @@ function drawUDLs(labelManager) {
       preferredX: mx, preferredY: my - arrowLen*sign - 6,
       priority: 60,
       color: cssVar('--canvas-udl-label'),
-      font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
       fontSize: fs,
       bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
       textAlign: 'center', textBaseline: 'middle',
@@ -1822,7 +1823,7 @@ function drawUDLs(labelManager) {
       preferredX: mx - arrowLen * sign * 1.8, preferredY: my,
       priority: 60,
       color: cssVar('--canvas-udl-x-label'),
-      font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
       fontSize: fs,
       bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
       textAlign: 'center', textBaseline: 'middle',
@@ -1836,7 +1837,7 @@ function drawUDLs(labelManager) {
 function labelText(text, x, y, color) {
   ctx.save();
   const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
-  ctx.font = `bold ${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font = `bold ${fs}px ${MONO_FONT_FAMILY}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   const w = ctx.measureText(text).width;
@@ -1930,7 +1931,7 @@ function drawDeflected(labelManager) {
       preferredX: maxLX, preferredY: maxLY - 12,
       priority: 50,
       color: cssVar('--canvas-deflected-label'),
-      font: 'bold ' + dfFs + 'px ' + LABEL_FONT_FAMILY,
+      font: 'bold ' + dfFs + 'px ' + MONO_FONT_FAMILY,
       fontSize: dfFs,
       bgColor: cssVar('--canvas-label-bg'),
       bgPadding: 2,
@@ -2032,7 +2033,7 @@ function drawBMD(labelManager) {
         labelManager.add({
           text: fmtM(Mi), anchorX: n1.x, anchorY: n1.y,
           preferredX: n1.x + perpX * off, preferredY: n1.y + perpY * off,
-          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + MONO_FONT_FAMILY, fontSize: bmdFs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
         });
       }
@@ -2042,7 +2043,7 @@ function drawBMD(labelManager) {
         labelManager.add({
           text: fmtM(Mj_bmd), anchorX: n2.x, anchorY: n2.y,
           preferredX: n2.x + perpX * off, preferredY: n2.y + perpY * off,
-          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + MONO_FONT_FAMILY, fontSize: bmdFs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
         });
       }
@@ -2059,7 +2060,7 @@ function drawBMD(labelManager) {
           labelManager.add({
             text: fmtM(peakM), anchorX: bx, anchorY: by,
             preferredX: bx + perpX * off, preferredY: by + perpY * off,
-            priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+            priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + MONO_FONT_FAMILY, fontSize: bmdFs,
             bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
           });
         }
@@ -2142,7 +2143,7 @@ function drawSFD(labelManager) {
         labelManager.add({
           text: fmtV(Vi), anchorX: n1.x, anchorY: n1.y,
           preferredX: n1.x + perpX * off, preferredY: n1.y + perpY * off,
-          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + MONO_FONT_FAMILY, fontSize: sfdFs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
         });
       }
@@ -2151,7 +2152,7 @@ function drawSFD(labelManager) {
         labelManager.add({
           text: fmtV(Vj), anchorX: n2.x, anchorY: n2.y,
           preferredX: n2.x + perpX * off, preferredY: n2.y + perpY * off,
-          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + MONO_FONT_FAMILY, fontSize: sfdFs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
         });
       }
@@ -2168,7 +2169,7 @@ function drawSFD(labelManager) {
         labelManager.add({
           text: 'V=0', anchorX: zx, anchorY: zy,
           preferredX: zx, preferredY: zy,
-          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + MONO_FONT_FAMILY, fontSize: sfdFs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
         });
       }
@@ -2282,7 +2283,7 @@ function drawAFD(labelManager) {
       labelManager.add({
         text: fmtN(f), anchorX: mx, anchorY: my,
         preferredX: mx + perpX * off, preferredY: my + perpY * off,
-        priority: 50, color: afdColor, font: 'bold ' + afdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: afdFs,
+        priority: 50, color: afdColor, font: 'bold ' + afdFs + 'px ' + MONO_FONT_FAMILY, fontSize: afdFs,
         bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
       });
     });

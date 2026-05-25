@@ -51,7 +51,7 @@
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-size-xs: 11px;
   --font-size-sm: 12px;
   --font-size-md: 13px;
@@ -114,6 +114,22 @@
   font-weight: 600;
   font-display: swap;
   src: url('../fonts/Inter-SemiBold.woff2') format('woff2');
+}
+
+/* ── @font-face: self-hosted JetBrains Mono ────────────────── */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/JetBrainsMono-Medium.woff2') format('woff2');
 }
 
 /* ── Reset & base ─────────────────────────────────────────── */
@@ -206,7 +222,8 @@ summary {
   padding: var(--space-2);
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   user-select: none;
-  transition: background 0.15s;
+  transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 summary::-webkit-details-marker {
   display: none;             /* Safari / older Chromium */
@@ -254,9 +271,13 @@ details[open] > summary {
   cursor: pointer;
   font-size: 11px;
   font-family: inherit;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  transition: background 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .tool-btn:hover  { background: var(--color-surface-hover); border-color: var(--color-border-hover); box-shadow: var(--shadow-sm); }
+.tool-btn:active { transform: scale(0.97); }
 .tool-btn.active { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); box-shadow: var(--shadow-sm); }
 .tool-btn.danger { color: var(--color-danger); }
 .tool-btn.danger:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
@@ -579,11 +600,11 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
 
 /* ── Dark theme overrides ──────────────────────────────────── */
 [data-theme="dark"] {
-  --color-bg: #0f1419;
-  --color-surface: #1a1f26;
-  --color-surface-alt: #2c333d;
-  --color-surface-hover: #2a313c;
-  --color-canvas-bg: #161a20;
+  --color-bg: #0D1117;
+  --color-surface: #161B22;
+  --color-surface-alt: #21262D;
+  --color-surface-hover: #292E36;
+  --color-canvas-bg: #0D1117;
   --color-fg: #e6e8eb;
   --color-fg-muted: #b0b5bd;
   --color-fg-subtle: #8a9099;
@@ -659,11 +680,19 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
 .card.floating {
   position: absolute;
   pointer-events: auto;
-  background: var(--color-surface);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-lg);
-  border: 1.5px solid var(--color-border-hover);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   padding: var(--space-3);
-  z-index: 100;           /* JS overrides via inline style for bring-to-top */
+  z-index: 100;
+  transition: box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="dark"] .card.floating {
+  background: rgba(22, 27, 34, 0.78);
+  border-color: var(--color-border);
 }
 
 .card-float-btn {
