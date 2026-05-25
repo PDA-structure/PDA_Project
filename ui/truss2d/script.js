@@ -106,6 +106,7 @@ let loads    = [];
 
 let history  = [];
 let results  = null;         // last API response
+let exportMode = false;
 
 // ── Mode management ───────────────────────────────────────────────────────
 const MODE_LABELS = {
@@ -390,7 +391,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
-  drawGrid();
+  if (!exportMode) drawGrid();
   drawMembers();
   drawNodes();
   if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
@@ -399,7 +400,7 @@ function draw() {
   if (results && document.getElementById('chkReactions')?.checked) drawReactions();
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
-  if (results) drawLegend();
+  if (results && !exportMode) drawLegend();
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
     throw err;
@@ -532,8 +533,14 @@ function drawNodeLabels() {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   nodes.forEach(function(n, i) {
-    var base = i * 2 + 1;
-    var label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
+    var label;
+    if (exportMode) {
+      label = String(i + 1);
+      ctx.font = 'bold 13px Arial';
+    } else {
+      var base = i * 2 + 1;
+      label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
+    }
     ctx.fillText(label, n.x + 8, n.y - 8);
   });
   ctx.restore();
@@ -1095,20 +1102,27 @@ function exportAnalysis() {
     + String(now.getMinutes()).padStart(2, '0') + '-'
     + String(now.getSeconds()).padStart(2, '0');
 
-  // Capture canvas image with consistent overlay state
+  // Capture canvas image: zoom-to-fit, clean export mode, white background
   var chkIds = ['chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions', 'chkDeflected'];
-  var saved = {};
+  var savedChk = {};
   chkIds.forEach(function (id) {
     var el = document.getElementById(id);
-    if (el) saved[id] = el.checked;
+    if (el) savedChk[id] = el.checked;
   });
-  ['chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions'].forEach(function (id) {
+  var savedView = { scale: view.scale, tx: view.tx, ty: view.ty };
+
+  ['chkSupports', 'chkLoads', 'chkReactions'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.checked = true;
   });
+  var nlEl = document.getElementById('chkNodeLabels');
+  if (nlEl) nlEl.checked = false;
   var defEl = document.getElementById('chkDeflected');
   if (defEl) defEl.checked = false;
-  draw();
+
+  exportMode = true;
+  resetView();
+
   var offscreen = document.createElement('canvas');
   offscreen.width = canvas.width;
   offscreen.height = canvas.height;
@@ -1117,9 +1131,14 @@ function exportAnalysis() {
   offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
   offCtx.drawImage(canvas, 0, 0);
   var canvasImage = offscreen.toDataURL('image/png');
-  Object.keys(saved).forEach(function (id) {
+
+  exportMode = false;
+  view.scale = savedView.scale;
+  view.tx = savedView.tx;
+  view.ty = savedView.ty;
+  Object.keys(savedChk).forEach(function (id) {
     var el = document.getElementById(id);
-    if (el) el.checked = saved[id];
+    if (el) el.checked = savedChk[id];
   });
   draw();
 
