@@ -1485,6 +1485,19 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
 
+  // White clearance behind reaction arrows so they pop out from support hatching
+  if (isReaction) {
+    var bgStyle = isDark ? 'rgba(13, 17, 23, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = bgStyle;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(apexX, apexY);
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+  }
+
   // Shaft: tail → apex
   ctx.beginPath();
   ctx.moveTo(tailX, tailY);
