@@ -391,15 +391,29 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
+
+  // Build member obstacle lines and create a fresh LabelManager for this frame
+  const memberLines = members.map(m => {
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    return (n1 && n2) ? { x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y } : null;
+  }).filter(Boolean);
+  const labelManager = new LabelManager({ ctx, members: memberLines });
+
   if (!exportMode && document.getElementById('chkGrid')?.checked) drawGrid();
-  drawMembers();
-  drawNodes();
-  if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
+  drawMembers(labelManager);
+  drawNodes(labelManager);
+  if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels(labelManager);
   if (document.getElementById('chkSupports')?.checked) drawSupports();
-  if (document.getElementById('chkLoads')?.checked) drawLoads();
-  if (results && document.getElementById('chkReactions')?.checked) drawReactions();
+  if (document.getElementById('chkLoads')?.checked) drawLoads(labelManager);
+  if (results && document.getElementById('chkReactions')?.checked) drawReactions(labelManager);
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (results && document.getElementById('chkDeflected').checked) drawDeflected();
+
+  // Resolve and render all collected labels
+  labelManager.resolve();
+  labelManager.render(ctx);
+
   if (results && !exportMode) drawLegend();
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
@@ -430,7 +444,7 @@ function drawGrid() {
   }
 }
 
-function drawMembers() {
+function drawMembers(labelManager) {
   // Normalisation pass: compute max |axial force| once per draw so thickness scales linearly across members.
   let maxAbsForce = 0;
   if (results && results.member_forces) {
@@ -470,11 +484,11 @@ function drawMembers() {
     ctx.lineTo(n2.x, n2.y);
     ctx.stroke();
 
-    if (label) drawMemberLabel(n1, n2, label, color);
+    if (label) drawMemberLabel(n1, n2, label, color, labelManager);
   });
 }
 
-function drawMemberLabel(n1, n2, text, color) {
+function drawMemberLabel(n1, n2, text, color, labelManager) {
   const mx = (n1.x + n2.x) / 2;
   const my = (n1.y + n2.y) / 2;
   const dx = n2.x - n1.x;
@@ -497,22 +511,26 @@ function drawMemberLabel(n1, n2, text, color) {
 
   const angle = Math.atan2(dy, dx);
   const fs = Math.round(9 * getSymbolScale());
-  ctx.save();
-  ctx.translate(ox, oy);
-  ctx.rotate(Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle);
-  ctx.font = `${fs}px Arial`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  // White halo so labels remain readable when they sit close to other labels or members.
-  ctx.lineWidth   = 3;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.strokeText(text, 0, 0);
-  ctx.fillStyle = color;
-  ctx.fillText(text, 0, 0);
-  ctx.restore();
+
+  labelManager.add({
+    text,
+    anchorX: mx, anchorY: my,
+    preferredX: ox, preferredY: oy,
+    priority: 40,
+    color,
+    font: fs + 'px Arial',
+    fontSize: fs,
+    haloColor: 'rgba(255, 255, 255, 0.9)',
+    haloWidth: 3,
+    rotation: (Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle),
+    textAlign: 'center',
+    textBaseline: 'middle',
+    radius: 18,
+    type: 'memberForce',
+  });
 }
 
-function drawNodes() {
+function drawNodes(labelManager) {
   const r = 5 * getSymbolScale();
   const fs = Math.round(11 * getSymbolScale());
   nodes.forEach(n => {
@@ -520,37 +538,50 @@ function drawNodes() {
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#e53935';
     ctx.fill();
-    ctx.fillStyle = '#222';
-    ctx.font = `bold ${fs}px Arial`;
-    ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
+    labelManager.add({
+      text: String(n.id + 1),
+      anchorX: n.x, anchorY: n.y,
+      preferredX: n.x + 8, preferredY: n.y - 8,
+      priority: 10,
+      color: '#222',
+      font: 'bold ' + fs + 'px Arial',
+      fontSize: fs,
+      textAlign: 'left',
+      textBaseline: 'bottom',
+      radius: 12,
+      type: 'nodeId',
+    });
   });
 }
 
-function drawNodeLabels() {
-  ctx.save();
-  ctx.font = '600 11px Arial';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
+function drawNodeLabels(labelManager) {
   nodes.forEach(function(n, i) {
-    var label, fontSize;
+    var label, fontSize, font;
     if (exportMode) {
       label = String(i + 1);
-      ctx.font = 'bold 13px Arial';
+      font = 'bold 13px Arial';
       fontSize = 13;
     } else {
       var base = i * 2 + 1;
       label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
+      font = '600 11px Arial';
       fontSize = 11;
     }
-    var pad = 2;
-    var tw = ctx.measureText(label).width;
-    var th = fontSize * 1.3;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.fillRect(n.x + 8 - pad, n.y - 8 - th, tw + 2 * pad, th + pad);
-    ctx.fillStyle = '#1a2744';
-    ctx.fillText(label, n.x + 8, n.y - 8);
+    labelManager.add({
+      text: label,
+      anchorX: n.x, anchorY: n.y,
+      preferredX: n.x + 8, preferredY: n.y - 8,
+      priority: 15,
+      color: '#1a2744',
+      font: font,
+      fontSize: fontSize,
+      bgColor: 'rgba(255,255,255,0.85)',
+      bgPadding: 2,
+      textAlign: 'left',
+      textBaseline: 'bottom',
+      type: 'dof',
+    });
   });
-  ctx.restore();
 }
 
 function highlightNode(n, color) {
@@ -692,7 +723,7 @@ function drawHatch(from, to, base, dir) {
 // Apex-at-node force arrow: head triangle touches the node and the shaft extends
 // OPPOSITE to the force direction, so the arrow visually communicates "this force
 // pushes into the node from outside". Used for both applied loads and reactions.
-function drawForceArrow(node, axis, forceValue, color, label) {
+function drawForceArrow(node, axis, forceValue, color, label, labelManager, isReaction) {
   const sc        = getSymbolScale();
   const arrowLen  = 24 * sc;
   const headDepth = 5 * sc;
@@ -724,9 +755,6 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `${fs}px Arial`;
-  ctx.textAlign   = 'center';
-  ctx.textBaseline = 'middle';
 
   // Shaft: tail -> base of head (apex itself is filled by the triangle).
   ctx.beginPath();
@@ -742,25 +770,33 @@ function drawForceArrow(node, axis, forceValue, color, label) {
   ctx.closePath();
   ctx.fill();
 
-  // Label sits just beyond the tail, with a white halo so it remains readable
-  // when it lands over support hatching or near other arrows.
+  ctx.restore();
+
+  // Label goes through the LabelManager for collision avoidance
   const labelX = tailX - dirX * labelGap;
   const labelY = tailY - dirY * labelGap;
-  ctx.lineWidth   = 3;
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.strokeText(label, labelX, labelY);
-  ctx.fillStyle = color;
-  ctx.fillText(label, labelX, labelY);
-
-  ctx.restore();
+  labelManager.add({
+    text: label,
+    anchorX: node.x, anchorY: node.y,
+    preferredX: labelX, preferredY: labelY,
+    priority: isReaction ? 20 : 30,
+    color,
+    font: fs + 'px Arial',
+    fontSize: fs,
+    haloColor: 'rgba(255, 255, 255, 0.9)',
+    haloWidth: 3,
+    textAlign: 'center',
+    textBaseline: 'middle',
+    type: isReaction ? 'reaction' : 'load',
+  });
 }
 
-function drawLoads() {
+function drawLoads(labelManager) {
   loads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
     const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
-    drawForceArrow(n, l.direction, l.magnitude, '#2e7d32', label);
+    drawForceArrow(n, l.direction, l.magnitude, '#2e7d32', label, labelManager, false);
   });
 }
 
@@ -823,7 +859,7 @@ function drawLegend() {
   ctx.restore();
 }
 
-function drawReactions() {
+function drawReactions(labelManager) {
   if (!results || !results.FG) return;
   const FG   = results.FG;
   const ZERO = 1e-3;
@@ -841,7 +877,7 @@ function drawReactions() {
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
       const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
-      drawForceArrow(n, dir, r, '#7b1fa2', label);
+      drawForceArrow(n, dir, r, '#7b1fa2', label, labelManager, true);
     });
   });
 }
