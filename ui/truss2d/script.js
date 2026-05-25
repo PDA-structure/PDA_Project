@@ -497,7 +497,15 @@ function drawMembers(labelManager) {
 function drawMemberLabel(n1, n2, text, color, labelManager) {
   const mx = (n1.x + n2.x) / 2;
   const my = (n1.y + n2.y) / 2;
+  const dx = n2.x - n1.x;
+  const dy = n2.y - n1.y;
   const fs = Math.round(8 * labelScale * getSymbolScale());
+
+  // Rotation: label follows member orientation
+  // Horizontal → no rotation; Vertical → read upward (-π/2);
+  // Diagonal → follow slope, ensure text reads in downward direction
+  let angle = Math.atan2(dy, dx);
+  if (Math.abs(angle) > Math.PI / 2) angle += Math.PI;
 
   labelManager.add({
     text,
@@ -509,6 +517,7 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
     fontSize: fs,
     bgColor: 'rgba(255, 255, 255, 0.85)',
     bgPadding: 1,
+    rotation: angle,
     textAlign: 'center',
     textBaseline: 'middle',
     radius: 14,
