@@ -84,7 +84,7 @@ class LabelManager {
     // 1. Try preferred position at full size
     if (label.preferredX != null && label.preferredY != null) {
       const box = this._makeBox(label.preferredX, label.preferredY, width, height, label);
-      if (!this._collides(box)) {
+      if (!this._collides(box, label.type)) {
         return this._finalize(label, box, width, height, 1.0, false);
       }
     }
@@ -92,7 +92,7 @@ class LabelManager {
     // 2. Try 8 candidates at full size
     for (const c of candidates) {
       const box = this._makeBox(c.x, c.y, width, height, label);
-      if (!this._collides(box)) {
+      if (!this._collides(box, label.type)) {
         return this._finalize(label, box, width, height, 1.0, false);
       }
     }
@@ -101,7 +101,7 @@ class LabelManager {
     const w80 = width * 0.8, h80 = height * 0.8;
     for (const c of candidates) {
       const box = this._makeBox(c.x, c.y, w80, h80, label);
-      if (!this._collides(box)) {
+      if (!this._collides(box, label.type)) {
         return this._finalize(label, box, w80, h80, 0.8, false);
       }
     }
@@ -110,7 +110,7 @@ class LabelManager {
     const w65 = width * 0.65, h65 = height * 0.65;
     for (const c of candidates) {
       const box = this._makeBox(c.x, c.y, w65, h65, label);
-      if (!this._collides(box)) {
+      if (!this._collides(box, label.type)) {
         return this._finalize(label, box, w65, h65, 0.65, false);
       }
     }
@@ -119,7 +119,7 @@ class LabelManager {
     const extCandidates = this._getCandidates(label.anchorX, label.anchorY, R * 2.5);
     for (const c of extCandidates) {
       const box = this._makeBox(c.x, c.y, width, height, label);
-      if (!this._collides(box)) {
+      if (!this._collides(box, label.type)) {
         return this._finalize(label, box, width, height, 1.0, true);
       }
     }
@@ -161,7 +161,7 @@ class LabelManager {
     return { left, top, right: left + w, bottom: top + h, renderX: x, renderY: y };
   }
 
-  _collides(box) {
+  _collides(box, type) {
     // Check against all previously placed labels
     for (const p of this._placed) {
       if (!(box.right < p.left || box.left > p.right ||
@@ -169,6 +169,8 @@ class LabelManager {
         return true;
       }
     }
+    // Skip member-line obstacle check for labels that sit ON members
+    if (type === 'memberForce' || type === 'memberId') return false;
     // Check against member line segments
     const cx = (box.left + box.right) / 2;
     const cy = (box.top + box.bottom) / 2;

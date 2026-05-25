@@ -497,41 +497,21 @@ function drawMembers(labelManager) {
 function drawMemberLabel(n1, n2, text, color, labelManager) {
   const mx = (n1.x + n2.x) / 2;
   const my = (n1.y + n2.y) / 2;
-  const dx = n2.x - n1.x;
-  const dy = n2.y - n1.y;
-  const len = Math.hypot(dx, dy) || 1;
-
-  // Perpendicular unit vector; sign chosen to point AWAY from the structure
-  // centroid so top-chord labels go up, bottom-chord labels go down, and
-  // diagonals fan outward — de-clusters member labels at converging nodes.
-  let nx = -dy / len;
-  let ny =  dx / len;
-  let cx = 0, cy = 0;
-  for (let i = 0; i < nodes.length; i++) { cx += nodes[i].x; cy += nodes[i].y; }
-  cx /= nodes.length;
-  cy /= nodes.length;
-  if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
-
-  const ox = mx + nx * 6;
-  const oy = my + ny * 6;
-
-  const angle = Math.atan2(dy, dx);
   const fs = Math.round(8 * labelScale * getSymbolScale());
 
   labelManager.add({
     text,
     anchorX: mx, anchorY: my,
-    preferredX: ox, preferredY: oy,
+    preferredX: mx, preferredY: my,
     priority: 40,
     color,
     font: fs + 'px Arial',
     fontSize: fs,
-    haloColor: 'rgba(255, 255, 255, 0.9)',
-    haloWidth: 3,
-    rotation: (Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle),
+    bgColor: 'rgba(255, 255, 255, 0.85)',
+    bgPadding: 1,
     textAlign: 'center',
     textBaseline: 'middle',
-    radius: 18,
+    radius: 14,
     type: 'memberForce',
   });
 }
