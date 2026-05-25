@@ -1455,9 +1455,9 @@ function drawHaloedLabel(x, y, text, color) {
 function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelManager, isDark, isReaction) {
   const sc        = getSymbolScale();
   const arrowLen  = 24 * sc;
-  const headDepth = 5 * sc;
-  const arrowHW   = 5 * sc;
-  const apexGap   = 2 * sc;     // pull-back so coincident X+Y arrows don't merge into a diamond
+  const chevronD  = 6 * sc;
+  const chevronHW = 4 * sc;
+  const apexGap   = 2 * sc;
   const fs        = Math.round(BASE_LABEL_SIZE * labelScale * sc);
   const labelGap  = 12 * sc;
 
@@ -1465,47 +1465,56 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
   if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
   else              dirX = forceValue > 0 ?  1 : -1;
 
-  const apexX = node.x - apexGap   * dirX;
-  const apexY = node.y - apexGap   * dirY;
-  const baseX = apexX - headDepth  * dirX;
-  const baseY = apexY - headDepth  * dirY;
-  const tailX = apexX - arrowLen   * dirX;
-  const tailY = apexY - arrowLen   * dirY;
+  const apexX = node.x - apexGap * dirX;
+  const apexY = node.y - apexGap * dirY;
+  const tailX = apexX - arrowLen * dirX;
+  const tailY = apexY - arrowLen * dirY;
+  const chevBaseX = apexX - chevronD * dirX;
+  const chevBaseY = apexY - chevronD * dirY;
 
   const perpX = -dirY;
   const perpY =  dirX;
 
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.fillStyle   = color;
-  ctx.lineWidth   = 2;
+  ctx.lineWidth   = 1.5;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
 
+  // Shaft: tail → apex
   ctx.beginPath();
   ctx.moveTo(tailX, tailY);
-  ctx.lineTo(baseX, baseY);
+  ctx.lineTo(apexX, apexY);
   ctx.stroke();
 
+  // Open chevron head
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(apexX, apexY);
-  ctx.lineTo(baseX + perpX * arrowHW, baseY + perpY * arrowHW);
-  ctx.lineTo(baseX - perpX * arrowHW, baseY - perpY * arrowHW);
-  ctx.closePath();
-  ctx.fill();
+  ctx.moveTo(chevBaseX + perpX * chevronHW, chevBaseY + perpY * chevronHW);
+  ctx.lineTo(apexX, apexY);
+  ctx.lineTo(chevBaseX - perpX * chevronHW, chevBaseY - perpY * chevronHW);
+  ctx.stroke();
 
   ctx.restore();
 
-  // Label goes through the LabelManager for collision avoidance
-  const labelX = tailX - dirX * labelGap;
-  const labelY = tailY - dirY * labelGap;
+  // Reaction labels: centred on shaft midpoint
+  // Load labels: at tail end with gap
+  const midX = (tailX + apexX) / 2;
+  const midY = (tailY + apexY) / 2;
+  const lblX = isReaction ? midX : tailX - dirX * labelGap;
+  const lblY = isReaction ? midY : tailY - dirY * labelGap;
+
   labelManager.add({
     text: label,
     anchorX: node.x, anchorY: node.y,
-    preferredX: labelX, preferredY: labelY,
+    preferredX: lblX, preferredY: lblY,
     priority: isReaction ? 20 : 30,
     color: labelColor,
     font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
     fontSize: fs,
-    haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
+    bgColor: isReaction ? cssVar('--canvas-label-bg') : null,
+    bgPadding: 1,
+    haloColor: isReaction ? null : (isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)'),
     haloWidth: 4,
     textAlign: 'center',
     textBaseline: 'middle',

@@ -739,76 +739,73 @@ function drawHatch(from, to, base, dir) {
   }
 }
 
-// Apex-at-node force arrow: head triangle touches the node and the shaft extends
-// OPPOSITE to the force direction, so the arrow visually communicates "this force
-// pushes into the node from outside". Used for both applied loads and reactions.
 function drawForceArrow(node, axis, forceValue, color, label, labelManager, isReaction) {
   const sc        = getSymbolScale();
   const arrowLen  = 24 * sc;
-  const headDepth = 5 * sc;
-  const arrowHW   = 5 * sc;
+  const chevronD  = 6 * sc;
+  const chevronHW = 4 * sc;
   const apexGap   = 2 * sc;
   const fs        = Math.round(8 * labelScale * sc);
   const labelGap  = 12 * sc;
 
-  // Unit vector in canvas coords pointing in the direction of the force.
-  // Canvas y is flipped relative to world y (positive world y = upward = canvas -y).
   let dirX = 0, dirY = 0;
   if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
   else              dirX = forceValue > 0 ?  1 : -1;
 
-  // Apex sits a small gap outside the node along the force direction; everything else
-  // is measured back from the apex along the OPPOSITE direction.
-  const apexX = node.x - apexGap   * dirX;
-  const apexY = node.y - apexGap   * dirY;
-  const baseX = apexX - headDepth  * dirX;
-  const baseY = apexY - headDepth  * dirY;
-  const tailX = apexX - arrowLen   * dirX;
-  const tailY = apexY - arrowLen   * dirY;
+  const apexX = node.x - apexGap * dirX;
+  const apexY = node.y - apexGap * dirY;
+  const tailX = apexX - arrowLen * dirX;
+  const tailY = apexY - arrowLen * dirY;
+  const chevBaseX = apexX - chevronD * dirX;
+  const chevBaseY = apexY - chevronD * dirY;
 
-  // Perpendicular to dir in the canvas frame.
   const perpX = -dirY;
   const perpY =  dirX;
 
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.fillStyle   = color;
-  ctx.lineWidth   = 2;
+  ctx.lineWidth   = 1.5;
+  ctx.lineCap     = 'round';
+  ctx.lineJoin    = 'round';
 
-  // Shaft: tail -> base of head (apex itself is filled by the triangle).
+  // Shaft: tail → apex
   ctx.beginPath();
   ctx.moveTo(tailX, tailY);
-  ctx.lineTo(baseX, baseY);
+  ctx.lineTo(apexX, apexY);
   ctx.stroke();
 
-  // Head: filled triangle with apex pulled just outside the node.
+  // Open chevron head
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(apexX, apexY);
-  ctx.lineTo(baseX + perpX * arrowHW, baseY + perpY * arrowHW);
-  ctx.lineTo(baseX - perpX * arrowHW, baseY - perpY * arrowHW);
-  ctx.closePath();
-  ctx.fill();
+  ctx.moveTo(chevBaseX + perpX * chevronHW, chevBaseY + perpY * chevronHW);
+  ctx.lineTo(apexX, apexY);
+  ctx.lineTo(chevBaseX - perpX * chevronHW, chevBaseY - perpY * chevronHW);
+  ctx.stroke();
 
   ctx.restore();
 
-  // Label preferred position: at arrow tail, offset perpendicular UPWARD
-  // so horizontal reaction labels sit above the arrow, not below it
-  const labelX = tailX - dirX * labelGap - perpX * labelGap;
-  const labelY = tailY - dirY * labelGap - perpY * labelGap;
+  // Reaction labels: centred on shaft midpoint (fixes horizontal reaction confusion)
+  // Load labels: at tail end with gap
+  const midX = (tailX + apexX) / 2;
+  const midY = (tailY + apexY) / 2;
+  const lblX = isReaction ? midX : tailX - dirX * labelGap;
+  const lblY = isReaction ? midY : tailY - dirY * labelGap;
+
   labelManager.add({
     text: label,
     anchorX: node.x, anchorY: node.y,
-    preferredX: labelX, preferredY: labelY,
+    preferredX: lblX, preferredY: lblY,
     priority: isReaction ? 20 : 30,
     color,
     font: fs + 'px Arial',
     fontSize: fs,
-    haloColor: 'rgba(255, 255, 255, 0.9)',
+    bgColor: isReaction ? 'rgba(255, 255, 255, 0.85)' : null,
+    bgPadding: 1,
+    haloColor: isReaction ? null : 'rgba(255, 255, 255, 0.9)',
     haloWidth: 3,
     textAlign: 'center',
     textBaseline: 'middle',
     type: isReaction ? 'reaction' : 'load',
-    forceLeaderLine: isReaction && axis === 'x',
   });
 }
 
