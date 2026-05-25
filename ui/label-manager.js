@@ -45,10 +45,14 @@ class LabelManager {
    * Render all resolved labels to the canvas context.
    */
   render(ctx) {
+    // Render labels in screen space for crisp text at any zoom level.
+    // World→screen transform captured once, then identity set for drawing.
+    const t = ctx.getTransform();
+
     for (const p of this._placed) {
       ctx.save();
 
-      // Leader line (thin grey line from anchor to label center) if label moved far
+      // Leader line drawn in world space (before transform reset)
       if (p.leaderLine) {
         ctx.beginPath();
         ctx.moveTo(p.anchorX, p.anchorY);
@@ -58,12 +62,17 @@ class LabelManager {
         ctx.stroke();
       }
 
+      // Switch to screen space for crisp text rendering
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const sx = p.renderX * t.a + t.e;
+      const sy = p.renderY * t.d + t.f;
+
       if (p.rotation != null) {
-        ctx.translate(p.renderX, p.renderY);
+        ctx.translate(sx, sy);
         ctx.rotate(p.rotation);
         this._drawLabelContent(ctx, p, 0, 0);
       } else {
-        this._drawLabelContent(ctx, p, p.renderX, p.renderY);
+        this._drawLabelContent(ctx, p, sx, sy);
       }
       ctx.restore();
     }
