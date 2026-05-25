@@ -391,7 +391,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
-  if (!exportMode) drawGrid();
+  if (!exportMode && document.getElementById('chkGrid')?.checked) drawGrid();
   drawMembers();
   drawNodes();
   if (document.getElementById('chkNodeLabels')?.checked) drawNodeLabels();
@@ -529,18 +529,25 @@ function drawNodes() {
 function drawNodeLabels() {
   ctx.save();
   ctx.font = '600 11px Arial';
-  ctx.fillStyle = '#1a2744';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   nodes.forEach(function(n, i) {
-    var label;
+    var label, fontSize;
     if (exportMode) {
       label = String(i + 1);
       ctx.font = 'bold 13px Arial';
+      fontSize = 13;
     } else {
       var base = i * 2 + 1;
       label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
+      fontSize = 11;
     }
+    var pad = 2;
+    var tw = ctx.measureText(label).width;
+    var th = fontSize * 1.3;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(n.x + 8 - pad, n.y - 8 - th, tw + 2 * pad, th + pad);
+    ctx.fillStyle = '#1a2744';
     ctx.fillText(label, n.x + 8, n.y - 8);
   });
   ctx.restore();

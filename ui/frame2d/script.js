@@ -908,7 +908,7 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
-  drawGrid();
+  if (document.getElementById('chkGrid')?.checked) drawGrid();
   if (document.getElementById('chkLoads').checked) drawUDLs();
   drawMembers();
   if (results) {
@@ -1550,13 +1550,19 @@ function drawReactions() {
 // ── Node label overlay ────────────────────────────────────────────────────
 function drawNodeLabels() {
   ctx.save();
-  ctx.font = '600 ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1) + 'px ' + LABEL_FONT_FAMILY;
-  ctx.fillStyle = cssVar('--canvas-label');
+  var fontSize = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1);
+  ctx.font = '600 ' + fontSize + 'px ' + LABEL_FONT_FAMILY;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'bottom';
   nodes.forEach(function(n, i) {
     var base = i * 3 + 1;
     var label = 'N' + i + ' [' + base + ',' + (base + 1) + ',' + (base + 2) + ']';
+    var pad = 2;
+    var tw = ctx.measureText(label).width;
+    var th = fontSize * 1.3;
+    ctx.fillStyle = cssVar('--canvas-label-bg');
+    ctx.fillRect(n.x + 8 - pad, n.y - 8 - th, tw + 2 * pad, th + pad);
+    ctx.fillStyle = cssVar('--canvas-label');
     ctx.fillText(label, n.x + 8, n.y - 8);
   });
   ctx.restore();
@@ -2067,6 +2073,7 @@ document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkAFD').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
+document.getElementById('chkGrid').addEventListener('change', draw);
 
 // Conditional visibility for diagram-specific scale controls.
 // Deflection scale slider only appears when chkDeflected is on.
