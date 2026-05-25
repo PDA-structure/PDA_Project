@@ -908,29 +908,46 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
+
+  // Build member obstacle lines and create a fresh LabelManager for this frame
+  const memberLines = members.map(m => {
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    return (n1 && n2) ? { x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y } : null;
+  }).filter(Boolean);
+  const labelManager = new LabelManager({ ctx, members: memberLines });
+
+  // Compute isDark once for theme-aware label colours
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
   if (document.getElementById('chkGrid')?.checked) drawGrid();
-  if (document.getElementById('chkLoads').checked) drawUDLs();
-  drawMembers();
+  if (document.getElementById('chkLoads').checked) drawUDLs(labelManager);
+  drawMembers(labelManager, isDark);
   if (results) {
-    if (document.getElementById('chkBMD').checked) drawBMD();
-    if (document.getElementById('chkSFD').checked) drawSFD();
-    if (document.getElementById('chkAFD').checked) drawAFD();
-    if (document.getElementById('chkDeflected').checked) drawDeflected();
+    if (document.getElementById('chkBMD').checked) drawBMD(labelManager);
+    if (document.getElementById('chkSFD').checked) drawSFD(labelManager);
+    if (document.getElementById('chkAFD').checked) drawAFD(labelManager);
+    if (document.getElementById('chkDeflected').checked) drawDeflected(labelManager);
   } else {
     clearDiagramState();
   }
-  drawNodes();
+  drawNodes(labelManager);
   drawDiagnosticOverlays();   // Phase 6 PUREBAR-04 — pre/post-solve red highlights
-  if (document.getElementById('chkSupports').checked) drawSupports();
-  if (document.getElementById('chkLoads').checked) drawNodeLoads();
+  if (document.getElementById('chkSupports').checked) drawSupports(labelManager);
+  if (document.getElementById('chkLoads').checked) drawNodeLoads(labelManager, isDark);
   if (results) {
     const chkR = document.getElementById('chkReactions');
-    if (!chkR || chkR.checked) drawReactions();
+    if (!chkR || chkR.checked) drawReactions(labelManager, isDark);
   }
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
   if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
-    drawNodeLabels();
+    drawNodeLabels(labelManager);
   }
+
+  // Resolve and render all collected labels
+  labelManager.resolve();
+  labelManager.render(ctx);
+
   if (results) drawLegend();
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
@@ -970,7 +987,7 @@ function drawGrid() {
   }
 }
 
-function drawMembers() {
+function drawMembers(labelManager, isDark) {
   members.forEach((m, idx) => {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
@@ -1011,7 +1028,7 @@ function drawMembers() {
   });
 }
 
-function drawMemberLabel(n1, n2, text, color) {
+function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
   const mx = (n1.x + n2.x) / 2, my = (n1.y + n2.y) / 2;
   const dx = n2.x - n1.x, dy = n2.y - n1.y;
   const len = Math.hypot(dx, dy) || 1;
@@ -1028,22 +1045,23 @@ function drawMemberLabel(n1, n2, text, color) {
 
   const angle = Math.atan2(dy, dx);
   const fs = Math.round((BASE_LABEL_SIZE - 1) * labelScale * getSymbolScale());
-  ctx.save();
-  ctx.translate(mx + nx*14, my + ny*14);
-  ctx.rotate(Math.abs(angle) > Math.PI/2 ? angle + Math.PI : angle);
-  ctx.font = '600 ' + fs + 'px ' + LABEL_FONT_FAMILY;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  // Halo so labels remain readable when they sit close to other labels or members.
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-  ctx.lineJoin    = 'round';
-  ctx.miterLimit  = 2;
-  ctx.lineWidth   = 4;
-  ctx.strokeStyle = isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)';
-  ctx.strokeText(text, 0, 0);
-  ctx.fillStyle = color;
-  ctx.fillText(text, 0, 0);
-  ctx.restore();
+
+  labelManager.add({
+    text,
+    anchorX: mx, anchorY: my,
+    preferredX: mx + nx * 14, preferredY: my + ny * 14,
+    priority: 40,
+    color,
+    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    fontSize: fs,
+    haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
+    haloWidth: 4,
+    rotation: (Math.abs(angle) > Math.PI / 2 ? angle + Math.PI : angle),
+    textAlign: 'center',
+    textBaseline: 'middle',
+    radius: 18,
+    type: 'memberForce',
+  });
 }
 
 function drawPinCircle(x1, y1, x2, y2, end) {
@@ -1062,16 +1080,27 @@ function drawPinCircle(x1, y1, x2, y2, end) {
   ctx.fill();
 }
 
-function drawNodes() {
+function drawNodes(labelManager) {
   const r = 5 * getSymbolScale();
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1);
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI*2);
     ctx.fillStyle = cssVar('--canvas-node');
     ctx.fill();
-    ctx.fillStyle = cssVar('--canvas-label');
-    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1) + 'px ' + LABEL_FONT_FAMILY;
-    ctx.fillText(n.id + 1, n.x + 8, n.y - 8);
+    labelManager.add({
+      text: String(n.id + 1),
+      anchorX: n.x, anchorY: n.y,
+      preferredX: n.x + 8, preferredY: n.y - 8,
+      priority: 10,
+      color: cssVar('--canvas-label'),
+      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: fs,
+      textAlign: 'left',
+      textBaseline: 'bottom',
+      radius: 12,
+      type: 'nodeId',
+    });
   });
 }
 
@@ -1147,7 +1176,7 @@ function highlightNode(n, color) {
 }
 
 // ── Support symbols ───────────────────────────────────────────────────────
-function drawSupports() {
+function drawSupports(labelManager) {
   supports.forEach(s => {
     const n = nodes.find(nd => nd.id === s.nodeId);
     if (!n) return;
@@ -1156,7 +1185,7 @@ function drawSupports() {
     else if (s.type === 'pinned')  drawPin(n.x, n.y);
     else if (s.type === 'rollerY') drawRollerH(n.x, n.y);
     else if (s.type === 'rollerX') drawRollerV(n.x, n.y);
-    else if (s.type === 'spring')  drawSpring(n.x, n.y, s.Kx, s.Ky, s.Ktheta);
+    else if (s.type === 'spring')  drawSpring(n.x, n.y, s.Kx, s.Ky, s.Ktheta, labelManager);
     ctx.restore();
   });
 }
@@ -1216,7 +1245,7 @@ function drawRollerV(x, y) {
 // D-07: coil glyph per active spring axis (Kx / Ky / Kθ), with value tag label.
 // Horizontal coil on -X side for Kx, vertical coil below node for Ky,
 // rotational spiral arc around node for Kθ.
-function drawSpring(x, y, Kx, Ky, Ktheta) {
+function drawSpring(x, y, Kx, Ky, Ktheta, labelManager) {
   const sc = getSymbolScale();
   ctx.save();
   ctx.strokeStyle = cssVar('--canvas-spring'); ctx.fillStyle = cssVar('--canvas-spring'); ctx.lineWidth = 1.5;
@@ -1269,16 +1298,25 @@ function drawSpring(x, y, Kx, Ky, Ktheta) {
     ctx.stroke();
   }
 
-  // Value tag label
+  // Value tag label via LabelManager
   const labelParts = [];
   if (Kx     != null) labelParts.push('Kx=' + Kx + ' kN/m');
   if (Ky     != null) labelParts.push('Ky=' + Ky + ' kN/m');
   if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + ' kN·m/rad');
-  if (labelParts.length) {
-    ctx.font = Math.round(BASE_LABEL_SIZE * 0.9 * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = cssVar('--canvas-spring');
-    ctx.fillText(labelParts.join(' · '), x + 10 * sc, y - 10 * sc);
+  if (labelParts.length && labelManager) {
+    const fs = Math.round(BASE_LABEL_SIZE * 0.9 * labelScale * getSymbolScale());
+    labelManager.add({
+      text: labelParts.join(' · '),
+      anchorX: x, anchorY: y,
+      preferredX: x + 10 * sc, preferredY: y - 10 * sc,
+      priority: 70,
+      color: cssVar('--canvas-spring'),
+      font: fs + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: fs,
+      textAlign: 'left',
+      textBaseline: 'middle',
+      type: 'spring',
+    });
   }
 
   ctx.restore();
@@ -1401,7 +1439,7 @@ function drawHaloedLabel(x, y, text, color) {
 // Apex-at-node force arrow: head triangle touches the node, shaft extends OPPOSITE
 // to the force direction, label sits at the tail outside the structure. Used by
 // both drawNodeLoads (loads) and drawReactions (reactions).
-function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
+function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelManager, isDark, isReaction) {
   const sc        = getSymbolScale();
   const arrowLen  = 24 * sc;
   const headDepth = 5 * sc;
@@ -1428,9 +1466,6 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
-  ctx.textAlign   = 'center';
-  ctx.textBaseline = 'middle';
 
   ctx.beginPath();
   ctx.moveTo(tailX, tailY);
@@ -1444,16 +1479,32 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label) {
   ctx.closePath();
   ctx.fill();
 
-  drawHaloedLabel(tailX - dirX * labelGap, tailY - dirY * labelGap, label, labelColor);
-
   ctx.restore();
+
+  // Label goes through the LabelManager for collision avoidance
+  const labelX = tailX - dirX * labelGap;
+  const labelY = tailY - dirY * labelGap;
+  labelManager.add({
+    text: label,
+    anchorX: node.x, anchorY: node.y,
+    preferredX: labelX, preferredY: labelY,
+    priority: isReaction ? 20 : 30,
+    color: labelColor,
+    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    fontSize: fs,
+    haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
+    haloWidth: 4,
+    textAlign: 'center',
+    textBaseline: 'middle',
+    type: isReaction ? 'reaction' : 'load',
+  });
 }
 
 // Moment arc with V-style arrowhead at the end of the arc. Used by both
 // drawNodeLoads (moment loads, kind='load', r=14*sc — unchanged geometry from
 // pre-cyp) and drawReactions (moment reactions, kind='reaction', r=18*sc — bigger
 // so the two visually differ when adjacent at the same node).
-function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
+function drawMomentArc(node, momentValue, color, labelColor, label, opts, labelManager, isDark) {
   const sc      = getSymbolScale();
   const kind    = (opts && opts.kind) || 'reaction';
   const r       = (kind === 'load' ? 14 : 18) * sc;
@@ -1465,9 +1516,6 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
   ctx.strokeStyle = color;
   ctx.fillStyle   = color;
   ctx.lineWidth   = 2;
-  ctx.font        = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
-  ctx.textAlign   = 'center';
-  ctx.textBaseline = 'middle';
 
   // Arc geometry mirrors the pre-cyp moment-load arc so kind='load' stays
   // byte-identical to the previous visual.
@@ -1487,26 +1535,41 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts) {
   ctx.lineTo(ax + arrowSz * Math.cos(tang + 0.5), ay + arrowSz * Math.sin(tang + 0.5));
   ctx.fill();
 
-  drawHaloedLabel(node.x, node.y - r - 6, label, labelColor);
-
   ctx.restore();
+
+  // Label goes through the LabelManager for collision avoidance
+  const isReaction = kind === 'reaction';
+  labelManager.add({
+    text: label,
+    anchorX: node.x, anchorY: node.y,
+    preferredX: node.x, preferredY: node.y - r - 6,
+    priority: isReaction ? 20 : 30,
+    color: labelColor,
+    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    fontSize: fs,
+    haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
+    haloWidth: 4,
+    textAlign: 'center',
+    textBaseline: 'middle',
+    type: isReaction ? 'reaction' : 'load',
+  });
 }
 
-function drawNodeLoads() {
+function drawNodeLoads(labelManager, isDark) {
   nodeLoads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
     if (l.direction === 'moment') {
       const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kNm';
-      drawMomentArc(n, l.magnitude, cssVar('--canvas-load-moment'), cssVar('--canvas-load-moment-label'), label, { kind: 'load' });
+      drawMomentArc(n, l.magnitude, cssVar('--canvas-load-moment'), cssVar('--canvas-load-moment-label'), label, { kind: 'load' }, labelManager, isDark);
     } else {
       const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
-      drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), cssVar('--canvas-load-label'), label);
+      drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), cssVar('--canvas-load-label'), label, labelManager, isDark, false);
     }
   });
 }
 
-function drawReactions() {
+function drawReactions(labelManager, isDark) {
   if (!results || !results.FG) return;
   const FG    = results.FG;
   const ZERO  = 1e-3;
@@ -1538,38 +1601,40 @@ function drawReactions() {
       if (Math.abs(r) < ZERO) return;
       if (dof === 'm') {
         const label = (Math.abs(r) / 1000).toFixed(2) + ' kNm';
-        drawMomentArc(n, r, mcol, flbl, label, { kind: 'reaction' });
+        drawMomentArc(n, r, mcol, flbl, label, { kind: 'reaction' }, labelManager, isDark);
       } else {
         const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
-        drawForceArrow(n, dof, r, fcol, flbl, label);
+        drawForceArrow(n, dof, r, fcol, flbl, label, labelManager, isDark, true);
       }
     });
   });
 }
 
 // ── Node label overlay ────────────────────────────────────────────────────
-function drawNodeLabels() {
-  ctx.save();
+function drawNodeLabels(labelManager) {
   var fontSize = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1);
-  ctx.font = '600 ' + fontSize + 'px ' + LABEL_FONT_FAMILY;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
   nodes.forEach(function(n, i) {
     var base = i * 3 + 1;
     var label = 'N' + i + ' [' + base + ',' + (base + 1) + ',' + (base + 2) + ']';
-    var pad = 2;
-    var tw = ctx.measureText(label).width;
-    var th = fontSize * 1.3;
-    ctx.fillStyle = cssVar('--canvas-label-bg');
-    ctx.fillRect(n.x + 8 - pad, n.y - 8 - th, tw + 2 * pad, th + pad);
-    ctx.fillStyle = cssVar('--canvas-label');
-    ctx.fillText(label, n.x + 8, n.y - 8);
+    labelManager.add({
+      text: label,
+      anchorX: n.x, anchorY: n.y,
+      preferredX: n.x + 8, preferredY: n.y - 8,
+      priority: 15,
+      color: cssVar('--canvas-label'),
+      font: '600 ' + fontSize + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: fontSize,
+      bgColor: cssVar('--canvas-label-bg'),
+      bgPadding: 2,
+      textAlign: 'left',
+      textBaseline: 'bottom',
+      type: 'dof',
+    });
   });
-  ctx.restore();
 }
 
 // ── UDL arrows ────────────────────────────────────────────────────────────
-function drawUDLs() {
+function drawUDLs(labelManager) {
   members.forEach(m => {
     if (!m.udl) return;
     const n1 = nodes.find(n => n.id === m.start);
@@ -1604,11 +1669,22 @@ function drawUDLs() {
       ctx.fill();
     }
 
-    // label
+    // label via LabelManager
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-label');
-    ctx.fillText((Math.abs(m.udl)/1000).toFixed(1)+' kN/m', mx, my - arrowLen*sign - 6);
+    const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    labelManager.add({
+      text: (Math.abs(m.udl)/1000).toFixed(1)+' kN/m',
+      anchorX: mx, anchorY: my,
+      preferredX: mx, preferredY: my - arrowLen*sign - 6,
+      priority: 60,
+      color: cssVar('--canvas-udl-label'),
+      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: fs,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      type: 'udl',
+    });
   });
 
   // Horizontal UDL (w_x) — horizontal arrows in global X direction (wind load convention)
@@ -1638,26 +1714,35 @@ function drawUDLs() {
       const t = i / steps;
       const ax = n1.x + t * dx;   // point on member (arrow tip)
       const ay = n1.y + t * dy;
-      // Arrow drawn horizontally: tail at (ax - arrowLen*sign, ay), tip at (ax, ay)
       const tailX = ax - arrowLen * sign;
       const tailY = ay;
       ctx.beginPath();
       ctx.moveTo(tailX, tailY);
       ctx.lineTo(ax, ay);
       ctx.stroke();
-      // Arrowhead as filled triangle pointing toward the member
       ctx.beginPath();
-      ctx.moveTo(ax, ay);                    // tip
-      ctx.lineTo(ax - 8 * sign, ay - 4);    // upper tail corner
-      ctx.lineTo(ax - 8 * sign, ay + 4);    // lower tail corner
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax - 8 * sign, ay - 4);
+      ctx.lineTo(ax - 8 * sign, ay + 4);
       ctx.closePath();
       ctx.fill();
     }
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    ctx.font = 'bold ' + Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale()) + 'px ' + LABEL_FONT_FAMILY; ctx.textAlign = 'center'; ctx.fillStyle = cssVar('--canvas-udl-x-label');
-    ctx.fillText((Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m', mx - arrowLen * sign * 1.8, my);
+    const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    labelManager.add({
+      text: (Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m',
+      anchorX: mx, anchorY: my,
+      preferredX: mx - arrowLen * sign * 1.8, preferredY: my,
+      priority: 60,
+      color: cssVar('--canvas-udl-x-label'),
+      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: fs,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      type: 'udl',
+    });
   });
 }
 
@@ -1685,7 +1770,7 @@ function labelText(text, x, y, color) {
 // slope (dy/dx) = -solver_theta, so we negate before passing to shape functions.
 // For UDL members, adds the quartic particular-solution correction so midspan
 // deflection is exact rather than the 80%-accurate cubic approximation.
-function drawDeflected() {
+function drawDeflected(labelManager) {
   try {
   const scale = parseFloat(document.getElementById('inputScale').value) || 100;
   const E = parseFloat(document.getElementById('inputE').value) * 1e9;
@@ -1753,7 +1838,21 @@ function drawDeflected() {
   });
   ctx.setLineDash([]);
   if (maxTransverse > 1e-8) {
-    labelText('δ=' + (maxTransverse * 1000).toFixed(3) + ' mm', maxLX, maxLY - 12, cssVar('--canvas-deflected-label'));
+    const dfFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    labelManager.add({
+      text: 'δ=' + (maxTransverse * 1000).toFixed(3) + ' mm',
+      anchorX: maxLX, anchorY: maxLY,
+      preferredX: maxLX, preferredY: maxLY - 12,
+      priority: 50,
+      color: cssVar('--canvas-deflected-label'),
+      font: 'bold ' + dfFs + 'px ' + LABEL_FONT_FAMILY,
+      fontSize: dfFs,
+      bgColor: cssVar('--canvas-label-bg'),
+      bgPadding: 2,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      type: 'diagram',
+    });
   }
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
@@ -1766,7 +1865,7 @@ function drawDeflected() {
 // The Mj negation matches the SFD sign fix: solver stores element end forces
 // (the element exerts -Mj on node j), so the internal moment at j = -Mj_element.
 // Positive moment (sagging) draws on the tension face (below for horizontal beam).
-function drawBMD() {
+function drawBMD(labelManager) {
   const moments = results.member_moments;
   if (!moments) return;
   const NSEG = 20;
@@ -1832,6 +1931,8 @@ function drawBMD() {
     // ── Annotate end moments and UDL midspan peak (always — chkDiagLabels retired) ─────────────────────────
     const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
     const nudgeM = 8 * getSymbolScale();
+    const bmdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    const bmdColor = cssVar('--canvas-bmd');
     members.forEach((m, idx) => {
       const n1 = nodes.find(n => n.id === m.start);
       const n2 = nodes.find(n => n.id === m.end);
@@ -1843,12 +1944,22 @@ function drawBMD() {
       const L_m = memberLengthReal(m);
       if (Math.abs(Mi) > maxMoment * 0.01) {
         const off = Mi * scaleFactor + nudgeM * Math.sign(Mi);
-        labelText(fmtM(Mi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-bmd'));
+        labelManager.add({
+          text: fmtM(Mi), anchorX: n1.x, anchorY: n1.y,
+          preferredX: n1.x + perpX * off, preferredY: n1.y + perpY * off,
+          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
       }
-      const Mj_bmd = -Mj;  // internal moment at j-end = -element_end_force_at_j
+      const Mj_bmd = -Mj;
       if (Math.abs(Mj_bmd) > maxMoment * 0.01) {
         const off = Mj_bmd * scaleFactor + nudgeM * Math.sign(Mj_bmd);
-        labelText(fmtM(Mj_bmd), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-bmd'));
+        labelManager.add({
+          text: fmtM(Mj_bmd), anchorX: n2.x, anchorY: n2.y,
+          preferredX: n2.x + perpX * off, preferredY: n2.y + perpY * off,
+          priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
       }
       if (m.udl && m.type !== 'bar') {
         let peakM = 0, peakXi = 0.5;
@@ -1860,7 +1971,12 @@ function drawBMD() {
         if (peakXi > 0.1 && peakXi < 0.9 && Math.abs(peakM) > maxMoment * 0.01) {
           const bx = n1.x + peakXi * dx, by = n1.y + peakXi * dy;
           const off = peakM * scaleFactor + nudgeM * Math.sign(peakM);
-          labelText(fmtM(peakM), bx + perpX * off, by + perpY * off, cssVar('--canvas-bmd'));
+          labelManager.add({
+            text: fmtM(peakM), anchorX: bx, anchorY: by,
+            preferredX: bx + perpX * off, preferredY: by + perpY * off,
+            priority: 50, color: bmdColor, font: 'bold ' + bmdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: bmdFs,
+            bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+          });
         }
       }
     });
@@ -1870,7 +1986,7 @@ function drawBMD() {
 // ── Shear force diagram ────────────────────────────────────────────────────
 // V varies linearly for UDL: V(ξ) = Vi*(1-ξ) + Vj*ξ.
 // NSEG points ensure correct zero-crossing is captured visually.
-function drawSFD() {
+function drawSFD(labelManager) {
   const shears = results.member_shears;
   if (!shears) return;
   const NSEG = 20;
@@ -1926,6 +2042,8 @@ function drawSFD() {
     // ── Annotate end shears and zero crossings (always — chkDiagLabels retired) ────────────────────────────
     const fmtV = v => (v / 1000).toFixed(2) + ' kN';
     const nudgeV = 8 * getSymbolScale();
+    const sfdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    const sfdColor = cssVar('--canvas-sfd');
     members.forEach((m, idx) => {
       const n1 = nodes.find(n => n.id === m.start);
       const n2 = nodes.find(n => n.id === m.end);
@@ -1936,23 +2054,38 @@ function drawSFD() {
       const Vi = shears[idx][0], Vj = -shears[idx][1];
       if (Math.abs(Vi) > maxShear * 0.01) {
         const off = Vi * scaleFactor + nudgeV * Math.sign(Vi);
-        labelText(fmtV(Vi), n1.x + perpX * off, n1.y + perpY * off, cssVar('--canvas-sfd'));
+        labelManager.add({
+          text: fmtV(Vi), anchorX: n1.x, anchorY: n1.y,
+          preferredX: n1.x + perpX * off, preferredY: n1.y + perpY * off,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
       }
       if (Math.abs(Vj) > maxShear * 0.01) {
         const off = Vj * scaleFactor + nudgeV * Math.sign(Vj);
-        labelText(fmtV(Vj), n2.x + perpX * off, n2.y + perpY * off, cssVar('--canvas-sfd'));
+        labelManager.add({
+          text: fmtV(Vj), anchorX: n2.x, anchorY: n2.y,
+          preferredX: n2.x + perpX * off, preferredY: n2.y + perpY * off,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
       }
       if (Vi * Vj < 0) {
         const xi0 = Vi / (Vi - Vj);
         const zx = n1.x + xi0 * dx, zy = n1.y + xi0 * dy;
         ctx.save();
-        ctx.strokeStyle = cssVar('--canvas-sfd'); ctx.lineWidth = 2;
+        ctx.strokeStyle = sfdColor; ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(zx + perpX * 6, zy + perpY * 6);
         ctx.lineTo(zx - perpX * 6, zy - perpY * 6);
         ctx.stroke();
         ctx.restore();
-        labelText('V=0', zx, zy, cssVar('--canvas-sfd'));
+        labelManager.add({
+          text: 'V=0', anchorX: zx, anchorY: zy,
+          preferredX: zx, preferredY: zy,
+          priority: 50, color: sfdColor, font: 'bold ' + sfdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: sfdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
       }
     });
   }
@@ -1990,7 +2123,7 @@ function hexToRgba(hex, alpha) {
 // red; matches the member-line colour code. Drawn on the OPPOSITE side of
 // the member from BMD/SFD (negative-perp direction) so the three diagrams
 // don't overlap on a simple beam.
-function drawAFD() {
+function drawAFD(labelManager) {
   const axial = results && results.member_forces;
   if (!axial) return;
 
@@ -2047,6 +2180,7 @@ function drawAFD() {
   {
     const fmtN = v => (v / 1000).toFixed(2) + ' kN';
     const nudge = 8 * getSymbolScale();
+    const afdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
     members.forEach((m, idx) => {
       const n1 = nodes.find(n => n.id === m.start);
       const n2 = nodes.find(n => n.id === m.end);
@@ -2059,8 +2193,13 @@ function drawAFD() {
       const off   = Math.abs(f) * scaleFactor + nudge;
       const mx    = (n1.x + n2.x) / 2;
       const my    = (n1.y + n2.y) / 2;
-      const stroke = f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression');
-      labelText(fmtN(f), mx + perpX * off, my + perpY * off, stroke);
+      const afdColor = f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression');
+      labelManager.add({
+        text: fmtN(f), anchorX: mx, anchorY: my,
+        preferredX: mx + perpX * off, preferredY: my + perpY * off,
+        priority: 50, color: afdColor, font: 'bold ' + afdFs + 'px ' + LABEL_FONT_FAMILY, fontSize: afdFs,
+        bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+      });
     });
   }
 }
