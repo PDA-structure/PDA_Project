@@ -808,6 +808,7 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
     textAlign: 'center',
     textBaseline: 'middle',
     type: isReaction ? 'reaction' : 'load',
+    forceLeaderLine: isReaction && axis === 'x',
   });
 }
 

@@ -211,7 +211,7 @@ class LabelManager {
       textBaseline: label.textBaseline || 'middle',
       anchorX: label.anchorX,
       anchorY: label.anchorY,
-      leaderLine,
+      leaderLine: leaderLine || !!label.forceLeaderLine,
       type: label.type,
     };
   }
