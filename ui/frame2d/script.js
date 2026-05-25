@@ -1025,6 +1025,10 @@ function drawMembers(labelManager, isDark) {
     // pin release circles
     if (m.pinLeft)  drawPinCircle(n1.x, n1.y, n2.x, n2.y, 'start');
     if (m.pinRight) drawPinCircle(n1.x, n1.y, n2.x, n2.y, 'end');
+
+    if (document.getElementById('chkMemberIds')?.checked) {
+      drawMemberIdLabel(n1, n2, idx, labelManager);
+    }
   });
 }
 
@@ -1044,12 +1048,12 @@ function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
   if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
 
   const angle = Math.atan2(dy, dx);
-  const fs = Math.round((BASE_LABEL_SIZE - 1) * labelScale * getSymbolScale());
+  const fs = Math.round((BASE_LABEL_SIZE - 3) * labelScale * getSymbolScale());
 
   labelManager.add({
     text,
     anchorX: mx, anchorY: my,
-    preferredX: mx + nx * 14, preferredY: my + ny * 14,
+    preferredX: mx + nx * 20, preferredY: my + ny * 20,
     priority: 40,
     color,
     font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
@@ -1080,27 +1084,51 @@ function drawPinCircle(x1, y1, x2, y2, end) {
   ctx.fill();
 }
 
+function drawMemberIdLabel(n1, n2, idx, labelManager) {
+  const mx = (n1.x + n2.x) / 2;
+  const my = (n1.y + n2.y) / 2;
+  const fs = Math.round((BASE_LABEL_SIZE - 3) * labelScale * getSymbolScale());
+  labelManager.add({
+    text: 'M' + (idx + 1),
+    anchorX: mx, anchorY: my,
+    preferredX: mx, preferredY: my - 8,
+    priority: 35,
+    color: cssVar('--canvas-label'),
+    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    fontSize: fs,
+    bgColor: cssVar('--canvas-label-bg'),
+    bgPadding: 1,
+    textAlign: 'center',
+    textBaseline: 'bottom',
+    radius: 14,
+    type: 'memberId',
+  });
+}
+
 function drawNodes(labelManager) {
   const r = 5 * getSymbolScale();
-  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1);
+  const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * getSymbolScale() + 1);
+  const showNodeIds = document.getElementById('chkNodeIds')?.checked;
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI*2);
     ctx.fillStyle = cssVar('--canvas-node');
     ctx.fill();
-    labelManager.add({
-      text: String(n.id + 1),
-      anchorX: n.x, anchorY: n.y,
-      preferredX: n.x + 8, preferredY: n.y - 8,
-      priority: 10,
-      color: cssVar('--canvas-label'),
-      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
-      fontSize: fs,
-      textAlign: 'left',
-      textBaseline: 'bottom',
-      radius: 12,
-      type: 'nodeId',
-    });
+    if (showNodeIds) {
+      labelManager.add({
+        text: String(n.id + 1),
+        anchorX: n.x, anchorY: n.y,
+        preferredX: n.x + 8, preferredY: n.y - 8,
+        priority: 10,
+        color: cssVar('--canvas-label'),
+        font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+        fontSize: fs,
+        textAlign: 'left',
+        textBaseline: 'bottom',
+        radius: 12,
+        type: 'nodeId',
+      });
+    }
   });
 }
 
@@ -2212,6 +2240,9 @@ document.getElementById('chkBMD').addEventListener('change', draw);
 document.getElementById('chkSFD').addEventListener('change', draw);
 document.getElementById('chkAFD').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
+document.getElementById('chkNodeIds').addEventListener('change', draw);
+document.getElementById('chkMemberIds').addEventListener('change', draw);
+document.getElementById('chkMemberForces').addEventListener('change', draw);
 document.getElementById('chkGrid').addEventListener('change', draw);
 
 // Conditional visibility for diagram-specific scale controls.

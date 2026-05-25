@@ -484,7 +484,12 @@ function drawMembers(labelManager) {
     ctx.lineTo(n2.x, n2.y);
     ctx.stroke();
 
-    if (label) drawMemberLabel(n1, n2, label, color, labelManager);
+    if (label && document.getElementById('chkMemberForces')?.checked) {
+      drawMemberLabel(n1, n2, label, color, labelManager);
+    }
+    if (document.getElementById('chkMemberIds')?.checked) {
+      drawMemberIdLabel(n1, n2, idx, labelManager);
+    }
   });
 }
 
@@ -506,11 +511,11 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
   cy /= nodes.length;
   if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
 
-  const ox = mx + nx * 14;
-  const oy = my + ny * 14;
+  const ox = mx + nx * 20;
+  const oy = my + ny * 20;
 
   const angle = Math.atan2(dy, dx);
-  const fs = Math.round(9 * getSymbolScale());
+  const fs = Math.round(7 * getSymbolScale());
 
   labelManager.add({
     text,
@@ -530,27 +535,51 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
   });
 }
 
+function drawMemberIdLabel(n1, n2, idx, labelManager) {
+  const mx = (n1.x + n2.x) / 2;
+  const my = (n1.y + n2.y) / 2;
+  const fs = Math.round(7 * getSymbolScale());
+  labelManager.add({
+    text: 'M' + (idx + 1),
+    anchorX: mx, anchorY: my,
+    preferredX: mx, preferredY: my - 8,
+    priority: 35,
+    color: '#666',
+    font: '600 ' + fs + 'px Arial',
+    fontSize: fs,
+    bgColor: 'rgba(255,255,255,0.85)',
+    bgPadding: 1,
+    textAlign: 'center',
+    textBaseline: 'bottom',
+    radius: 14,
+    type: 'memberId',
+  });
+}
+
 function drawNodes(labelManager) {
   const r = 5 * getSymbolScale();
-  const fs = Math.round(11 * getSymbolScale());
+  const fs = Math.round(9 * getSymbolScale());
+  const showNodeIds = document.getElementById('chkNodeIds')?.checked;
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = '#e53935';
     ctx.fill();
-    labelManager.add({
-      text: String(n.id + 1),
-      anchorX: n.x, anchorY: n.y,
-      preferredX: n.x + 8, preferredY: n.y - 8,
-      priority: 10,
-      color: '#222',
-      font: 'bold ' + fs + 'px Arial',
-      fontSize: fs,
-      textAlign: 'left',
-      textBaseline: 'bottom',
-      radius: 12,
-      type: 'nodeId',
-    });
+    if (showNodeIds) {
+      labelManager.add({
+        text: String(n.id + 1),
+        anchorX: n.x, anchorY: n.y,
+        preferredX: n.x + 8, preferredY: n.y - 8,
+        priority: 10,
+        color: '#222',
+        font: 'bold ' + fs + 'px Arial',
+        fontSize: fs,
+        textAlign: 'left',
+        textBaseline: 'bottom',
+        radius: 12,
+        type: 'nodeId',
+      });
+    }
   });
 }
 
