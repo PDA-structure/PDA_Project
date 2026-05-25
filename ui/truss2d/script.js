@@ -1132,8 +1132,20 @@ function saveModel() {
   }
 }
 
-function exportAnalysis() {
+function toggleExportMenu() {
+  var m = document.getElementById('exportMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function hideExportMenu() {
+  document.getElementById('exportMenu').style.display = 'none';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.export-dropdown')) hideExportMenu();
+});
+
+function exportAnalysis(mode) {
   if (!results) return;
+  mode = mode || 'presentation';
   var E_GPa = parseFloat(document.getElementById('inputE').value);
   var A_cm2 = parseFloat(document.getElementById('inputA').value);
 
@@ -1199,23 +1211,28 @@ function exportAnalysis() {
     + String(now.getMinutes()).padStart(2, '0') + '-'
     + String(now.getSeconds()).padStart(2, '0');
 
-  // Capture canvas image: zoom-to-fit, clean export mode, white background
-  var chkIds = ['chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions', 'chkDeflected'];
+  // Save current state
+  var allChkIds = ['chkGrid', 'chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions',
+                   'chkDeflected', 'chkNodeIds', 'chkMemberIds', 'chkMemberForces'];
   var savedChk = {};
-  chkIds.forEach(function (id) {
+  allChkIds.forEach(function (id) {
     var el = document.getElementById(id);
     if (el) savedChk[id] = el.checked;
   });
   var savedView = { scale: view.scale, tx: view.tx, ty: view.ty };
 
-  ['chkSupports', 'chkLoads', 'chkReactions'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.checked = true;
-  });
-  var nlEl = document.getElementById('chkNodeLabels');
-  if (nlEl) nlEl.checked = false;
-  var defEl = document.getElementById('chkDeflected');
-  if (defEl) defEl.checked = false;
+  if (mode === 'presentation') {
+    // Automated best-practice: node IDs, member forces, supports, loads, reactions ON
+    // Grid, DOF labels, member IDs, deflected OFF
+    var onIds  = ['chkNodeIds', 'chkMemberForces', 'chkSupports', 'chkLoads', 'chkReactions'];
+    var offIds = ['chkGrid', 'chkNodeLabels', 'chkMemberIds', 'chkDeflected'];
+    onIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = true; });
+    offIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = false; });
+  } else {
+    // As displayed: just hide grid for clean background
+    var gridEl = document.getElementById('chkGrid');
+    if (gridEl) gridEl.checked = false;
+  }
 
   exportMode = true;
   resetView();
