@@ -469,7 +469,7 @@ function drawMembers(labelManager) {
       if (Math.abs(f) < 1e-3)       { color = '#999'; }
       else if (f > 0)                { color = '#1565c0'; }  // tension  = blue
       else                           { color = '#b71c1c'; }  // compression = red
-      label = (f / 1000).toFixed(2) + ' kN';
+      label = (f / 1000).toFixed(2) + 'kN';
 
       if (maxAbsForce > 1e-3) {
         const af = Math.abs(f);
@@ -806,7 +806,7 @@ function drawLoads(labelManager) {
   loads.forEach(l => {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
-    const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
+    const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + 'kN';
     drawForceArrow(n, l.direction, l.magnitude, '#2e7d32', label, labelManager, false);
   });
 }
@@ -906,7 +906,7 @@ function drawReactions(labelManager) {
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
       const tag = dir === 'x' ? 'Rx' : 'Ry';
-      const txt = tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN';
+      const txt = tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + 'kN';
 
       if (dir === 'y') {
         // Ry: below support, centred

@@ -1317,9 +1317,9 @@ function drawSpring(x, y, Kx, Ky, Ktheta, labelManager) {
 
   // Value tag label via LabelManager
   const labelParts = [];
-  if (Kx     != null) labelParts.push('Kx=' + Kx + ' kN/m');
-  if (Ky     != null) labelParts.push('Ky=' + Ky + ' kN/m');
-  if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + ' kN·m/rad');
+  if (Kx     != null) labelParts.push('Kx=' + Kx + 'kN/m');
+  if (Ky     != null) labelParts.push('Ky=' + Ky + 'kN/m');
+  if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + 'kN·m/rad');
   if (labelParts.length && labelManager) {
     const fs = Math.round(BASE_LABEL_SIZE * 0.9 * labelScale * getSymbolScale());
     labelManager.add({
@@ -1586,10 +1586,10 @@ function drawNodeLoads(labelManager, isDark) {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
     if (l.direction === 'moment') {
-      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kNm';
+      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + 'kNm';
       drawMomentArc(n, l.magnitude, cssVar('--canvas-load-moment'), cssVar('--canvas-load-moment-label'), label, { kind: 'load' }, labelManager, isDark);
     } else {
-      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + ' kN';
+      const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + 'kN';
       drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), cssVar('--canvas-load-label'), label, labelManager, isDark, false);
     }
   });
@@ -1650,7 +1650,7 @@ function drawReactions(labelManager, isDark) {
       if (Math.abs(r) < ZERO) return;
 
       if (dof === 'x') {
-        const tag = 'Rx = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN';
+        const tag = 'Rx = ' + (Math.abs(r) / 1000).toFixed(2) + 'kN';
         const offsetX = isLeft ? -20 * sc : 20 * sc;
         labelManager.add({
           text: tag, anchorX: n.x, anchorY: n.y,
@@ -1663,8 +1663,8 @@ function drawReactions(labelManager, isDark) {
         });
       } else {
         const tag = dof === 'y'
-          ? 'Ry = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN'
-          : 'Mz = ' + (Math.abs(r) / 1000).toFixed(2) + ' kNm';
+          ? 'Ry = ' + (Math.abs(r) / 1000).toFixed(2) + 'kN'
+          : 'Mz = ' + (Math.abs(r) / 1000).toFixed(2) + 'kNm';
         labelManager.add({
           text: tag, anchorX: n.x, anchorY: n.y,
           preferredX: n.x, preferredY: belowY,
@@ -1753,7 +1753,7 @@ function drawUDLs(labelManager) {
     const my = (n1.y + n2.y) / 2;
     const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
     labelManager.add({
-      text: (Math.abs(m.udl)/1000).toFixed(1)+' kN/m',
+      text: (Math.abs(m.udl)/1000).toFixed(1)+'kN/m',
       anchorX: mx, anchorY: my,
       preferredX: mx, preferredY: my - arrowLen*sign - 6,
       priority: 60,
@@ -1818,7 +1818,7 @@ function drawUDLs(labelManager) {
     const my = (n1.y + n2.y) / 2;
     const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
     labelManager.add({
-      text: (Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m',
+      text: (Math.abs(m.udl_x) / 1000).toFixed(1) + 'kN/m',
       anchorX: mx, anchorY: my,
       preferredX: mx - arrowLen * sign * 1.8, preferredY: my,
       priority: 60,
@@ -2015,7 +2015,7 @@ function drawBMD(labelManager) {
 
   {
     // ── Annotate end moments and UDL midspan peak (always — chkDiagLabels retired) ─────────────────────────
-    const fmtM = v => (v / 1000).toFixed(2) + ' kNm';
+    const fmtM = v => (v / 1000).toFixed(2) + 'kNm';
     const nudgeM = 8 * getSymbolScale();
     const bmdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
     const bmdColor = cssVar('--canvas-bmd');
@@ -2126,7 +2126,7 @@ function drawSFD(labelManager) {
 
   {
     // ── Annotate end shears and zero crossings (always — chkDiagLabels retired) ────────────────────────────
-    const fmtV = v => (v / 1000).toFixed(2) + ' kN';
+    const fmtV = v => (v / 1000).toFixed(2) + 'kN';
     const nudgeV = 8 * getSymbolScale();
     const sfdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
     const sfdColor = cssVar('--canvas-sfd');
@@ -2264,7 +2264,7 @@ function drawAFD(labelManager) {
 
   // Value labels at the polygon midpoint (always — chkDiagLabels retired).
   {
-    const fmtN = v => (v / 1000).toFixed(2) + ' kN';
+    const fmtN = v => (v / 1000).toFixed(2) + 'kN';
     const nudge = 8 * getSymbolScale();
     const afdFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
     members.forEach((m, idx) => {
@@ -3025,7 +3025,7 @@ function renderResults(res) {
                :                        [{d:1,label:'Y'}];
     dofs.forEach(({d, label}) => {
       const raw = FG[base + d];
-      const val = d < 2 ? (raw/1000).toFixed(3)+' kN' : (raw/1000).toFixed(3)+' kNm';
+      const val = d < 2 ? (raw/1000).toFixed(3)+'kN' : (raw/1000).toFixed(3)+'kNm';
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${s.nodeId+1}</td><td>${label}</td><td>${val}</td>`;
       rBody.appendChild(tr);
