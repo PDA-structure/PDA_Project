@@ -787,8 +787,8 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   // Only add label if text is non-empty (reactions now labelled separately below supports)
   if (label) {
-    const lblX = tailX - dirX * labelGap;
-    const lblY = tailY - dirY * labelGap;
+    const lblX = tailX;
+    const lblY = tailY;
     labelManager.add({
       text: label, anchorX: node.x, anchorY: node.y,
       preferredX: lblX, preferredY: lblY,
