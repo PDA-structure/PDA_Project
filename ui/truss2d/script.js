@@ -512,8 +512,8 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
   cy /= nodes.length;
   if (nx * (mx - cx) + ny * (my - cy) < 0) { nx = -nx; ny = -ny; }
 
-  const ox = mx + nx * 14;
-  const oy = my + ny * 14;
+  const ox = mx + nx * 6;
+  const oy = my + ny * 6;
 
   const angle = Math.atan2(dy, dx);
   const fs = Math.round(8 * labelScale * getSymbolScale());
@@ -802,10 +802,10 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   ctx.restore();
 
-  // Label preferred position: beside the arrow tail, offset perpendicular
-  // so horizontal arrows label sideways (not below where they look vertical)
-  const labelX = tailX - dirX * labelGap + perpX * labelGap;
-  const labelY = tailY - dirY * labelGap + perpY * labelGap;
+  // Label preferred position: at arrow tail, offset perpendicular UPWARD
+  // so horizontal reaction labels sit above the arrow, not below it
+  const labelX = tailX - dirX * labelGap - perpX * labelGap;
+  const labelY = tailY - dirY * labelGap - perpY * labelGap;
   labelManager.add({
     text: label,
     anchorX: node.x, anchorY: node.y,

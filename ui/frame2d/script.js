@@ -1053,7 +1053,7 @@ function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
   labelManager.add({
     text,
     anchorX: mx, anchorY: my,
-    preferredX: mx + nx * 14, preferredY: my + ny * 14,
+    preferredX: mx + nx * 6, preferredY: my + ny * 6,
     priority: 40,
     color,
     font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
