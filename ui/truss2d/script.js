@@ -894,41 +894,44 @@ function drawReactions(labelManager) {
       drawForceArrow(n, dir, r, '#7b1fa2', '', labelManager, true);
     });
 
-    // Collect reaction values
-    const lines = [];
+    // Determine outside direction for horizontal reactions
+    let cx = 0;
+    for (let i = 0; i < nodes.length; i++) cx += nodes[i].x;
+    cx /= nodes.length;
+    const isLeft = n.x <= cx;
+
+    // Place each reaction label
     dirs.forEach(dir => {
       const idx = base + (dir === 'y' ? 1 : 0);
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
       const tag = dir === 'x' ? 'Rx' : 'Ry';
-      lines.push(tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN');
-    });
+      const txt = tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN';
 
-    // Position outside the structure: left supports → label left, right supports → label right
-    let cx = 0;
-    for (let i = 0; i < nodes.length; i++) cx += nodes[i].x;
-    cx /= nodes.length;
-    const isLeft = n.x <= cx;
-    const offsetX = isLeft ? -20 * sc : 20 * sc;
-    const align = isLeft ? 'right' : 'left';
-    const baseY = n.y + 20 * sc;
-
-    lines.forEach((txt, i) => {
-      labelManager.add({
-        text: txt,
-        anchorX: n.x, anchorY: n.y,
-        preferredX: n.x + offsetX, preferredY: baseY + i * (fs + 4),
-        priority: 20,
-        color: '#7b1fa2',
-        font: fs + 'px Arial',
-        fontSize: fs,
-        bgColor: 'rgba(255, 255, 255, 0.85)',
-        bgPadding: 1,
-        textAlign: align,
-        textBaseline: 'top',
-        type: 'reaction',
-        skipCollision: true,
-      });
+      if (dir === 'y') {
+        // Ry: below support, centred
+        labelManager.add({
+          text: txt, anchorX: n.x, anchorY: n.y,
+          preferredX: n.x, preferredY: n.y + 28 * sc,
+          priority: 20, color: '#7b1fa2',
+          font: fs + 'px Arial', fontSize: fs,
+          bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
+          textAlign: 'center', textBaseline: 'top',
+          type: 'reaction', skipCollision: true,
+        });
+      } else {
+        // Rx: outside the structure horizontally
+        const offsetX = isLeft ? -20 * sc : 20 * sc;
+        labelManager.add({
+          text: txt, anchorX: n.x, anchorY: n.y,
+          preferredX: n.x + offsetX, preferredY: n.y,
+          priority: 20, color: '#7b1fa2',
+          font: fs + 'px Arial', fontSize: fs,
+          bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
+          textAlign: isLeft ? 'right' : 'left', textBaseline: 'middle',
+          type: 'reaction', skipCollision: true,
+        });
+      }
     });
   });
 }
