@@ -94,6 +94,15 @@
         <button class="tool-btn" id="btnLoad" onclick="triggerLoad()" title="Load structure from JSON file">
           &#x1F4C2; Load JSON
         </button>
+        <div class="export-dropdown" style="position:relative; display:inline-block; width:100%;">
+          <button class="tool-btn" id="btnExport" onclick="toggleExportMenu()" title="Export analysis results" disabled style="width:100%">
+            &#x1F4CA; Export Analysis &#x25BE;
+          </button>
+          <div id="exportMenu" style="display:none; position:absolute; left:0; top:100%; z-index:200; background:var(--color-surface); border:1px solid var(--color-border); border-radius:4px; box-shadow:var(--shadow-md); min-width:160px;">
+            <button class="tool-btn" style="width:100%; text-align:left; border:none; border-radius:0;" onclick="exportAnalysis('presentation'); hideExportMenu()">Presentation (auto)</button>
+            <button class="tool-btn" style="width:100%; text-align:left; border:none; border-radius:0;" onclick="exportAnalysis('as-displayed'); hideExportMenu()">As displayed</button>
+          </div>
+        </div>
         <input type="file" id="fileInput" accept=".json" style="display:none">
       </details>
 

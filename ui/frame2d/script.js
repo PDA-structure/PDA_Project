@@ -880,6 +880,8 @@ async function solve() {
     document.getElementById('chkBMD').disabled = false;
     document.getElementById('chkSFD').disabled = false;
     document.getElementById('chkAFD').disabled = false;
+    var expBtn = document.getElementById('btnExport');
+    if (expBtn) expBtn.disabled = false;
     renderResults(results);
     draw();
   } catch {
@@ -1702,6 +1704,8 @@ function drawNodeLabels(labelManager) {
 
 // ── UDL arrows ────────────────────────────────────────────────────────────
 function drawUDLs(labelManager) {
+  const sc = getSymbolScale();
+
   members.forEach(m => {
     if (!m.udl) return;
     const n1 = nodes.find(n => n.id === m.start);
@@ -1709,52 +1713,59 @@ function drawUDLs(labelManager) {
     if (!n1 || !n2) return;
 
     const arrowLen = 20;
-    const sign = m.udl > 0 ? 1 : -1;   // positive = downward in canvas (y increases down)
-    const steps = Math.max(2, Math.floor(Math.hypot(n2.x-n1.x, n2.y-n1.y) / 22));
+    const chevD = 5, chevHW = 3;
+    const sign = m.udl > 0 ? 1 : -1;
+    const steps = Math.max(3, Math.floor(Math.hypot(n2.x-n1.x, n2.y-n1.y) / 18));
 
-    ctx.strokeStyle = cssVar('--canvas-udl'); ctx.fillStyle = cssVar('--canvas-udl'); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = cssVar('--canvas-udl');
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // top connecting line
+    // Connecting line at tail end
     ctx.beginPath();
     ctx.moveTo(n1.x, n1.y - arrowLen * sign);
     ctx.lineTo(n2.x, n2.y - arrowLen * sign);
     ctx.stroke();
 
-    // arrows
+    // Slim arrows with open chevron tips
     for (let i = 0; i <= steps; i++) {
       const t  = i / steps;
       const ax = n1.x + t*(n2.x - n1.x);
       const ay = n1.y + t*(n2.y - n1.y);
+      // Shaft
       ctx.beginPath();
       ctx.moveTo(ax, ay - arrowLen * sign);
       ctx.lineTo(ax, ay);
       ctx.stroke();
+      // Open chevron
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(ax - 4, ay - 8*sign);
+      ctx.moveTo(ax - chevHW, ay - chevD * sign);
       ctx.lineTo(ax, ay);
-      ctx.lineTo(ax + 4, ay - 8*sign);
-      ctx.fill();
+      ctx.lineTo(ax + chevHW, ay - chevD * sign);
+      ctx.stroke();
+      ctx.lineWidth = 1;
     }
 
-    // label via LabelManager
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
     labelManager.add({
       text: (Math.abs(m.udl)/1000).toFixed(1)+' kN/m',
       anchorX: mx, anchorY: my,
       preferredX: mx, preferredY: my - arrowLen*sign - 6,
       priority: 60,
       color: cssVar('--canvas-udl-label'),
-      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
       fontSize: fs,
-      textAlign: 'center',
-      textBaseline: 'middle',
-      type: 'udl',
+      bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+      textAlign: 'center', textBaseline: 'middle',
+      type: 'udl', skipCollision: true,
     });
   });
 
-  // Horizontal UDL (w_x) — horizontal arrows in global X direction (wind load convention)
+  // Horizontal UDL (w_x)
   members.forEach(m => {
     if (!m.udl_x) return;
     const n1 = nodes.find(n => n.id === m.start);
@@ -1762,15 +1773,19 @@ function drawUDLs(labelManager) {
     if (!n1 || !n2) return;
 
     const arrowLen = 20;
-    const sign = m.udl_x > 0 ? 1 : -1;  // positive = rightward on canvas (+X global)
+    const chevD = 5, chevHW = 3;
+    const sign = m.udl_x > 0 ? 1 : -1;
 
     const dx = n2.x - n1.x, dy = n2.y - n1.y;
     const len = Math.hypot(dx, dy) || 1;
 
-    const steps = Math.max(2, Math.floor(len / 22));
-    ctx.strokeStyle = cssVar('--canvas-udl-x'); ctx.fillStyle = cssVar('--canvas-udl-x'); ctx.lineWidth = 1.5;
+    const steps = Math.max(3, Math.floor(len / 18));
+    ctx.strokeStyle = cssVar('--canvas-udl-x');
+    ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
 
-    // Horizontal baseline along the arrow tails (offset horizontally from member)
+    // Baseline along arrow tails
     const baseOffsetX = -arrowLen * sign;
     ctx.beginPath();
     ctx.moveTo(n1.x + baseOffsetX, n1.y);
@@ -1779,36 +1794,39 @@ function drawUDLs(labelManager) {
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
-      const ax = n1.x + t * dx;   // point on member (arrow tip)
+      const ax = n1.x + t * dx;
       const ay = n1.y + t * dy;
       const tailX = ax - arrowLen * sign;
       const tailY = ay;
+      // Shaft
       ctx.beginPath();
       ctx.moveTo(tailX, tailY);
       ctx.lineTo(ax, ay);
       ctx.stroke();
+      // Open chevron
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(ax - 8 * sign, ay - 4);
-      ctx.lineTo(ax - 8 * sign, ay + 4);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(ax - chevD * sign, ay - chevHW);
+      ctx.lineTo(ax, ay);
+      ctx.lineTo(ax - chevD * sign, ay + chevHW);
+      ctx.stroke();
+      ctx.lineWidth = 1;
     }
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
     labelManager.add({
       text: (Math.abs(m.udl_x) / 1000).toFixed(1) + ' kN/m',
       anchorX: mx, anchorY: my,
       preferredX: mx - arrowLen * sign * 1.8, preferredY: my,
       priority: 60,
       color: cssVar('--canvas-udl-x-label'),
-      font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+      font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
       fontSize: fs,
-      textAlign: 'center',
-      textBaseline: 'middle',
-      type: 'udl',
+      bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+      textAlign: 'center', textBaseline: 'middle',
+      type: 'udl', skipCollision: true,
     });
   });
 }
@@ -2548,6 +2566,97 @@ function createDownloadLink(res) {
 function updateSaveButtonState() {
   const btn = document.getElementById('btnSave');
   if (btn) btn.disabled = nodes.length === 0;
+}
+
+// ── Export Analysis ───────────────────────────────────────────────────────
+function toggleExportMenu() {
+  var m = document.getElementById('exportMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function hideExportMenu() {
+  document.getElementById('exportMenu').style.display = 'none';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.export-dropdown')) hideExportMenu();
+});
+
+function exportAnalysis(mode) {
+  if (!results) return;
+  mode = mode || 'presentation';
+
+  var now = new Date();
+  var ts = now.getFullYear() + '-'
+    + String(now.getMonth() + 1).padStart(2, '0') + '-'
+    + String(now.getDate()).padStart(2, '0') + 'T'
+    + String(now.getHours()).padStart(2, '0') + '-'
+    + String(now.getMinutes()).padStart(2, '0') + '-'
+    + String(now.getSeconds()).padStart(2, '0');
+
+  // Save current state
+  var allChkIds = ['chkGrid', 'chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions',
+                   'chkDeflected', 'chkNodeIds', 'chkMemberIds', 'chkMemberForces',
+                   'chkBMD', 'chkSFD', 'chkAFD'];
+  var savedChk = {};
+  allChkIds.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) savedChk[id] = el.checked;
+  });
+  var savedView = { scale: view.scale, tx: view.tx, ty: view.ty };
+
+  if (mode === 'presentation') {
+    var onIds  = ['chkNodeIds', 'chkMemberForces', 'chkSupports', 'chkLoads', 'chkReactions'];
+    var offIds = ['chkGrid', 'chkNodeLabels', 'chkMemberIds', 'chkDeflected', 'chkBMD', 'chkSFD', 'chkAFD'];
+    onIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = true; });
+    offIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = false; });
+  } else {
+    var gridEl = document.getElementById('chkGrid');
+    if (gridEl) gridEl.checked = false;
+  }
+
+  resetView();
+  draw();
+
+  var offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  var offCtx = offscreen.getContext('2d');
+  offCtx.fillStyle = '#ffffff';
+  offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+  offCtx.drawImage(canvas, 0, 0);
+  var canvasImage = offscreen.toDataURL('image/png');
+
+  // Restore state
+  view.scale = savedView.scale;
+  view.tx = savedView.tx;
+  view.ty = savedView.ty;
+  Object.keys(savedChk).forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.checked = savedChk[id];
+  });
+  draw();
+
+  var pkg = {
+    schema_version: '1.0',
+    type: 'frame2d-analysis',
+    timestamp: now.toISOString(),
+    canvas_image: canvasImage,
+    metadata: {
+      solver: 'frame2d',
+      n_nodes: nodes.length,
+      n_members: members.length,
+    },
+    results: results,
+  };
+
+  var blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'frame2d-analysis-' + ts + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function saveModel() {
