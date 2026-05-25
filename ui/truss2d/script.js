@@ -372,6 +372,7 @@ async function solve() {
     setStatus('Solved ✓', false);
     renderResults(results);
     draw();
+    updateSaveButtonState();
   } catch (err) {
     setStatus('Cannot reach API. Is the server running?', true);
   }
