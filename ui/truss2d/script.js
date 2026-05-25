@@ -784,29 +784,34 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   ctx.restore();
 
-  // Reaction labels: centred on shaft midpoint (fixes horizontal reaction confusion)
-  // Load labels: at tail end with gap
   const midX = (tailX + apexX) / 2;
   const midY = (tailY + apexY) / 2;
-  const lblX = isReaction ? midX : tailX;
-  const lblY = isReaction ? midY : tailY;
 
-  labelManager.add({
-    text: label,
-    anchorX: node.x, anchorY: node.y,
-    preferredX: lblX, preferredY: lblY,
-    priority: isReaction ? 20 : 30,
-    color,
-    font: fs + 'px Arial',
-    fontSize: fs,
-    bgColor: isReaction ? 'rgba(255, 255, 255, 0.85)' : null,
-    bgPadding: 1,
-    haloColor: isReaction ? null : 'rgba(255, 255, 255, 0.9)',
-    haloWidth: 3,
-    textAlign: 'center',
-    textBaseline: 'middle',
-    type: isReaction ? 'reaction' : 'load',
-  });
+  if (isReaction) {
+    // Reaction label sits ON the shaft midpoint — always placed there, no collision dodge
+    labelManager.add({
+      text: label, anchorX: node.x, anchorY: node.y,
+      preferredX: midX, preferredY: midY,
+      priority: 20, color,
+      font: fs + 'px Arial', fontSize: fs,
+      bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
+      textAlign: 'center', textBaseline: 'middle',
+      type: 'reaction', skipCollision: true,
+    });
+  } else {
+    // Load label just beyond tail, reading away from the arrow
+    const lblX = tailX - dirX * labelGap;
+    const lblY = tailY - dirY * labelGap;
+    labelManager.add({
+      text: label, anchorX: node.x, anchorY: node.y,
+      preferredX: lblX, preferredY: lblY,
+      priority: 30, color,
+      font: fs + 'px Arial', fontSize: fs,
+      haloColor: 'rgba(255, 255, 255, 0.9)', haloWidth: 3,
+      textAlign: 'center', textBaseline: 'middle',
+      type: 'load',
+    });
+  }
 }
 
 function drawLoads(labelManager) {

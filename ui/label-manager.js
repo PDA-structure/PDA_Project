@@ -78,6 +78,14 @@ class LabelManager {
     const width = tw + 2 * pad;
     const height = th + pad;
 
+    // Labels that must stay at their preferred position (member forces, reactions on shaft)
+    if (label.skipCollision || label.type === 'memberForce') {
+      const px = label.preferredX != null ? label.preferredX : label.anchorX;
+      const py = label.preferredY != null ? label.preferredY : label.anchorY;
+      const box = this._makeBox(px, py, width, height, label);
+      return this._finalize(label, box, width, height, 1.0, false);
+    }
+
     const R = label.radius || 16;
     const candidates = this._getCandidates(label.anchorX, label.anchorY, R);
 
