@@ -784,22 +784,8 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 
   ctx.restore();
 
-  const midX = (tailX + apexX) / 2;
-  const midY = (tailY + apexY) / 2;
-
-  if (isReaction) {
-    // Reaction label sits ON the shaft midpoint — always placed there, no collision dodge
-    labelManager.add({
-      text: label, anchorX: node.x, anchorY: node.y,
-      preferredX: midX, preferredY: midY,
-      priority: 20, color,
-      font: fs + 'px Arial', fontSize: fs,
-      bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
-      textAlign: 'center', textBaseline: 'middle',
-      type: 'reaction', skipCollision: true,
-    });
-  } else {
-    // Load label just beyond tail, reading away from the arrow
+  // Only add label if text is non-empty (reactions now labelled separately below supports)
+  if (label) {
     const lblX = tailX - dirX * labelGap;
     const lblY = tailY - dirY * labelGap;
     labelManager.add({
@@ -886,6 +872,8 @@ function drawReactions(labelManager) {
   if (!results || !results.FG) return;
   const FG   = results.FG;
   const ZERO = 1e-3;
+  const sc   = getSymbolScale();
+  const fs   = Math.round(8 * labelScale * sc);
 
   supports.forEach(s => {
     const n = nodes.find(nd => nd.id === s.nodeId);
@@ -895,12 +883,43 @@ function drawReactions(labelManager) {
                : s.type === 'rollerX' ? ['x']
                : s.type === 'rollerY' ? ['y']
                : [];
+
+    // Draw arrows (no labels on them)
     dirs.forEach(dir => {
       const idx = base + (dir === 'y' ? 1 : 0);
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
-      const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
-      drawForceArrow(n, dir, r, '#7b1fa2', label, labelManager, true);
+      drawForceArrow(n, dir, r, '#7b1fa2', '', labelManager, true);
+    });
+
+    // Collect reaction values and label below support as Rx/Ry
+    const lines = [];
+    dirs.forEach(dir => {
+      const idx = base + (dir === 'y' ? 1 : 0);
+      const r   = FG[idx];
+      if (Math.abs(r) < ZERO) return;
+      const tag = dir === 'x' ? 'Rx' : 'Ry';
+      lines.push(tag + ' = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN');
+    });
+
+    // Place labels below the support glyph, stacked vertically
+    const baseY = n.y + 28 * sc;
+    lines.forEach((txt, i) => {
+      labelManager.add({
+        text: txt,
+        anchorX: n.x, anchorY: n.y,
+        preferredX: n.x, preferredY: baseY + i * (fs + 4),
+        priority: 20,
+        color: '#7b1fa2',
+        font: fs + 'px Arial',
+        fontSize: fs,
+        bgColor: 'rgba(255, 255, 255, 0.85)',
+        bgPadding: 1,
+        textAlign: 'center',
+        textBaseline: 'top',
+        type: 'reaction',
+        skipCollision: true,
+      });
     });
   });
 }
