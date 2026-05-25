@@ -788,8 +788,8 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
   // Load labels: at tail end with gap
   const midX = (tailX + apexX) / 2;
   const midY = (tailY + apexY) / 2;
-  const lblX = isReaction ? midX : tailX - dirX * labelGap;
-  const lblY = isReaction ? midY : tailY - dirY * labelGap;
+  const lblX = isReaction ? midX : tailX;
+  const lblY = isReaction ? midY : tailY;
 
   labelManager.add({
     text: label,
