@@ -2580,6 +2580,75 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.export-dropdown')) hideExportMenu();
 });
 
+function captureView(onIds, offIds) {
+  var allChkIds = ['chkGrid', 'chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions',
+                   'chkDeflected', 'chkNodeIds', 'chkMemberIds', 'chkMemberForces',
+                   'chkBMD', 'chkSFD', 'chkAFD'];
+  var savedChk = {};
+  allChkIds.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) savedChk[id] = el.checked;
+  });
+  var savedView = { scale: view.scale, tx: view.tx, ty: view.ty };
+
+  // Always off: grid
+  var el = document.getElementById('chkGrid');
+  if (el) el.checked = false;
+  onIds.forEach(function (id) { var e = document.getElementById(id); if (e) e.checked = true; });
+  offIds.forEach(function (id) { var e = document.getElementById(id); if (e) e.checked = false; });
+
+  // Compute tight bounding box from nodes with generous margin for labels/supports
+  var rMinX = Infinity, rMinY = Infinity, rMaxX = -Infinity, rMaxY = -Infinity;
+  for (var i = 0; i < nodes.length; i++) {
+    var rx = nodes[i].realX, ry = nodes[i].realY;
+    if (rx < rMinX) rMinX = rx; if (ry < rMinY) rMinY = ry;
+    if (rx > rMaxX) rMaxX = rx; if (ry > rMaxY) rMaxY = ry;
+  }
+  var rw = (rMaxX - rMinX) || 1, rh = (rMaxY - rMinY) || 1;
+  var margin = 0.30;
+  rMinX -= rw * margin; rMaxX += rw * margin;
+  rMinY -= rh * margin; rMaxY += rh * margin;
+  rw = rMaxX - rMinX; rh = rMaxY - rMinY;
+
+  // Size offscreen canvas to bounding box aspect ratio, max 1200px wide
+  var maxW = 1200;
+  var aspect = rw / rh;
+  var offW = Math.min(maxW, Math.round(800 * aspect));
+  var offH = Math.round(offW / aspect);
+
+  // Compute zoom-to-fit for offscreen dimensions
+  var pw = rw / UNIT * GRID, ph = rh / UNIT * GRID;
+  var sx = offW / pw, sy = offH / ph;
+  view.scale = Math.min(sx, sy);
+  var cx = origin.x + (rMinX + rw / 2) / UNIT * GRID;
+  var cy = origin.y - (rMinY + rh / 2) / UNIT * GRID;
+  view.tx = offW / 2 - cx * view.scale;
+  view.ty = offH / 2 - cy * view.scale;
+
+  // Temporarily resize main canvas to match offscreen dimensions
+  var origW = canvas.width, origH = canvas.height;
+  canvas.width = offW; canvas.height = offH;
+  draw();
+
+  var offscreen = document.createElement('canvas');
+  offscreen.width = offW; offscreen.height = offH;
+  var offCtx = offscreen.getContext('2d');
+  offCtx.fillStyle = '#ffffff';
+  offCtx.fillRect(0, 0, offW, offH);
+  offCtx.drawImage(canvas, 0, 0);
+  var dataUrl = offscreen.toDataURL('image/png');
+
+  // Restore canvas size and state
+  canvas.width = origW; canvas.height = origH;
+  view.scale = savedView.scale; view.tx = savedView.tx; view.ty = savedView.ty;
+  Object.keys(savedChk).forEach(function (id) {
+    var e = document.getElementById(id);
+    if (e) e.checked = savedChk[id];
+  });
+  draw();
+  return dataUrl;
+}
+
 function exportAnalysis(mode) {
   if (!results) return;
   mode = mode || 'presentation';
@@ -2592,54 +2661,43 @@ function exportAnalysis(mode) {
     + String(now.getMinutes()).padStart(2, '0') + '-'
     + String(now.getSeconds()).padStart(2, '0');
 
-  // Save current state
-  var allChkIds = ['chkGrid', 'chkNodeLabels', 'chkSupports', 'chkLoads', 'chkReactions',
-                   'chkDeflected', 'chkNodeIds', 'chkMemberIds', 'chkMemberForces',
-                   'chkBMD', 'chkSFD', 'chkAFD'];
-  var savedChk = {};
-  allChkIds.forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) savedChk[id] = el.checked;
-  });
-  var savedView = { scale: view.scale, tx: view.tx, ty: view.ty };
-
+  var images;
   if (mode === 'presentation') {
-    var onIds  = ['chkNodeIds', 'chkMemberForces', 'chkSupports', 'chkLoads', 'chkReactions'];
-    var offIds = ['chkGrid', 'chkNodeLabels', 'chkMemberIds', 'chkDeflected', 'chkBMD', 'chkSFD', 'chkAFD'];
-    onIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = true; });
-    offIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.checked = false; });
+    // 4 curated views
+    var baseOn  = ['chkNodeIds', 'chkSupports'];
+    var baseOff = ['chkNodeLabels', 'chkMemberIds', 'chkDeflected'];
+
+    images = [
+      { caption: 'Applied Loads & Reactions',
+        data: captureView(
+          baseOn.concat(['chkLoads', 'chkReactions', 'chkMemberForces']),
+          baseOff.concat(['chkBMD', 'chkSFD', 'chkAFD'])) },
+      { caption: 'Bending Moment Diagram (kNm)',
+        data: captureView(
+          baseOn.concat(['chkBMD']),
+          baseOff.concat(['chkLoads', 'chkReactions', 'chkMemberForces', 'chkSFD', 'chkAFD'])) },
+      { caption: 'Shear Force Diagram (kN)',
+        data: captureView(
+          baseOn.concat(['chkSFD']),
+          baseOff.concat(['chkLoads', 'chkReactions', 'chkMemberForces', 'chkBMD', 'chkAFD'])) },
+      { caption: 'Axial Force Diagram (kN)',
+        data: captureView(
+          baseOn.concat(['chkAFD', 'chkMemberForces']),
+          baseOff.concat(['chkLoads', 'chkReactions', 'chkBMD', 'chkSFD'])) },
+    ];
   } else {
-    var gridEl = document.getElementById('chkGrid');
-    if (gridEl) gridEl.checked = false;
+    // Single image: as displayed (minus grid)
+    images = [
+      { caption: 'Analysis Results (as displayed)',
+        data: captureView([], []) }
+    ];
   }
-
-  resetView();
-  draw();
-
-  var offscreen = document.createElement('canvas');
-  offscreen.width = canvas.width;
-  offscreen.height = canvas.height;
-  var offCtx = offscreen.getContext('2d');
-  offCtx.fillStyle = '#ffffff';
-  offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
-  offCtx.drawImage(canvas, 0, 0);
-  var canvasImage = offscreen.toDataURL('image/png');
-
-  // Restore state
-  view.scale = savedView.scale;
-  view.tx = savedView.tx;
-  view.ty = savedView.ty;
-  Object.keys(savedChk).forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.checked = savedChk[id];
-  });
-  draw();
 
   var pkg = {
     schema_version: '1.0',
     type: 'frame2d-analysis',
     timestamp: now.toISOString(),
-    canvas_image: canvasImage,
+    images: images,
     metadata: {
       solver: 'frame2d',
       n_nodes: nodes.length,
