@@ -1596,14 +1596,21 @@ function drawReactions(labelManager, isDark) {
   if (!results || !results.FG) return;
   const FG    = results.FG;
   const ZERO  = 1e-3;
+  const sc    = getSymbolScale();
+  const fs    = Math.round((BASE_LABEL_SIZE - 3) * labelScale * sc);
   const fcol  = cssVar('--canvas-reaction');
-  const flbl  = cssVar('--canvas-reaction-label');
   const mcol  = cssVar('--canvas-reaction-moment');
+  const lblCol = cssVar('--canvas-reaction-label');
+
+  // Centroid for left/right determination
+  let centroidX = 0;
+  for (let i = 0; i < nodes.length; i++) centroidX += nodes[i].x;
+  centroidX /= nodes.length;
 
   supports.forEach(s => {
     const n = nodes.find(nd => nd.id === s.nodeId);
     if (!n) return;
-    const base = s.nodeId * 3;  // frame2d: 3 DOF/node — [Fx, Fy, Mz]
+    const base = s.nodeId * 3;
 
     let restrained = [];
     switch (s.type) {
@@ -1618,16 +1625,53 @@ function drawReactions(labelManager, isDark) {
         break;
     }
 
+    // Draw arrows/arcs without labels
     restrained.forEach(dof => {
       const idx = dof === 'x' ? base + 0 : dof === 'y' ? base + 1 : base + 2;
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
       if (dof === 'm') {
-        const label = (Math.abs(r) / 1000).toFixed(2) + ' kNm';
-        drawMomentArc(n, r, mcol, flbl, label, { kind: 'reaction' }, labelManager, isDark);
+        drawMomentArc(n, r, mcol, lblCol, '', { kind: 'reaction' }, labelManager, isDark);
       } else {
-        const label = (Math.abs(r) / 1000).toFixed(2) + ' kN';
-        drawForceArrow(n, dof, r, fcol, flbl, label, labelManager, isDark, true);
+        drawForceArrow(n, dof, r, fcol, lblCol, '', labelManager, isDark, true);
+      }
+    });
+
+    // Place reaction labels: Ry/Mz below support, Rx outside horizontally
+    const isLeft = n.x <= centroidX;
+    let belowY = n.y + 28 * sc;
+
+    restrained.forEach(dof => {
+      const idx = dof === 'x' ? base + 0 : dof === 'y' ? base + 1 : base + 2;
+      const r   = FG[idx];
+      if (Math.abs(r) < ZERO) return;
+
+      if (dof === 'x') {
+        const tag = 'Rx = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN';
+        const offsetX = isLeft ? -20 * sc : 20 * sc;
+        labelManager.add({
+          text: tag, anchorX: n.x, anchorY: n.y,
+          preferredX: n.x + offsetX, preferredY: n.y,
+          priority: 20, color: lblCol,
+          font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY, fontSize: fs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+          textAlign: isLeft ? 'right' : 'left', textBaseline: 'middle',
+          type: 'reaction', skipCollision: true,
+        });
+      } else {
+        const tag = dof === 'y'
+          ? 'Ry = ' + (Math.abs(r) / 1000).toFixed(2) + ' kN'
+          : 'Mz = ' + (Math.abs(r) / 1000).toFixed(2) + ' kNm';
+        labelManager.add({
+          text: tag, anchorX: n.x, anchorY: n.y,
+          preferredX: n.x, preferredY: belowY,
+          priority: 20, color: lblCol,
+          font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY, fontSize: fs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+          textAlign: 'center', textBaseline: 'top',
+          type: 'reaction', skipCollision: true,
+        });
+        belowY += fs + 4;
       }
     });
   });
