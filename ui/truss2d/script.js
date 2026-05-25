@@ -559,15 +559,16 @@ function drawNodes(labelManager) {
       labelManager.add({
         text: String(n.id + 1),
         anchorX: n.x, anchorY: n.y,
-        preferredX: n.x + 8, preferredY: n.y - 8,
+        preferredX: n.x + 6, preferredY: n.y - 6,
         priority: 10,
         color: '#222',
         font: 'bold ' + fs + 'px Arial',
         fontSize: fs,
         textAlign: 'left',
         textBaseline: 'bottom',
-        radius: 12,
+        radius: 10,
         type: 'nodeId',
+        skipCollision: true,
       });
     }
   });

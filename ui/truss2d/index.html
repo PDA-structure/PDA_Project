@@ -118,16 +118,11 @@
             <input type="number" id="inputScale"      min="1"            step="10" value="100">
           </span>
         </label>
-        <label class="panel-label">Symbol size
+        <label class="panel-label">Display scale
           <span class="scale-row">
-            <input type="range"  id="inputSymbolScaleRange" min="0.5" max="2.0" step="0.1" value="1.0" onchange="document.getElementById('inputSymbolScale').value=this.value; draw()" oninput="document.getElementById('inputSymbolScale').value=this.value; draw()">
-            <input type="number" id="inputSymbolScale" value="1.0" min="0.5" max="2.0" step="0.1" onchange="document.getElementById('inputSymbolScaleRange').value=this.value; draw()" oninput="document.getElementById('inputSymbolScaleRange').value=this.value; draw()">
-          </span>
-        </label>
-        <label class="panel-label">Label size
-          <span class="scale-row">
-            <input type="range"  id="inputLabelScaleRange" min="0.5" max="2.0" step="0.1" value="1.0" onchange="document.getElementById('inputLabelScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()" oninput="document.getElementById('inputLabelScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()">
-            <input type="number" id="inputLabelScale" value="1.0" min="0.5" max="2.0" step="0.1" onchange="document.getElementById('inputLabelScaleRange').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()" oninput="document.getElementById('inputLabelScaleRange').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()">
+            <input type="range"  id="inputDisplayScaleRange" min="0.5" max="2.0" step="0.1" value="1.0" onchange="document.getElementById('inputDisplayScale').value=this.value; document.getElementById('inputSymbolScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()" oninput="document.getElementById('inputDisplayScale').value=this.value; document.getElementById('inputSymbolScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()">
+            <input type="number" id="inputDisplayScale" value="1.0" min="0.5" max="2.0" step="0.1" onchange="document.getElementById('inputDisplayScaleRange').value=this.value; document.getElementById('inputSymbolScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()" oninput="document.getElementById('inputDisplayScaleRange').value=this.value; document.getElementById('inputSymbolScale').value=this.value; labelScale=parseFloat(this.value)||1.0; draw()">
+            <input type="hidden" id="inputSymbolScale" value="1.0">
           </span>
         </label>
       </section>

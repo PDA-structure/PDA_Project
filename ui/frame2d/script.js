@@ -1103,15 +1103,16 @@ function drawNodes(labelManager) {
       labelManager.add({
         text: String(n.id + 1),
         anchorX: n.x, anchorY: n.y,
-        preferredX: n.x + 8, preferredY: n.y - 8,
+        preferredX: n.x + 6, preferredY: n.y - 6,
         priority: 10,
         color: cssVar('--canvas-label'),
         font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
         fontSize: fs,
         textAlign: 'left',
         textBaseline: 'bottom',
-        radius: 12,
+        radius: 10,
         type: 'nodeId',
+        skipCollision: true,
       });
     }
   });
@@ -2278,9 +2279,11 @@ syncScaleControls('inputScaleRange',         'inputScale',         draw);
 syncScaleControls('inputBMDScaleRange',      'inputBMDScale',      draw);
 syncScaleControls('inputSFDScaleRange',      'inputSFDScale',      draw);
 syncScaleControls('inputAFDScaleRange',      'inputAFDScale',      draw);
-syncScaleControls('inputSymbolScaleRange',   'inputSymbolScale',   draw);
-syncScaleControls('inputLabelScale',         'inputLabelScaleNum', function () {
-  labelScale = parseFloat(document.getElementById('inputLabelScale').value) || 1.0;
+syncScaleControls('inputDisplayScaleRange',  'inputDisplayScale',  function () {
+  var v = parseFloat(document.getElementById('inputDisplayScale').value) || 1.0;
+  document.getElementById('inputSymbolScale').value = v;
+  document.getElementById('inputLabelScale').value = v;
+  labelScale = v;
   draw();
 });
 
