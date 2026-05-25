@@ -1613,7 +1613,7 @@ function drawReactions(labelManager, isDark) {
   const FG    = results.FG;
   const ZERO  = 1e-3;
   const sc    = getSymbolScale();
-  const fs    = Math.round((BASE_LABEL_SIZE - 3) * labelScale * sc);
+  const fs    = Math.round(BASE_LABEL_SIZE * labelScale * sc);
   const fcol  = cssVar('--canvas-reaction');
   const mcol  = cssVar('--canvas-reaction-moment');
   const lblCol = cssVar('--canvas-reaction-label');
