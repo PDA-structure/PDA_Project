@@ -117,6 +117,20 @@
         <label>A (cm²)
           <input type="number" id="inputA" value="100" min="0" step="1">
         </label>
+        <hr style="margin:6px 0;border:none;border-top:1px solid var(--border)">
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkSelfWeight"> Include self-weight
+        </label>
+        <label>Density (kg/m<sup>3</sup>)
+          <input type="number" id="inputDensity" value="7850" min="0" step="50">
+        </label>
+      </details>
+
+      <details class="card" id="sectionsSummaryCard">
+        <summary>Sections in Use</summary>
+        <div id="sectionsSummaryBody" style="font-size:11px;line-height:1.6;color:var(--fg-muted,#666);">
+          No sections assigned. Use <em>Member Props</em> mode to assign catalog sections.
+        </div>
       </details>
 
       <details class="card">
@@ -180,6 +194,7 @@
           <div class="display-col">
             <label class="checkbox-label"><input type="checkbox" id="chkNodeIds" checked> Show node IDs</label>
             <label class="checkbox-label"><input type="checkbox" id="chkMemberIds"> Show member IDs</label>
+            <label class="checkbox-label"><input type="checkbox" id="chkSectionIds"> Show section IDs</label>
             <label class="checkbox-label"><input type="checkbox" id="chkMemberForces" checked> Show member forces</label>
             <label class="checkbox-label"><input type="checkbox" id="chkNodeLabels"> Node labels</label>
             <label id="deflectionScaleLabel">Deflection scale
@@ -246,6 +261,9 @@
         <canvas id="canvas" width="1000" height="620"></canvas>
       </main>
 
+      <!-- Draggable divider between canvas and results -->
+      <div id="resizeDivider" style="display:none"></div>
+
       <!-- Results sidebar (right column, appears when SOLVE runs) -->
       <div class="results-panel" id="resultsPanel" style="display:none">
         <div class="results-grid">
@@ -255,11 +273,11 @@
             <table id="tableMemberActions">
               <thead>
                 <tr>
-                  <th>Mbr</th><th>Nodes</th><th>Type</th>
-                  <th>Axial (kN)</th>
+                  <th>Mbr</th><th>Nodes</th><th>Type</th><th>Section</th>
+                  <th>N_i (kN)</th><th>N_j (kN)</th>
                   <th>V_i (kN)</th><th>V_j (kN)</th>
                   <th>M_i (kNm)</th><th>M_j (kNm)</th>
-                  <th>&sigma; (MPa)</th>
+                  <th>&sigma;_i (MPa)</th><th>&sigma;_j (MPa)</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -300,6 +318,12 @@
   <!-- UDL floating panel -->
   <div id="udlPanel">
     <div class="panel-title" id="udlPanelTitle">UDL — Member ?</div>
+    <label>Direction
+      <select id="udlDir">
+        <option value="global">Global (vertical ↓)</option>
+        <option value="local">Local (⊥ to member)</option>
+      </select>
+    </label>
     <label>
       w<sub>y</sub> (N/m, + = downward)
       <input type="number" id="udlWy" step="100">
@@ -337,7 +361,47 @@
     </div>
   </div>
 
+  <!-- Member properties floating panel -->
+  <div id="memberPropsPanel">
+    <div class="panel-title" id="memberPropsPanelTitle">Member ? — Properties</div>
+    <label>Section type
+      <select id="mpSectionType">
+        <option value="Custom">Custom</option>
+        <option value="UKB">UKB — Universal Beam</option>
+        <option value="UKC">UKC — Universal Column</option>
+      </select>
+    </label>
+    <label id="mpSizeLabel">Size
+      <select id="mpSectionSize">
+        <option value="">(select)</option>
+      </select>
+    </label>
+    <label>Steel grade
+      <select id="mpGrade">
+        <option value="S275">S275</option>
+        <option value="S355">S355</option>
+        <option value="S460">S460</option>
+      </select>
+    </label>
+    <div id="mpSectionInfo" style="font-size:11px;color:var(--fg-muted,#666);margin:4px 0;"></div>
+    <label>E (GPa)
+      <input type="number" id="mpE" step="1" min="0">
+    </label>
+    <label id="mpALabel">A (cm²)
+      <input type="number" id="mpA" step="1" min="0">
+    </label>
+    <label id="mpILabel">I (cm⁴)
+      <input type="number" id="mpI" step="100" min="0">
+    </label>
+    <div class="panel-actions">
+      <button id="mpResetBtn">Reset to Global</button>
+      <button id="mpCancelBtn">Cancel</button>
+      <button id="mpApplyBtn">Apply</button>
+    </div>
+  </div>
+
   <script src="../label-manager.js"></script>
+  <script src="sections.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

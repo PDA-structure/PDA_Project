@@ -15,6 +15,7 @@ class LabelManager {
     this._placed = [];
     this._ctx = config.ctx;
     this._memberLines = config.members || [];
+    this._dpr = config.dpr || 1;
   }
 
   /**
@@ -62,10 +63,11 @@ class LabelManager {
         ctx.stroke();
       }
 
-      // Switch to screen space for crisp text rendering
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const sx = p.renderX * t.a + t.e;
-      const sy = p.renderY * t.d + t.f;
+      // Switch to screen space (DPR-scaled) for crisp text rendering
+      const d = this._dpr;
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+      const sx = (p.renderX * t.a + t.e) / d;
+      const sy = (p.renderY * t.d + t.f) / d;
 
       if (p.rotation != null) {
         ctx.translate(sx, sy);

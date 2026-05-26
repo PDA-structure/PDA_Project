@@ -436,7 +436,9 @@ canvas {
   border-radius: var(--radius-md);
   cursor: crosshair;
   display: block;
-  max-width: 100%;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
   box-shadow: var(--shadow-sm);
 }
 
@@ -447,6 +449,19 @@ canvas {
   flex: 1;
   min-height: 0;
   gap: var(--space-2);
+}
+
+/* ── Resize divider between canvas and results ─────────────── */
+#resizeDivider {
+  width: 6px;
+  cursor: col-resize;
+  background: var(--color-border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#resizeDivider:hover,
+#resizeDivider.active {
+  background: var(--color-accent);
 }
 
 /* ── Results panel (right sidebar, vertical column) ──────────── */
@@ -514,7 +529,8 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
 
 /* ── UDL & Spring floating panels — token-driven (260505-sq0) ── */
 #udlPanel,
-#springPanel {
+#springPanel,
+#memberPropsPanel {
   display: none;             /* JS toggles to 'block' */
   position: fixed;
   top: 50%;
@@ -529,11 +545,22 @@ td:first-child, td:nth-child(2), td:nth-child(3) { text-align: center; }
   color: var(--color-fg);
 }
 
-#udlPanel   { border: 1px solid var(--color-info-border);          min-width: 240px; }
-#springPanel{ border: 1px solid var(--color-accent-spring-border); min-width: 260px; }
+#udlPanel        { border: 1px solid var(--color-info-border);          min-width: 240px; }
+#springPanel     { border: 1px solid var(--color-accent-spring-border); min-width: 260px; }
+#memberPropsPanel{ border: 1px solid var(--color-info-border);          min-width: 280px; }
 
 #udlPanel .panel-title,
-#springPanel .panel-title { font-weight: 600; margin-bottom: 10px; font-size: 13px; }
+#springPanel .panel-title,
+#memberPropsPanel .panel-title { font-weight: 600; margin-bottom: 10px; font-size: 13px; }
+
+#memberPropsPanel label { display: block; margin: 6px 0; font-size: 12px; color: var(--color-fg-strong); }
+#memberPropsPanel select,
+#memberPropsPanel input[type="number"] {
+  width: 100%; font-size: 12px; padding: 4px 6px;
+  border: 1px solid var(--color-border); border-radius: 4px;
+  background: var(--color-surface); color: var(--color-fg);
+}
+#memberPropsPanel .panel-actions { margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end; }
 
 #udlPanel label {
   display: block;

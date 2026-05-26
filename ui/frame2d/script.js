@@ -73,6 +73,18 @@ const API_URL = ''; // relative — UI is served from the same FastAPI process
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
 
+// ── HiDPI (Retina) canvas scaling ────────────────────────────────────────
+let dpr = window.devicePixelRatio || 1;
+let LOGICAL_W, LOGICAL_H;
+function setupHiDPI() {
+  const rect = canvas.getBoundingClientRect();
+  LOGICAL_W = rect.width;
+  LOGICAL_H = rect.height;
+  canvas.width  = Math.round(LOGICAL_W * dpr);
+  canvas.height = Math.round(LOGICAL_H * dpr);
+}
+setupHiDPI();
+
 // ── CSS variable bridge ───────────────────────────────────────────────────
 // Reads a CSS custom property from :root (light) or [data-theme="dark"] (dark).
 // Used by every canvas-drawing function so colours follow the active theme.
@@ -131,8 +143,8 @@ let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy 
 
 function toWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const px = (clientX - rect.left) * (canvas.width  / rect.width);
-  const py = (clientY - rect.top)  * (canvas.height / rect.height);
+  const px = (clientX - rect.left) * (LOGICAL_W / rect.width);
+  const py = (clientY - rect.top)  * (LOGICAL_H / rect.height);
   return { x: (px - view.tx) / view.scale, y: (py - view.ty) / view.scale };
 }
 
@@ -155,13 +167,13 @@ function resetView() {
   rh = rMaxY - rMinY;
   var pw = rw / UNIT * GRID;
   var ph = rh / UNIT * GRID;
-  var sx = canvas.width  / pw;
-  var sy = canvas.height / ph;
+  var sx = LOGICAL_W / pw;
+  var sy = LOGICAL_H / ph;
   view.scale = Math.min(sx, sy);
   var cx = origin.x + (rMinX + rw / 2) / UNIT * GRID;
   var cy = origin.y - (rMinY + rh / 2) / UNIT * GRID;
-  view.tx = canvas.width  / 2 - cx * view.scale;
-  view.ty = canvas.height / 2 - cy * view.scale;
+  view.tx = LOGICAL_W / 2 - cx * view.scale;
+  view.ty = LOGICAL_H / 2 - cy * view.scale;
   draw();
 }
 
@@ -236,6 +248,9 @@ canvas.addEventListener('click', e => {
           pinRight: false,
           udl: null,
           udl_x: null,
+          udl_dir: 'global',
+          section: null,
+          grade: 'S275',
           E_override: null,
           I_override: null,
           A_override: null,
@@ -295,6 +310,7 @@ canvas.addEventListener('click', e => {
       _udlActiveMemberIdx = mi;
       const m = members[mi];
       document.getElementById('udlPanelTitle').textContent = 'UDL — Member ' + (mi + 1);
+      document.getElementById('udlDir').value = m.udl_dir || 'global';
       document.getElementById('udlWy').value = m.udl !== null && m.udl !== undefined ? m.udl : '';
       document.getElementById('udlWx').value = m.udl_x !== null && m.udl_x !== undefined ? m.udl_x : '';
       document.getElementById('udlPanel').style.display = 'block';
@@ -331,6 +347,7 @@ canvas.addEventListener('click', e => {
       } else {
         _udlActiveMemberIdx = mi;
         document.getElementById('udlPanelTitle').textContent = 'Edit UDL — Member ' + (mi + 1);
+        document.getElementById('udlDir').value = m.udl_dir || 'global';
         document.getElementById('udlWy').value = m.udl !== null && m.udl !== undefined ? m.udl : '';
         document.getElementById('udlWx').value = m.udl_x !== null && m.udl_x !== undefined ? m.udl_x : '';
         document.getElementById('udlPanel').style.display = 'block';
@@ -363,52 +380,23 @@ canvas.addEventListener('click', e => {
       results = null;
     }
 
-  // ---- Per-member E/I/A overrides ----
+  // ---- Per-member properties (floating panel) ----
+  // Shift+click toggles multi-select; plain click opens panel for one or all selected.
   } else if (mode === 'memberProps') {
     const mi = findMemberAt(px, py);
     if (mi !== null) {
-      const m = members[mi];
-      const globalE = parseFloat(document.getElementById('inputE').value) || 200;
-      const globalI = parseFloat(document.getElementById('inputI').value) || 10000;
-      const globalA = parseFloat(document.getElementById('inputA').value) || 100;
-      const curE = m.E_override != null ? m.E_override : globalE;
-      const curI = m.I_override != null ? m.I_override : globalI;
-      const curA = m.A_override != null ? m.A_override : globalA;
-      const srcE = m.E_override != null ? 'override' : 'global';
-      const srcI = m.I_override != null ? 'override' : 'global';
-      const srcA = m.A_override != null ? 'override' : 'global';
-      var info = 'Member ' + (mi + 1) + ' current values:\n'
-        + '  E = ' + curE + ' GPa (' + srcE + ')\n'
-        + '  I = ' + curI + ' cm\u2074 (' + srcI + ')\n'
-        + '  A = ' + curA + ' cm\u00B2 (' + srcA + ')\n\n'
-        + 'Choose action:';
-      var action = prompt(info + '\n\nType "edit" to change values, "reset" to clear overrides, or Cancel to keep as-is.', 'edit');
-      if (action === null) { /* cancelled */ }
-      else if (action.trim().toLowerCase() === 'reset') {
-        saveHistory();
-        m.E_override = null;
-        m.I_override = null;
-        m.A_override = null;
-        results = null;
-        setStatus('Member ' + (mi + 1) + ' reset to global values');
+      if (e.shiftKey) {
+        members[mi]._selected = !members[mi]._selected;
+        draw();
       } else {
-        var eInput = prompt('Member ' + (mi + 1) + ' \u2014 E (GPa):', String(curE));
-        if (eInput !== null && eInput.trim() !== '') {
-          var val = parseFloat(eInput);
-          if (!isNaN(val)) { saveHistory(); m.E_override = val; results = null; }
-        }
-        var iInput = prompt('Member ' + (mi + 1) + ' \u2014 I (cm\u2074):', String(curI));
-        if (iInput !== null && iInput.trim() !== '') {
-          var val = parseFloat(iInput);
-          if (!isNaN(val)) { saveHistory(); m.I_override = val; results = null; }
-        }
-        var aInput = prompt('Member ' + (mi + 1) + ' \u2014 A (cm\u00B2):', String(curA));
-        if (aInput !== null && aInput.trim() !== '') {
-          var val = parseFloat(aInput);
-          if (!isNaN(val)) { saveHistory(); m.A_override = val; results = null; }
+        const selected = members.filter(m => m._selected).map((m, i) => members.indexOf(m));
+        if (selected.length > 0 && members[mi]._selected) {
+          openMemberPropsPanel(selected);
+        } else {
+          members.forEach(m => { m._selected = false; });
+          openMemberPropsPanel(mi);
         }
       }
-      draw();
     }
 
   // ---- Edit node ----
@@ -521,6 +509,7 @@ function resetAll() {
   panStartX = 0; panStartY = 0; panStartTx = 0; panStartTy = 0;
   if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
   document.getElementById('resultsPanel').style.display = 'none';
+  document.getElementById('resizeDivider').style.display = 'none';
   document.getElementById('udlPanel').style.display = 'none';
   const sp = document.getElementById('springPanel');
   if (sp) sp.style.display = 'none';
@@ -771,44 +760,92 @@ async function solve() {
     if (l.direction === 'moment') forceVector[base + 2] = l.magnitude;
   });
 
-  // ENForces & ENMoments from vertical UDLs.
-  // For inclined members, vertical (gravity) UDL decomposes into:
-  //   - Local TRANSVERSE component (w * cos θ): handled via ENForces/ENMoments
-  //   - Local AXIAL component (-w * sin θ): added directly to forceVector at each endpoint
-  // Both components are required for correct global equilibrium (Fy reactions).
-  const ENForces  = members.map(m => {
-    if (!m.udl || m.type === 'bar') return [0, 0];
-    const L = memberLengthReal(m);
-    const theta = memberAngle(m);
-    const q_local_y = -m.udl * Math.cos(theta);  // local transverse component of global-Y load
-    return [q_local_y * L / 2, q_local_y * L / 2];
-  });
-  const ENMoments = members.map(m => {
-    if (!m.udl || m.type === 'bar') return [0, 0];
-    const L = memberLengthReal(m);
-    const theta = memberAngle(m);
-    const q_local_y = -m.udl * Math.cos(theta);
-    return [q_local_y * L * L / 12, -q_local_y * L * L / 12];
-  });
+  // ── Self-weight ──────────────────────────────────────────────────────────
+  // When enabled, auto-compute a global-vertical UDL per member from density
+  // and cross-sectional area: w_sw = ρ × g × A (N/m, downward = positive).
+  const swEnabled = document.getElementById('chkSelfWeight').checked;
+  const swDensity = parseFloat(document.getElementById('inputDensity').value) || 0;
 
-  // Axial component of vertical UDL on inclined members → add to forceVector
-  // q_axial = -w * sin(theta); global force at each node: (q_axial*L/2) * (cos θ, sin θ)
-  members.forEach(m => {
-    if (!m.udl || m.type === 'bar') return;
+  // ── UDL decomposition ──────────────────────────────────────────────────
+  // Each member may carry:
+  //   1. User-applied w_y UDL — direction per m.udl_dir ('global' or 'local')
+  //   2. Self-weight — always global vertical
+  //
+  // Global UDL on inclined members decomposes into:
+  //   - Transverse: w * cos θ  → ENForces / ENMoments
+  //   - Axial:     -w * sin θ  → forceVector point loads + ENAxialForces
+  //
+  // Local UDL is already perpendicular to the member:
+  //   - Transverse: w directly  → ENForces / ENMoments
+  //   - Axial: none
+  const ENForces      = [];
+  const ENMoments     = [];
+  const ENAxialForces = [];
+
+  members.forEach((m, idx) => {
+    if (m.type === 'bar') { ENForces.push([0,0]); ENMoments.push([0,0]); ENAxialForces.push([0,0]); return; }
+
+    const L     = memberLengthReal(m);
     const theta = memberAngle(m);
-    const sinT = Math.sin(theta);
-    if (Math.abs(sinT) < 1e-9) return;  // horizontal member: no axial component
-    const L   = memberLengthReal(m);
-    const q_ax = -m.udl * sinT;          // local axial load per unit length
-    const Nx   = q_ax * L / 2;           // axial force at each node
-    const fxi  = Nx * Math.cos(theta);
-    const fyi  = Nx * sinT;
-    const bi   = m.start * 3;            // 0-based forceVector index for start node
-    const bj   = m.end   * 3;
-    forceVector[bi]     += fxi;
-    forceVector[bi + 1] += fyi;
-    forceVector[bj]     += fxi;
-    forceVector[bj + 1] += fyi;
+    const cosT  = Math.cos(theta);
+    const sinT  = Math.sin(theta);
+    const dir   = m.udl_dir || 'global';
+
+    // Separate dead (self-weight) and user (applied UDL) contributions.
+    // Both accumulate into transverse and axial totals. The separation
+    // prepares the data structure for factored load combinations later
+    // (e.g. 1.35G + 1.5Q per EC0) — currently summed unfactored.
+    let dead_q_trans = 0, dead_q_axial = 0;
+    let user_q_trans = 0, user_q_axial = 0;
+
+    // (a) User-applied w_y — direction per m.udl_dir
+    if (m.udl) {
+      if (dir === 'local') {
+        user_q_trans = -m.udl;
+      } else {
+        user_q_trans = -m.udl * cosT;
+        user_q_axial = -m.udl * sinT;
+      }
+    }
+
+    // (b) Self-weight — always global vertical
+    if (swEnabled) {
+      let w_sw = 0;
+      if (m.mass_per_m) {
+        w_sw = m.mass_per_m * 9.81;
+      } else if (swDensity > 0) {
+        const A_m = Array.isArray(A) ? A[idx] : A;
+        w_sw = swDensity * 9.81 * A_m;
+      }
+      if (w_sw > 0) {
+        dead_q_trans = -w_sw * cosT;
+        dead_q_axial = -w_sw * sinT;
+      }
+    }
+
+    // Combine (unfactored — factors come with load combinations)
+    const q_trans = dead_q_trans + user_q_trans;
+    const q_axial = dead_q_axial + user_q_axial;
+
+    // ENForces / ENMoments from transverse component
+    ENForces.push( [q_trans * L / 2,       q_trans * L / 2]);
+    ENMoments.push([q_trans * L * L / 12, -q_trans * L * L / 12]);
+
+    // Axial component → forceVector point loads + ENAxialForces
+    if (Math.abs(q_axial) > 1e-9) {
+      const Nx  = q_axial * L / 2;
+      const fxi = Nx * cosT;
+      const fyi = Nx * sinT;
+      const bi  = m.start * 3;
+      const bj  = m.end   * 3;
+      forceVector[bi]     += fxi;
+      forceVector[bi + 1] += fyi;
+      forceVector[bj]     += fxi;
+      forceVector[bj + 1] += fyi;
+      ENAxialForces.push([Nx, Nx]);
+    } else {
+      ENAxialForces.push([0, 0]);
+    }
   });
 
   const bars        = members.map((m,i) => m.type === 'bar'   ? i+1 : null).filter(Boolean);
@@ -822,7 +859,7 @@ async function solve() {
     solver: 'frame_v2',
     nodes:   nodes.map(n => [n.realX, n.realY]),
     members: members.map(m => [m.start + 1, m.end + 1]),
-    ENForces, ENMoments, forceVector,
+    ENForces, ENMoments, forceVector, ENAxialForces,
     E, I, A,
     bars, beamPinLeft, beamPinRight,
     restrainedDoF,
@@ -910,7 +947,7 @@ function draw() {
   try {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
+  ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, dpr * view.tx, dpr * view.ty);
 
   // Build member obstacle lines and create a fresh LabelManager for this frame
   const memberLines = members.map(m => {
@@ -918,7 +955,7 @@ function draw() {
     const n2 = nodes.find(n => n.id === m.end);
     return (n1 && n2) ? { x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y } : null;
   }).filter(Boolean);
-  const labelManager = new LabelManager({ ctx, members: memberLines });
+  const labelManager = new LabelManager({ ctx, members: memberLines, dpr });
 
   // Compute isDark once for theme-aware label colours
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -943,6 +980,7 @@ function draw() {
     if (!chkR || chkR.checked) drawReactions(labelManager, isDark);
   }
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
+  if (document.getElementById('chkSectionIds')?.checked) drawSectionIds();
   if (document.getElementById('chkNodeLabels') && document.getElementById('chkNodeLabels').checked) {
     drawNodeLabels(labelManager);
   }
@@ -967,9 +1005,9 @@ function drawGrid() {
   ctx.lineWidth = 0.5 / view.scale;   // keep lines visually 0.5 px regardless of zoom
 
   const worldLeft   = (0             - view.tx) / view.scale;
-  const worldRight  = (canvas.width  - view.tx) / view.scale;
-  const worldTop    = (0             - view.ty) / view.scale;
-  const worldBottom = (canvas.height - view.ty) / view.scale;
+  const worldRight  = (LOGICAL_W - view.tx) / view.scale;
+  const worldTop    = (0         - view.ty) / view.scale;
+  const worldBottom = (LOGICAL_H - view.ty) / view.scale;
 
   const xStart = Math.floor(worldLeft   / GRID) * GRID;
   const xEnd   = Math.ceil (worldRight  / GRID) * GRID;
@@ -999,7 +1037,8 @@ function drawMembers(labelManager, isDark) {
     // colour from results
     let color = m.type === 'bar' ? cssVar('--canvas-bar') : cssVar('--canvas-stroke');
     if (results && results.member_forces) {
-      const f = results.member_forces[idx];
+      const fArr = results.member_forces[idx];
+      const f = Math.abs(fArr[0]) >= Math.abs(fArr[1]) ? fArr[0] : fArr[1];
       const isZero = Math.abs(f) < 1e-3;
       color = isZero ? cssVar('--canvas-zero')
             : (f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression'));
@@ -1014,15 +1053,16 @@ function drawMembers(labelManager, isDark) {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // override indicator — blue outline when member has per-member E/I/A
-    if (m.E_override != null || m.I_override != null || m.A_override != null) {
-      ctx.strokeStyle = cssVar('--canvas-member-preview');
-      ctx.lineWidth = 4;
-      ctx.setLineDash([]);
+    // selection highlight for multi-select in memberProps mode
+    if (m._selected) {
+      ctx.strokeStyle = '#FF9800';
+      ctx.lineWidth = 5;
+      ctx.setLineDash([8, 4]);
       ctx.beginPath();
       ctx.moveTo(n1.x, n1.y);
       ctx.lineTo(n2.x, n2.y);
       ctx.stroke();
+      ctx.setLineDash([]);
     }
 
     // pin release circles
@@ -1037,7 +1077,7 @@ function drawMembers(labelManager, isDark) {
 
 function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
   const mx = (n1.x + n2.x) / 2, my = (n1.y + n2.y) / 2;
-  const fs = Math.round((BASE_LABEL_SIZE - 3) * labelScale * getSymbolScale());
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
 
   labelManager.add({
     text,
@@ -1053,6 +1093,70 @@ function drawMemberLabel(n1, n2, text, color, labelManager, isDark) {
     textBaseline: 'middle',
     radius: 14,
     type: 'memberForce',
+  });
+}
+
+// ── Section colour palette ────────────────────────────────────────────────
+const SECTION_COLOURS = [
+  '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', '#00BCD4',
+  '#E91E63', '#795548', '#607D8B',
+];
+const _sectionColourCache = {};
+function sectionColour(designation) {
+  if (!designation) return null;
+  if (_sectionColourCache[designation]) return _sectionColourCache[designation];
+  let hash = 0;
+  for (let i = 0; i < designation.length; i++) hash = ((hash << 5) - hash + designation.charCodeAt(i)) | 0;
+  const col = SECTION_COLOURS[Math.abs(hash) % SECTION_COLOURS.length];
+  _sectionColourCache[designation] = col;
+  return col;
+}
+
+function drawSectionIds() {
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+  const pad = 3;
+  const t = ctx.getTransform();
+  const d = dpr;
+  members.forEach((m, idx) => {
+    if (!m.section) return;
+    const n1 = nodes.find(n => n.id === m.start);
+    const n2 = nodes.find(n => n.id === m.end);
+    if (!n1 || !n2) return;
+
+    const mx = (n1.x + n2.x) / 2;
+    const my = (n1.y + n2.y) / 2;
+    const text = m.section.size || m.section.designation;
+    const col = sectionColour(m.section.designation);
+    const font = 'bold ' + fs + 'px ' + MONO_FONT_FAMILY;
+
+    // Member angle — keep text readable (flip if it would be upside-down)
+    let angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
+    if (angle > Math.PI / 2)  angle -= Math.PI;
+    if (angle < -Math.PI / 2) angle += Math.PI;
+
+    ctx.save();
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    const sx = (mx * t.a + t.e) / d;
+    const sy = (my * t.d + t.f) / d;
+
+    ctx.translate(sx, sy);
+    ctx.rotate(angle);
+
+    ctx.font = font;
+    const tw = ctx.measureText(text).width;
+    const rw = tw + pad * 2;
+    const rh = fs + pad * 2;
+
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.roundRect(-rw / 2, -rh / 2, rw, rh, 3);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
   });
 }
 
@@ -1075,14 +1179,14 @@ function drawPinCircle(x1, y1, x2, y2, end) {
 function drawMemberIdLabel(n1, n2, idx, labelManager) {
   const mx = (n1.x + n2.x) / 2;
   const my = (n1.y + n2.y) / 2;
-  const fs = Math.round((BASE_LABEL_SIZE - 3) * labelScale * getSymbolScale());
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
   labelManager.add({
     text: 'M' + (idx + 1),
     anchorX: mx, anchorY: my,
     preferredX: mx, preferredY: my - 8,
     priority: 35,
     color: cssVar('--canvas-label'),
-    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
+    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
     bgColor: cssVar('--canvas-label-bg'),
     bgPadding: 1,
@@ -1094,8 +1198,8 @@ function drawMemberIdLabel(n1, n2, idx, labelManager) {
 }
 
 function drawNodes(labelManager) {
-  const r = 5 * getSymbolScale();
-  const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * getSymbolScale() + 1);
+  const r = 2.5 * getSymbolScale();
+  const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
   const showNodeIds = document.getElementById('chkNodeIds')?.checked;
   nodes.forEach(n => {
     ctx.beginPath();
@@ -1106,10 +1210,10 @@ function drawNodes(labelManager) {
       labelManager.add({
         text: String(n.id + 1),
         anchorX: n.x, anchorY: n.y,
-        preferredX: n.x + 6, preferredY: n.y - 6,
+        preferredX: n.x + 3, preferredY: n.y - 3,
         priority: 10,
         color: cssVar('--canvas-label'),
-        font: 'bold ' + fs + 'px ' + LABEL_FONT_FAMILY,
+        font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
         fontSize: fs,
         textAlign: 'left',
         textBaseline: 'bottom',
@@ -1321,14 +1425,14 @@ function drawSpring(x, y, Kx, Ky, Ktheta, labelManager) {
   if (Ky     != null) labelParts.push('Ky=' + Ky + 'kN/m');
   if (Ktheta != null) labelParts.push('Kθ=' + Ktheta + 'kN·m/rad');
   if (labelParts.length && labelManager) {
-    const fs = Math.round(BASE_LABEL_SIZE * 0.9 * labelScale * getSymbolScale());
+    const fs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
     labelManager.add({
       text: labelParts.join(' · '),
       anchorX: x, anchorY: y,
       preferredX: x + 10 * sc, preferredY: y - 10 * sc,
       priority: 70,
       color: cssVar('--canvas-spring'),
-      font: fs + 'px ' + MONO_FONT_FAMILY,
+      font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
       fontSize: fs,
       textAlign: 'left',
       textBaseline: 'middle',
@@ -1385,7 +1489,7 @@ function drawLegend() {
   // size without freezing the larger-text use case.
   const sc = Math.max(1.0, getSymbolScale());
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);  // screen-space — pan/zoom must NOT move/scale the legend
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);  // DPR-scaled screen-space
 
   const fs      = Math.round(12 * sc);
   const lh      = Math.round(17 * sc);
@@ -1395,12 +1499,12 @@ function drawLegend() {
   const gap     = Math.round(8 * sc);
   const margin  = Math.round(10 * sc);
 
-  ctx.font = `600 ${fs}px ${LABEL_FONT_FAMILY}`;
+  ctx.font = `500 ${fs}px ${MONO_FONT_FAMILY}`;
   let maxTextW = 0;
   items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
   const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
   const boxH = padY * 2 + items.length * lh;
-  const x0 = canvas.width - boxW - margin;
+  const x0 = LOGICAL_W - boxW - margin;
   const y0 = margin;
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1458,12 +1562,12 @@ function drawHaloedLabel(x, y, text, color) {
 // both drawNodeLoads (loads) and drawReactions (reactions).
 function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelManager, isDark, isReaction) {
   const sc        = getSymbolScale();
-  const arrowLen  = 24 * sc;
-  const chevronD  = 6 * sc;
-  const chevronHW = 4 * sc;
+  const arrowLen  = 16 * sc;
+  const chevronD  = 4 * sc;
+  const chevronHW = 3 * sc;
   const apexGap   = 2 * sc;
   const fs        = Math.round(BASE_LABEL_SIZE * labelScale * sc);
-  const labelGap  = 12 * sc;
+  const labelGap  = 8 * sc;
 
   let dirX = 0, dirY = 0;
   if (axis === 'y') dirY = forceValue > 0 ? -1 : 1;
@@ -1481,7 +1585,7 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
 
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth   = 1.5;
+  ctx.lineWidth   = 1;
   ctx.lineCap     = 'round';
   ctx.lineJoin    = 'round';
 
@@ -1489,13 +1593,13 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
   if (isReaction) {
     var bgStyle = isDark ? 'rgba(13, 17, 23, 0.9)' : 'rgba(255, 255, 255, 0.9)';
     ctx.strokeStyle = bgStyle;
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.moveTo(tailX, tailY);
     ctx.lineTo(apexX, apexY);
     ctx.stroke();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1;
   }
 
   // Shaft: tail → apex
@@ -1505,7 +1609,7 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
   ctx.stroke();
 
   // Open chevron head
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(chevBaseX + perpX * chevronHW, chevBaseY + perpY * chevronHW);
   ctx.lineTo(apexX, apexY);
@@ -1514,29 +1618,33 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
 
   ctx.restore();
 
-  // Reaction labels: centred on shaft midpoint
-  // Load labels: at tail end with gap
-  const midX = (tailX + apexX) / 2;
-  const midY = (tailY + apexY) / 2;
-  const lblX = isReaction ? midX : tailX - dirX * labelGap;
-  const lblY = isReaction ? midY : tailY - dirY * labelGap;
-
-  labelManager.add({
-    text: label,
-    anchorX: node.x, anchorY: node.y,
-    preferredX: lblX, preferredY: lblY,
-    priority: isReaction ? 20 : 30,
-    color: labelColor,
-    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
-    fontSize: fs,
-    bgColor: isReaction ? cssVar('--canvas-label-bg') : null,
-    bgPadding: 1,
-    haloColor: isReaction ? null : (isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)'),
-    haloWidth: 4,
-    textAlign: 'center',
-    textBaseline: 'middle',
-    type: isReaction ? 'reaction' : 'load',
-  });
+  if (isReaction) {
+    // Reaction labels still go through label manager
+    const midX = (tailX + apexX) / 2;
+    const midY = (tailY + apexY) / 2;
+    labelManager.add({
+      text: label,
+      anchorX: node.x, anchorY: node.y,
+      preferredX: midX, preferredY: midY,
+      priority: 20, color: labelColor,
+      font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+      bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+      textAlign: 'center', textBaseline: 'middle', type: 'reaction',
+    });
+  } else if (label) {
+    const font = '500 ' + fs + 'px ' + MONO_FONT_FAMILY;
+    const lblX = tailX - dirX * labelGap;
+    const lblY = tailY - dirY * labelGap;
+    labelManager.add({
+      text: label, anchorX: lblX, anchorY: lblY,
+      preferredX: lblX, preferredY: lblY,
+      priority: 25, color: labelColor,
+      font: font, fontSize: fs,
+      bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
+      textAlign: axis === 'y' ? 'center' : (dirX > 0 ? 'right' : 'left'),
+      textBaseline: 'middle', type: 'load', skipCollision: true,
+    });
+  }
 }
 
 // Moment arc with V-style arrowhead at the end of the arc. Used by both
@@ -1546,8 +1654,8 @@ function drawForceArrow(node, axis, forceValue, color, labelColor, label, labelM
 function drawMomentArc(node, momentValue, color, labelColor, label, opts, labelManager, isDark) {
   const sc      = getSymbolScale();
   const kind    = (opts && opts.kind) || 'reaction';
-  const r       = (kind === 'load' ? 14 : 18) * sc;
-  const arrowSz = 5 * sc;
+  const r       = (kind === 'load' ? 10 : 13) * sc;
+  const arrowSz = 4 * sc;
   const fs      = Math.round(BASE_LABEL_SIZE * labelScale * sc);
   const sign    = momentValue > 0 ? 1 : -1;  // + = CCW (mathematical / world convention)
 
@@ -1584,10 +1692,10 @@ function drawMomentArc(node, momentValue, color, labelColor, label, opts, labelM
     preferredX: node.x, preferredY: node.y - r - 6,
     priority: isReaction ? 20 : 30,
     color: labelColor,
-    font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
+    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
-    haloColor: isDark ? 'rgba(22, 26, 32, 1)' : 'rgba(255, 255, 255, 1)',
-    haloWidth: 4,
+    bgColor: cssVar('--canvas-label-bg'),
+    bgPadding: 1,
     textAlign: 'center',
     textBaseline: 'middle',
     type: isReaction ? 'reaction' : 'load',
@@ -1669,7 +1777,7 @@ function drawReactions(labelManager, isDark) {
           text: tag, anchorX: n.x, anchorY: n.y,
           preferredX: n.x + offsetX, preferredY: n.y,
           priority: 20, color: lblCol,
-          font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+          font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: isLeft ? 'right' : 'left', textBaseline: 'middle',
           type: 'reaction', skipCollision: true,
@@ -1682,7 +1790,7 @@ function drawReactions(labelManager, isDark) {
           text: tag, anchorX: n.x, anchorY: n.y,
           preferredX: n.x, preferredY: belowY,
           priority: 20, color: lblCol,
-          font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+          font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
           bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: 'center', textBaseline: 'top',
           type: 'reaction', skipCollision: true,
@@ -1695,7 +1803,7 @@ function drawReactions(labelManager, isDark) {
 
 // ── Node label overlay ────────────────────────────────────────────────────
 function drawNodeLabels(labelManager) {
-  var fontSize = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale() + 1);
+  var fontSize = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
   nodes.forEach(function(n, i) {
     var base = i * 3 + 1;
     var label = 'N' + i + ' [' + base + ',' + (base + 1) + ',' + (base + 2) + ']';
@@ -1705,7 +1813,7 @@ function drawNodeLabels(labelManager) {
       preferredX: n.x + 8, preferredY: n.y - 8,
       priority: 15,
       color: cssVar('--canvas-label'),
-      font: '600 ' + fontSize + 'px ' + LABEL_FONT_FAMILY,
+      font: '500 ' + fontSize + 'px ' + MONO_FONT_FAMILY,
       fontSize: fontSize,
       bgColor: cssVar('--canvas-label-bg'),
       bgPadding: 2,
@@ -1726,8 +1834,8 @@ function drawUDLs(labelManager) {
     const n2 = nodes.find(n => n.id === m.end);
     if (!n1 || !n2) return;
 
-    const arrowLen = 20;
-    const chevD = 5, chevHW = 3;
+    const arrowLen = 12;
+    const chevD = 3, chevHW = 2;
     const sign = m.udl > 0 ? 1 : -1;
     const steps = Math.max(3, Math.floor(Math.hypot(n2.x-n1.x, n2.y-n1.y) / 18));
 
@@ -1764,18 +1872,16 @@ function drawUDLs(labelManager) {
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
+    const fs = Math.round(BASE_LABEL_SIZE * labelScale * sc);
+    const udlText = (Math.abs(m.udl)/1000).toFixed(1)+'kN/m';
+    const udlLblY = my - arrowLen*sign - 10;
     labelManager.add({
-      text: (Math.abs(m.udl)/1000).toFixed(1)+'kN/m',
-      anchorX: mx, anchorY: my,
-      preferredX: mx, preferredY: my - arrowLen*sign - 6,
-      priority: 60,
-      color: cssVar('--canvas-udl-label'),
-      font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
-      fontSize: fs,
+      text: udlText, anchorX: mx, anchorY: udlLblY,
+      preferredX: mx, preferredY: udlLblY,
+      priority: 25, color: cssVar('--canvas-udl-label'),
+      font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
       bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
-      textAlign: 'center', textBaseline: 'middle',
-      type: 'udl', skipCollision: true,
+      textAlign: 'center', textBaseline: 'middle', type: 'load', skipCollision: true,
     });
   });
 
@@ -1786,8 +1892,8 @@ function drawUDLs(labelManager) {
     const n2 = nodes.find(n => n.id === m.end);
     if (!n1 || !n2) return;
 
-    const arrowLen = 20;
-    const chevD = 5, chevHW = 3;
+    const arrowLen = 12;
+    const chevD = 3, chevHW = 2;
     const sign = m.udl_x > 0 ? 1 : -1;
 
     const dx = n2.x - n1.x, dy = n2.y - n1.y;
@@ -1829,18 +1935,16 @@ function drawUDLs(labelManager) {
 
     const mx = (n1.x + n2.x) / 2;
     const my = (n1.y + n2.y) / 2;
-    const fs = Math.round((BASE_LABEL_SIZE - 2) * labelScale * sc);
+    const fs = Math.round(BASE_LABEL_SIZE * labelScale * sc);
+    const udlxText = (Math.abs(m.udl_x) / 1000).toFixed(1) + 'kN/m';
+    const udlxLblX = mx - arrowLen * sign * 1.8;
     labelManager.add({
-      text: (Math.abs(m.udl_x) / 1000).toFixed(1) + 'kN/m',
-      anchorX: mx, anchorY: my,
-      preferredX: mx - arrowLen * sign * 1.8, preferredY: my,
-      priority: 60,
-      color: cssVar('--canvas-udl-x-label'),
-      font: '600 ' + fs + 'px ' + MONO_FONT_FAMILY,
-      fontSize: fs,
+      text: udlxText, anchorX: udlxLblX, anchorY: my,
+      preferredX: udlxLblX, preferredY: my,
+      priority: 25, color: cssVar('--canvas-udl-x-label'),
+      font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
       bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
-      textAlign: 'center', textBaseline: 'middle',
-      type: 'udl', skipCollision: true,
+      textAlign: 'center', textBaseline: 'middle', type: 'load', skipCollision: true,
     });
   });
 }
@@ -2216,12 +2320,10 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// AFD — Axial Force Diagram. Axial is constant per member (no distributed
-// axial loads in the solver), so each diagram is a perpendicular RECTANGLE
-// alongside the member rather than a curve. Tension = blue, compression =
-// red; matches the member-line colour code. Drawn on the OPPOSITE side of
-// the member from BMD/SFD (negative-perp direction) so the three diagrams
-// don't overlap on a simple beam.
+// AFD — Axial Force Diagram.  member_forces is now [[Ni,Nj], …] so the
+// diagram is a TRAPEZOID (linearly varying axial from i-end to j-end).
+// Tension = blue, compression = red; drawn on the OPPOSITE side of the
+// member from BMD/SFD (negative-perp direction).
 function drawAFD(labelManager) {
   const axial = results && results.member_forces;
   if (!axial) return;
@@ -2233,7 +2335,8 @@ function drawAFD(labelManager) {
     const n2 = nodes.find(n => n.id === m.end);
     if (!n1 || !n2) return;
     minMbrLen = Math.min(minMbrLen, Math.hypot(n2.x - n1.x, n2.y - n1.y));
-    maxAbs    = Math.max(maxAbs, Math.abs(axial[idx]));
+    const [fi, fj] = axial[idx];
+    maxAbs = Math.max(maxAbs, Math.abs(fi), Math.abs(fj));
   });
   if (maxAbs < 1e-10) return;
 
@@ -2249,33 +2352,65 @@ function drawAFD(labelManager) {
     const n1 = nodes.find(n => n.id === m.start);
     const n2 = nodes.find(n => n.id === m.end);
     if (!n1 || !n2) return;
-    const f = axial[idx];
-    if (Math.abs(f) < 1e-3) return;
+    const [fi, fj] = axial[idx];
+    if (Math.abs(fi) < 1e-3 && Math.abs(fj) < 1e-3) return;
 
     const dx = n2.x - n1.x, dy = n2.y - n1.y;
     const angle = Math.atan2(dy, dx);
-    // Negative perpendicular (opposite side to BMD/SFD).
     const perpX =  Math.sin(angle);
     const perpY = -Math.cos(angle);
-    const off   = Math.abs(f) * scaleFactor;
 
-    const isTension = f > 0;
-    ctx.fillStyle   = isTension ? tensionFill   : compressionFill;
-    ctx.strokeStyle = isTension ? tensionStroke : compressionStroke;
-    ctx.lineWidth   = 1.5;
+    // Signed offsets: positive = tension side, negative = compression side.
+    const offI = fi * scaleFactor;
+    const offJ = fj * scaleFactor;
 
-    // Rectangle: baseline (n1 -> n2) and offset side (n2+perp*off -> n1+perp*off).
-    ctx.beginPath();
-    ctx.moveTo(n1.x, n1.y);
-    ctx.lineTo(n2.x, n2.y);
-    ctx.lineTo(n2.x + perpX * off, n2.y + perpY * off);
-    ctx.lineTo(n1.x + perpX * off, n1.y + perpY * off);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    // If both ends same sign → single trapezoid.  If they cross zero →
+    // two triangles meeting at the zero crossing point.
+    const sameSign = fi * fj >= 0;
+
+    if (sameSign) {
+      const isTension = (Math.abs(fi) >= Math.abs(fj) ? fi : fj) > 0;
+      ctx.fillStyle   = isTension ? tensionFill   : compressionFill;
+      ctx.strokeStyle = isTension ? tensionStroke : compressionStroke;
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.lineTo(n2.x + perpX * Math.abs(offJ), n2.y + perpY * Math.abs(offJ));
+      ctx.lineTo(n1.x + perpX * Math.abs(offI), n1.y + perpY * Math.abs(offI));
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      // Zero-crossing: interpolate parameter t where N(t) = 0.
+      const t0 = Math.abs(fi) / (Math.abs(fi) + Math.abs(fj));
+      const zx = n1.x + t0 * dx;
+      const zy = n1.y + t0 * dy;
+
+      // i-end triangle (fi sign)
+      ctx.fillStyle   = fi > 0 ? tensionFill   : compressionFill;
+      ctx.strokeStyle = fi > 0 ? tensionStroke : compressionStroke;
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(zx, zy);
+      ctx.lineTo(n1.x + perpX * Math.abs(offI), n1.y + perpY * Math.abs(offI));
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+
+      // j-end triangle (fj sign)
+      ctx.fillStyle   = fj > 0 ? tensionFill   : compressionFill;
+      ctx.strokeStyle = fj > 0 ? tensionStroke : compressionStroke;
+      ctx.beginPath();
+      ctx.moveTo(zx, zy);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.lineTo(n2.x + perpX * Math.abs(offJ), n2.y + perpY * Math.abs(offJ));
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    }
   });
 
-  // Value labels at the polygon midpoint (always — chkDiagLabels retired).
+  // Value labels at each end of the member (Ni near node 1, Nj near node 2).
   {
     const fmtN = v => (v / 1000).toFixed(2) + 'kN';
     const nudge = 8 * getSymbolScale();
@@ -2284,21 +2419,49 @@ function drawAFD(labelManager) {
       const n1 = nodes.find(n => n.id === m.start);
       const n2 = nodes.find(n => n.id === m.end);
       if (!n1 || !n2) return;
-      const f = axial[idx];
-      if (Math.abs(f) < maxAbs * 0.01) return;
+      const [fi, fj] = axial[idx];
       const angle = Math.atan2(n2.y - n1.y, n2.x - n1.x);
       const perpX =  Math.sin(angle);
       const perpY = -Math.cos(angle);
-      const off   = Math.abs(f) * scaleFactor + nudge;
-      const mx    = (n1.x + n2.x) / 2;
-      const my    = (n1.y + n2.y) / 2;
-      const afdColor = f > 0 ? cssVar('--canvas-tension') : cssVar('--canvas-compression');
-      labelManager.add({
-        text: fmtN(f), anchorX: mx, anchorY: my,
-        preferredX: mx + perpX * off, preferredY: my + perpY * off,
-        priority: 50, color: afdColor, font: 'bold ' + afdFs + 'px ' + MONO_FONT_FAMILY, fontSize: afdFs,
-        bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
-      });
+      const fMax = Math.max(Math.abs(fi), Math.abs(fj));
+      if (fMax < maxAbs * 0.01) return;
+
+      // If both ends are equal (constant axial), show one label at midpoint.
+      if (Math.abs(fi - fj) < fMax * 0.01) {
+        const off = Math.abs(fi) * scaleFactor + nudge;
+        const mx  = (n1.x + n2.x) / 2;
+        const my  = (n1.y + n2.y) / 2;
+        const col = fi > 0 ? tensionStroke : compressionStroke;
+        labelManager.add({
+          text: fmtN(fi), anchorX: mx, anchorY: my,
+          preferredX: mx + perpX * off, preferredY: my + perpY * off,
+          priority: 50, color: col, font: 'bold ' + afdFs + 'px ' + MONO_FONT_FAMILY, fontSize: afdFs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+        });
+      } else {
+        // Label at i-end
+        if (Math.abs(fi) >= maxAbs * 0.01) {
+          const offI = Math.abs(fi) * scaleFactor + nudge;
+          const col = fi > 0 ? tensionStroke : compressionStroke;
+          labelManager.add({
+            text: fmtN(fi), anchorX: n1.x, anchorY: n1.y,
+            preferredX: n1.x + perpX * offI, preferredY: n1.y + perpY * offI,
+            priority: 50, color: col, font: 'bold ' + afdFs + 'px ' + MONO_FONT_FAMILY, fontSize: afdFs,
+            bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+          });
+        }
+        // Label at j-end
+        if (Math.abs(fj) >= maxAbs * 0.01) {
+          const offJ = Math.abs(fj) * scaleFactor + nudge;
+          const col = fj > 0 ? tensionStroke : compressionStroke;
+          labelManager.add({
+            text: fmtN(fj), anchorX: n2.x, anchorY: n2.y,
+            preferredX: n2.x + perpX * offJ, preferredY: n2.y + perpY * offJ,
+            priority: 50, color: col, font: 'bold ' + afdFs + 'px ' + MONO_FONT_FAMILY, fontSize: afdFs,
+            bgColor: cssVar('--canvas-label-bg'), bgPadding: 2, textAlign: 'center', textBaseline: 'middle', type: 'diagram',
+          });
+        }
+      }
     });
   }
 }
@@ -2313,6 +2476,7 @@ document.getElementById('chkAFD').addEventListener('change', draw);
 document.getElementById('chkNodeLabels').addEventListener('change', draw);
 document.getElementById('chkNodeIds').addEventListener('change', draw);
 document.getElementById('chkMemberIds').addEventListener('change', draw);
+document.getElementById('chkSectionIds').addEventListener('change', draw);
 document.getElementById('chkMemberForces').addEventListener('change', draw);
 document.getElementById('chkGrid').addEventListener('change', draw);
 
@@ -2639,8 +2803,10 @@ function captureView(onIds, offIds) {
   view.tx = offW / 2 - cx * view.scale;
   view.ty = offH / 2 - cy * view.scale;
 
-  // Temporarily resize main canvas to match offscreen dimensions
+  // Temporarily resize canvas and disable DPR for export at fixed resolution
   var origW = canvas.width, origH = canvas.height;
+  var savedLogW = LOGICAL_W, savedLogH = LOGICAL_H, savedDpr = dpr;
+  LOGICAL_W = offW; LOGICAL_H = offH; dpr = 1;
   canvas.width = offW; canvas.height = offH;
   draw();
 
@@ -2652,7 +2818,8 @@ function captureView(onIds, offIds) {
   offCtx.drawImage(canvas, 0, 0);
   var dataUrl = offscreen.toDataURL('image/png');
 
-  // Restore canvas size and state
+  // Restore canvas size, logical dims, and DPR
+  LOGICAL_W = savedLogW; LOGICAL_H = savedLogH; dpr = savedDpr;
   canvas.width = origW; canvas.height = origH;
   view.scale = savedView.scale; view.tx = savedView.tx; view.ty = savedView.ty;
   Object.keys(savedChk).forEach(function (id) {
@@ -2804,10 +2971,10 @@ function saveModel() {
     return obj;
   }, {});
 
-  // udl as array of {memberId, wy, wx} — per D-02/D-04
+  // udl as array of {memberId, wy, wx, dir} — per D-02/D-04, extended with dir
   const canvasUdl = members
     .filter(m => (m.udl !== null && m.udl !== undefined) || (m.udl_x !== null && m.udl_x !== undefined))
-    .map(m => ({ memberId: m.id, wy: m.udl || 0, wx: m.udl_x || 0 }));
+    .map(m => ({ memberId: m.id, wy: m.udl || 0, wx: m.udl_x || 0, dir: m.udl_dir || 'global' }));
 
   // memberOverrides as object keyed by memberId string — per D-02/D-04
   const canvasMemberOverrides = members.reduce((obj, m) => {
@@ -2835,6 +3002,11 @@ function saveModel() {
     restrainedDoF,
     pinDoF: [], springDoF, springStiffness,
     udl_x: members.map(m => m.udl_x !== null ? m.udl_x : 0),
+    // Self-weight settings
+    selfWeight: {
+      enabled: document.getElementById('chkSelfWeight').checked,
+      density: parseFloat(document.getElementById('inputDensity').value) || 7850,
+    },
     // Canvas state — D-02/D-04 shape
     canvas: {
       origin: origin ? { x: origin.x, y: origin.y } : null,
@@ -2940,8 +3112,18 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
         if (udlMap[m.id] !== undefined) {
           m.udl = udlMap[m.id].wy !== undefined && udlMap[m.id].wy !== 0 ? udlMap[m.id].wy : (m.udl != null ? m.udl : null);
           m.udl_x = udlMap[m.id].wx !== undefined && udlMap[m.id].wx !== 0 ? udlMap[m.id].wx : (m.udl_x != null ? m.udl_x : null);
+          m.udl_dir = udlMap[m.id].dir || 'global';
         }
       });
+    }
+
+    // Restore self-weight settings (backward compat: default off)
+    if (data.selfWeight) {
+      document.getElementById('chkSelfWeight').checked = !!data.selfWeight.enabled;
+      if (data.selfWeight.density != null)
+        document.getElementById('inputDensity').value = data.selfWeight.density;
+    } else {
+      document.getElementById('chkSelfWeight').checked = false;
     }
 
     // D-02/D-04: Restore memberOverrides from canvas.memberOverrides back into member objects
@@ -2969,10 +3151,12 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     // Clear stale UI state (results panel, diagram toggles)
     const resultsPanel = document.getElementById('resultsPanel');
     if (resultsPanel) resultsPanel.style.display = 'none';
+    document.getElementById('resizeDivider').style.display = 'none';
     clearDiagramState();
 
     // Update Save button state — D-08: no auto-solve
     updateSaveButtonState();
+    updateSectionsSummary();
     setStatus('', false);
     draw();
 
@@ -2999,31 +3183,67 @@ function renderResults(res) {
   const UG = res.UG;
   const FG = res.FG;
 
+  // Section colour key — show legend of sections in use
+  let sectionKeyEl = document.getElementById('sectionColourKey');
+  if (!sectionKeyEl) {
+    sectionKeyEl = document.createElement('div');
+    sectionKeyEl.id = 'sectionColourKey';
+    sectionKeyEl.style.cssText = 'margin:4px 0 8px;font-size:11px;display:flex;flex-wrap:wrap;gap:6px 12px;';
+    const tableWrap = document.querySelector('#tableMemberActions')?.parentElement;
+    if (tableWrap) tableWrap.insertBefore(sectionKeyEl, document.querySelector('#tableMemberActions'));
+  }
+  const secGroups = {};
+  members.forEach(m => {
+    if (m.section) secGroups[m.section.designation] = sectionColour(m.section.designation);
+  });
+  const secKeys = Object.keys(secGroups);
+  if (secKeys.length > 0) {
+    sectionKeyEl.innerHTML = secKeys.map(k =>
+      '<span style="display:inline-flex;align-items:center;gap:3px;">' +
+      '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + secGroups[k] + ';"></span>' +
+      '<span>' + k + '</span></span>'
+    ).join('');
+    sectionKeyEl.style.display = '';
+  } else {
+    sectionKeyEl.style.display = 'none';
+  }
+
   // Member actions
   const mBody = document.querySelector('#tableMemberActions tbody');
   mBody.innerHTML = '';
   members.forEach((m, idx) => {
-    const axial = res.member_forces ? res.member_forces[idx] / 1000 : 0;
+    const fArr = res.member_forces ? res.member_forces[idx] : [0, 0];
+    const Ni = fArr[0] / 1000;
+    const Nj = fArr[1] / 1000;
     const Vi = res.member_shears  ? res.member_shears[idx][0]  / 1000 : '—';
     const Vj = res.member_shears  ? res.member_shears[idx][1]  / 1000 : '—';
     const Mi = res.member_moments ? res.member_moments[idx][0] / 1000 : '—';
     const Mj = res.member_moments ? res.member_moments[idx][1] / 1000 : '—';
-    const axialClass = Math.abs(axial) < 1e-3 ? 'zero-force' : axial > 0 ? 'tension' : 'compression';
-    const stress_Pa  = res.meta && res.meta.member_stresses ? res.meta.member_stresses[idx] : null;
-    const stress_MPa = stress_Pa !== null ? stress_Pa / 1e6 : null;
-    const stressClass = stress_MPa === null ? '' :
-      Math.abs(stress_MPa) < 0.01 ? 'zero-force' : stress_MPa > 0 ? 'tension' : 'compression';
-    const stressStr = stress_MPa !== null ? stress_MPa.toFixed(1) : '—';
+    const axialClassI = Math.abs(Ni) < 1e-3 ? 'zero-force' : Ni > 0 ? 'tension' : 'compression';
+    const axialClassJ = Math.abs(Nj) < 1e-3 ? 'zero-force' : Nj > 0 ? 'tension' : 'compression';
+    const stressArr = res.meta && res.meta.member_stresses ? res.meta.member_stresses[idx] : null;
+    const stressI_MPa = stressArr ? stressArr[0] / 1e6 : null;
+    const stressJ_MPa = stressArr ? stressArr[1] / 1e6 : null;
+    const stressClassI = stressI_MPa === null ? '' :
+      Math.abs(stressI_MPa) < 0.01 ? 'zero-force' : stressI_MPa > 0 ? 'tension' : 'compression';
+    const stressClassJ = stressJ_MPa === null ? '' :
+      Math.abs(stressJ_MPa) < 0.01 ? 'zero-force' : stressJ_MPa > 0 ? 'tension' : 'compression';
+    const stressStrI = stressI_MPa !== null ? stressI_MPa.toFixed(1) : '—';
+    const stressStrJ = stressJ_MPa !== null ? stressJ_MPa.toFixed(1) : '—';
     const fmt = v => typeof v === 'number' ? v.toFixed(3) : v;
     const tr = document.createElement('tr');
+    const secLabel = m.section ? m.section.size || m.section.designation : '—';
     tr.innerHTML = `
       <td>${idx+1}</td>
       <td>${m.start+1}–${m.end+1}</td>
       <td>${m.type === 'bar' ? 'Bar' : 'Beam'}</td>
-      <td class="${axialClass}">${axial.toFixed(3)}</td>
+      <td>${secLabel}</td>
+      <td class="${axialClassI}">${Ni.toFixed(3)}</td>
+      <td class="${axialClassJ}">${Nj.toFixed(3)}</td>
       <td>${fmt(Vi)}</td><td>${fmt(Vj)}</td>
       <td>${fmt(Mi)}</td><td>${fmt(Mj)}</td>
-      <td class="${stressClass}">${stressStr}</td>`;
+      <td class="${stressClassI}">${stressStrI}</td>
+      <td class="${stressClassJ}">${stressStrJ}</td>`;
     mBody.appendChild(tr);
   });
 
@@ -3105,6 +3325,7 @@ function renderResults(res) {
   }
 
   document.getElementById('resultsPanel').style.display = 'block';
+  document.getElementById('resizeDivider').style.display = 'block';
 }
 
 // ── Pan (middle-mouse drag) ───────────────────────────────────────────────
@@ -3113,8 +3334,8 @@ canvas.addEventListener('mousedown', e => {
     e.preventDefault();
     isPanning = true;
     const rect = canvas.getBoundingClientRect();
-    panStartX = (e.clientX - rect.left) * (canvas.width  / rect.width);
-    panStartY = (e.clientY - rect.top)  * (canvas.height / rect.height);
+    panStartX = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+    panStartY = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
     panStartTx = view.tx; panStartTy = view.ty;
   }
 });
@@ -3125,8 +3346,8 @@ canvas.addEventListener('mouseleave', () => { isPanning = false; });
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (canvas.width  / rect.width);
-  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  const mx = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+  const my = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
   const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
   view.tx = mx - (mx - view.tx) * factor;
   view.ty = my - (my - view.ty) * factor;
@@ -3138,8 +3359,8 @@ canvas.addEventListener('wheel', e => {
 canvas.addEventListener('mousemove', e => {
   if (isPanning) {
     const rect = canvas.getBoundingClientRect();
-    const px = (e.clientX - rect.left) * (canvas.width  / rect.width);
-    const py = (e.clientY - rect.top)  * (canvas.height / rect.height);
+    const px = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+    const py = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
     view.tx = panStartTx + (px - panStartX);
     view.ty = panStartTy + (py - panStartY);
     draw(); return;
@@ -3201,9 +3422,11 @@ document.getElementById('udlApplyBtn').addEventListener('click', function() {
   if (_udlActiveMemberIdx === null) return;
   const wy = parseFloat(document.getElementById('udlWy').value);
   const wx = parseFloat(document.getElementById('udlWx').value);
+  const dir = document.getElementById('udlDir').value;
   saveHistory();
   if (!isNaN(wy)) members[_udlActiveMemberIdx].udl = wy === 0 ? null : wy;
   if (!isNaN(wx)) members[_udlActiveMemberIdx].udl_x = wx === 0 ? null : wx;
+  members[_udlActiveMemberIdx].udl_dir = dir;
   results = null;
   document.getElementById('udlPanel').style.display = 'none';
   _udlActiveMemberIdx = null;
@@ -3220,7 +3443,242 @@ document.getElementById('udlCancelBtn').addEventListener('click', function() {
   _udlActiveMemberIdx = null;
 });
 
+// ── Member Properties Panel ───────────────────────────────────────────────
+let _mpActiveMemberIdx = null;
+
+function populateSizeDropdown(sectionType) {
+  const sel = document.getElementById('mpSectionSize');
+  sel.innerHTML = '';
+  if (sectionType === 'Custom') {
+    sel.innerHTML = '<option value="">(n/a)</option>';
+    sel.disabled = true;
+    document.getElementById('mpA').readOnly = false;
+    document.getElementById('mpI').readOnly = false;
+    document.getElementById('mpSizeLabel').style.display = 'none';
+    document.getElementById('mpSectionInfo').textContent = '';
+    return;
+  }
+  sel.disabled = false;
+  document.getElementById('mpSizeLabel').style.display = 'block';
+  const catalog = STEEL_SECTIONS[sectionType] || {};
+  sel.innerHTML = '<option value="">(select size)</option>';
+  Object.keys(catalog).forEach(key => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = key + ' (' + catalog[key].mass_per_m + ' kg/m)';
+    sel.appendChild(opt);
+  });
+}
+
+function onSectionSizeChange() {
+  const sType = document.getElementById('mpSectionType').value;
+  const sSize = document.getElementById('mpSectionSize').value;
+  if (sType === 'Custom' || !sSize) {
+    document.getElementById('mpA').readOnly = false;
+    document.getElementById('mpI').readOnly = false;
+    document.getElementById('mpSectionInfo').textContent = '';
+    return;
+  }
+  const sec = (STEEL_SECTIONS[sType] || {})[sSize];
+  if (!sec) return;
+  document.getElementById('mpA').value = sec.A;
+  document.getElementById('mpI').value = sec.I_y;
+  document.getElementById('mpA').readOnly = true;
+  document.getElementById('mpI').readOnly = true;
+  document.getElementById('mpSectionInfo').textContent =
+    sec.designation + ' — h=' + sec.h + ' b=' + sec.b + ' tw=' + sec.t_w + ' tf=' + sec.t_f + ' mm, ' + sec.mass_per_m + ' kg/m';
+}
+
+function openMemberPropsPanel(miOrArray) {
+  // Accept single index or array of indices (multi-select)
+  const indices = Array.isArray(miOrArray) ? miOrArray : [miOrArray];
+  _mpActiveMemberIdx = indices;
+  const m = members[indices[0]];  // use first member's values as panel defaults
+  const globalE = parseFloat(document.getElementById('inputE').value) || 200;
+  const globalI = parseFloat(document.getElementById('inputI').value) || 10000;
+  const globalA = parseFloat(document.getElementById('inputA').value) || 100;
+
+  if (indices.length === 1) {
+    document.getElementById('memberPropsPanelTitle').textContent = 'Member ' + (indices[0] + 1) + ' — Properties';
+  } else {
+    document.getElementById('memberPropsPanelTitle').textContent = 'Members ' + indices.map(i => i + 1).join(', ') + ' — Properties';
+  }
+  document.getElementById('mpSectionInfo').textContent = '';
+  document.getElementById('mpSectionInfo').style.color = '';
+
+  // Section type + size
+  if (m.section && m.section.type && m.section.type !== 'Custom') {
+    document.getElementById('mpSectionType').value = m.section.type;
+    populateSizeDropdown(m.section.type);
+    document.getElementById('mpSectionSize').value = m.section.size || '';
+    onSectionSizeChange();
+  } else {
+    document.getElementById('mpSectionType').value = 'Custom';
+    populateSizeDropdown('Custom');
+  }
+
+  // Grade
+  document.getElementById('mpGrade').value = m.grade || 'S275';
+
+  // E / A / I — show override or global
+  document.getElementById('mpE').value = m.E_override != null ? m.E_override : globalE;
+  if (document.getElementById('mpSectionType').value === 'Custom') {
+    document.getElementById('mpA').value = m.A_override != null ? m.A_override : globalA;
+    document.getElementById('mpI').value = m.I_override != null ? m.I_override : globalI;
+  }
+
+  document.getElementById('memberPropsPanel').style.display = 'block';
+}
+
+document.getElementById('mpSectionType').addEventListener('change', function() {
+  populateSizeDropdown(this.value);
+  onSectionSizeChange();
+});
+document.getElementById('mpSectionSize').addEventListener('change', onSectionSizeChange);
+
+document.getElementById('mpApplyBtn').addEventListener('click', function() {
+  if (_mpActiveMemberIdx === null) return;
+  const indices = Array.isArray(_mpActiveMemberIdx) ? _mpActiveMemberIdx : [_mpActiveMemberIdx];
+
+  const sType = document.getElementById('mpSectionType').value;
+  const sSize = document.getElementById('mpSectionSize').value;
+  const grade = document.getElementById('mpGrade').value;
+
+  if (sType !== 'Custom' && !sSize) {
+    document.getElementById('mpSectionInfo').textContent = 'Please select a section size.';
+    document.getElementById('mpSectionInfo').style.color = 'var(--color-error, #d32f2f)';
+    document.getElementById('mpSectionSize').focus();
+    return;
+  }
+
+  saveHistory();
+  const eVal = parseFloat(document.getElementById('mpE').value);
+  const globalE = parseFloat(document.getElementById('inputE').value) || 200;
+  const eOverride = (!isNaN(eVal) && eVal !== globalE) ? eVal : null;
+
+  indices.forEach(mi => {
+    const m = members[mi];
+    if (sType !== 'Custom') {
+      const sec = (STEEL_SECTIONS[sType] || {})[sSize];
+      if (sec) {
+        m.section = { type: sType, size: sSize, designation: sec.designation };
+        m.A_override = sec.A;
+        m.I_override = sec.I_y;
+        m.mass_per_m = sec.mass_per_m;
+      }
+    } else {
+      m.section = null;
+      m.mass_per_m = null;
+      const aVal = parseFloat(document.getElementById('mpA').value);
+      const iVal = parseFloat(document.getElementById('mpI').value);
+      const globalA = parseFloat(document.getElementById('inputA').value) || 100;
+      const globalI = parseFloat(document.getElementById('inputI').value) || 10000;
+      m.A_override = (!isNaN(aVal) && aVal !== globalA) ? aVal : null;
+      m.I_override = (!isNaN(iVal) && iVal !== globalI) ? iVal : null;
+    }
+    m.E_override = eOverride;
+    m.grade = grade;
+    m._selected = false;
+  });
+
+  const mbrList = indices.map(i => i + 1).join(', ');
+  if (sType !== 'Custom') {
+    const sec = (STEEL_SECTIONS[sType] || {})[sSize];
+    setStatus('Mbr ' + mbrList + ' → ' + (sec ? sec.designation : sSize) + ' (A=' + (sec ? sec.A : '?') + ' cm², I=' + (sec ? sec.I_y : '?') + ' cm⁴)');
+  } else {
+    setStatus('Mbr ' + mbrList + ' → Custom');
+  }
+
+  results = null;
+  document.getElementById('memberPropsPanel').style.display = 'none';
+  document.getElementById('mpSectionInfo').style.color = '';
+  _mpActiveMemberIdx = null;
+  updateSectionsSummary();
+  draw();
+});
+
+document.getElementById('mpResetBtn').addEventListener('click', function() {
+  if (_mpActiveMemberIdx === null) return;
+  const indices = Array.isArray(_mpActiveMemberIdx) ? _mpActiveMemberIdx : [_mpActiveMemberIdx];
+  saveHistory();
+  indices.forEach(mi => {
+    const m = members[mi];
+    m.section = null;
+    m.grade = 'S275';
+    m.mass_per_m = null;
+    m.E_override = null;
+    m.I_override = null;
+    m.A_override = null;
+    m._selected = false;
+  });
+  results = null;
+  document.getElementById('memberPropsPanel').style.display = 'none';
+  _mpActiveMemberIdx = null;
+  updateSectionsSummary();
+  draw();
+  setStatus('Mbr ' + indices.map(i => i + 1).join(', ') + ' reset to global values');
+});
+
+document.getElementById('mpCancelBtn').addEventListener('click', function() {
+  document.getElementById('memberPropsPanel').style.display = 'none';
+  _mpActiveMemberIdx = null;
+  members.forEach(m => { m._selected = false; });
+  draw();
+});
+
+function updateSectionsSummary() {
+  const body = document.getElementById('sectionsSummaryBody');
+  const grouped = {};
+  members.forEach((m, idx) => {
+    const key = m.section ? m.section.designation : null;
+    if (!key) return;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(idx + 1);
+  });
+  const keys = Object.keys(grouped);
+  if (keys.length === 0) {
+    body.innerHTML = 'No sections assigned. Use <em>Member Props</em> mode to assign catalog sections.';
+    return;
+  }
+  body.innerHTML = keys.map(k =>
+    '<div><strong>' + k + '</strong> — Mbr ' + grouped[k].join(', ') + '</div>'
+  ).join('');
+}
+
+// ── Resize divider drag handler ───────────────────────────────────────────
+{
+  const divider = document.getElementById('resizeDivider');
+  const resultsEl = document.getElementById('resultsPanel');
+  let dragging = false;
+
+  divider.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragging = true;
+    divider.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const row = divider.parentElement;
+    const rowRect = row.getBoundingClientRect();
+    const newWidth = rowRect.right - e.clientX;
+    const clamped = Math.max(200, Math.min(newWidth, rowRect.width - 200));
+    resultsEl.style.flex = '0 0 ' + clamped + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 setMode('view');
 updateSaveButtonState();
+updateSectionsSummary();
 draw();

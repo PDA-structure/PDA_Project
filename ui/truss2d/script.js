@@ -39,13 +39,62 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
+// ── Theme bootstrap ───────────────────────────────────────────────────────
+(function initTheme() {
+  function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    const ico = document.getElementById('themeToggleIcon');
+    const lbl = document.getElementById('themeToggleLabel');
+    if (ico) ico.textContent = (t === 'dark') ? '☀' : '☾';
+    if (lbl) lbl.textContent = (t === 'dark') ? 'Light' : 'Dark';
+  }
+  let saved = null;
+  try { saved = localStorage.getItem('truss2d_theme'); } catch (_) {}
+  const prefersDark = window.matchMedia &&
+                      window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initial = saved || (prefersDark ? 'dark' : 'light');
+  applyTheme(initial);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const tog = document.getElementById('themeToggle');
+    if (!tog) return;
+    applyTheme(document.documentElement.dataset.theme || initial);
+    tog.addEventListener('click', function () {
+      const next = (document.documentElement.dataset.theme === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem('truss2d_theme', next); } catch (_) {}
+    });
+  });
+})();
+
 const API_URL = ''; // relative — UI is served from the same FastAPI process
 
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
 
+// ── HiDPI (Retina) canvas scaling ────────────────────────────────────────
+const dpr = window.devicePixelRatio || 1;
+let LOGICAL_W, LOGICAL_H;
+function setupHiDPI() {
+  const rect = canvas.getBoundingClientRect();
+  LOGICAL_W = rect.width;
+  LOGICAL_H = rect.height;
+  canvas.width  = Math.round(LOGICAL_W * dpr);
+  canvas.height = Math.round(LOGICAL_H * dpr);
+}
+setupHiDPI();
+
+// ── CSS variable bridge ───────────────────────────────────────────────────
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 const GRID   = 20;   // pixels per grid cell
 const UNIT   = 1;    // 1 grid cell = 1 metre
+
+const BASE_LABEL_SIZE = 10;
+const LABEL_FONT_FAMILY = 'Inter, system-ui, sans-serif';
+const MONO_FONT_FAMILY = "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace";
 
 let _lastBlobUrl = null;
 
@@ -55,8 +104,8 @@ let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy 
 
 function toWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const px = (clientX - rect.left) * (canvas.width  / rect.width);
-  const py = (clientY - rect.top)  * (canvas.height / rect.height);
+  const px = (clientX - rect.left) * (LOGICAL_W / rect.width);
+  const py = (clientY - rect.top)  * (LOGICAL_H / rect.height);
   return { x: (px - view.tx) / view.scale, y: (py - view.ty) / view.scale };
 }
 
@@ -79,13 +128,13 @@ function resetView() {
   rh = rMaxY - rMinY;
   var pw = rw / UNIT * GRID;
   var ph = rh / UNIT * GRID;
-  var sx = canvas.width  / pw;
-  var sy = canvas.height / ph;
+  var sx = LOGICAL_W / pw;
+  var sy = LOGICAL_H / ph;
   view.scale = Math.min(sx, sy);
   var cx = origin.x + (rMinX + rw / 2) / UNIT * GRID;
   var cy = origin.y - (rMinY + rh / 2) / UNIT * GRID;
-  view.tx = canvas.width  / 2 - cx * view.scale;
-  view.ty = canvas.height / 2 - cy * view.scale;
+  view.tx = LOGICAL_W / 2 - cx * view.scale;
+  view.ty = LOGICAL_H / 2 - cy * view.scale;
   draw();
 }
 
@@ -391,7 +440,7 @@ function draw() {
   try {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.setTransform(view.scale, 0, 0, view.scale, view.tx, view.ty);
+  ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, dpr * view.tx, dpr * view.ty);
 
   // Build member obstacle lines and create a fresh LabelManager for this frame
   const memberLines = members.map(m => {
@@ -399,7 +448,7 @@ function draw() {
     const n2 = nodes.find(n => n.id === m.end);
     return (n1 && n2) ? { x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y } : null;
   }).filter(Boolean);
-  const labelManager = new LabelManager({ ctx, members: memberLines });
+  const labelManager = new LabelManager({ ctx, members: memberLines, dpr });
 
   if (!exportMode && document.getElementById('chkGrid')?.checked) drawGrid();
   drawMembers(labelManager);
@@ -423,7 +472,7 @@ function draw() {
 }
 
 function drawGrid() {
-  ctx.strokeStyle = '#eee';
+  ctx.strokeStyle = cssVar('--canvas-grid');
   ctx.lineWidth = 0.5;
 
   // Compute the visible window in the CURRENT (transformed) coordinate system,
@@ -431,8 +480,8 @@ function drawGrid() {
   // negative-coordinate regions for models imported from Revit etc.
   const x0 = (-view.tx)               / view.scale;
   const y0 = (-view.ty)               / view.scale;
-  const x1 = (canvas.width  - view.tx) / view.scale;
-  const y1 = (canvas.height - view.ty) / view.scale;
+  const x1 = (LOGICAL_W  - view.tx) / view.scale;
+  const y1 = (LOGICAL_H - view.ty) / view.scale;
 
   const startX = Math.floor(x0 / GRID) * GRID;
   const startY = Math.floor(y0 / GRID) * GRID;
@@ -460,15 +509,15 @@ function drawMembers(labelManager) {
     const n2 = nodes.find(n => n.id === m.end);
     if (!n1 || !n2) return;
 
-    let color = '#555';
+    let color = cssVar('--canvas-stroke');
     let label = null;
     let thickness = 2;
 
     if (results && results.member_forces) {
       const f = results.member_forces[idx];
-      if (Math.abs(f) < 1e-3)       { color = '#999'; }
-      else if (f > 0)                { color = '#1565c0'; }  // tension  = blue
-      else                           { color = '#b71c1c'; }  // compression = red
+      if (Math.abs(f) < 1e-3)       { color = cssVar('--canvas-zero'); }
+      else if (f > 0)                { color = cssVar('--canvas-tension'); }
+      else                           { color = cssVar('--canvas-compression'); }
       label = (f / 1000).toFixed(2) + 'kN';
 
       if (maxAbsForce > 1e-3) {
@@ -513,9 +562,9 @@ function drawMemberLabel(n1, n2, text, color, labelManager) {
     preferredX: mx, preferredY: my,
     priority: 40,
     color,
-    font: fs + 'px Arial',
+    font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
     fontSize: fs,
-    bgColor: 'rgba(255, 255, 255, 0.85)',
+    bgColor: cssVar('--canvas-label-bg'),
     bgPadding: 1,
     rotation: angle,
     textAlign: 'center',
@@ -534,10 +583,10 @@ function drawMemberIdLabel(n1, n2, idx, labelManager) {
     anchorX: mx, anchorY: my,
     preferredX: mx, preferredY: my - 8,
     priority: 35,
-    color: '#666',
-    font: '600 ' + fs + 'px Arial',
+    color: cssVar('--canvas-label'),
+    font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
     fontSize: fs,
-    bgColor: 'rgba(255,255,255,0.85)',
+    bgColor: cssVar('--canvas-label-bg'),
     bgPadding: 1,
     textAlign: 'center',
     textBaseline: 'bottom',
@@ -553,7 +602,7 @@ function drawNodes(labelManager) {
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = '#e53935';
+    ctx.fillStyle = cssVar('--canvas-node');
     ctx.fill();
     if (showNodeIds) {
       labelManager.add({
@@ -561,8 +610,8 @@ function drawNodes(labelManager) {
         anchorX: n.x, anchorY: n.y,
         preferredX: n.x + 6, preferredY: n.y - 6,
         priority: 10,
-        color: '#222',
-        font: 'bold ' + fs + 'px Arial',
+        color: cssVar('--canvas-label'),
+        font: '600 ' + fs + 'px ' + LABEL_FONT_FAMILY,
         fontSize: fs,
         textAlign: 'left',
         textBaseline: 'bottom',
@@ -579,12 +628,12 @@ function drawNodeLabels(labelManager) {
     var label, fontSize, font;
     if (exportMode) {
       label = String(i + 1);
-      font = 'bold 13px Arial';
+      font = '600 13px ' + LABEL_FONT_FAMILY;
       fontSize = 13;
     } else {
       var base = i * 2 + 1;
       label = 'N' + i + ' [' + base + ',' + (base + 1) + ']';
-      font = '600 11px Arial';
+      font = '600 11px ' + LABEL_FONT_FAMILY;
       fontSize = 11;
     }
     labelManager.add({
@@ -592,10 +641,10 @@ function drawNodeLabels(labelManager) {
       anchorX: n.x, anchorY: n.y,
       preferredX: n.x + 8, preferredY: n.y - 8,
       priority: 15,
-      color: '#1a2744',
+      color: cssVar('--canvas-label'),
       font: font,
       fontSize: fontSize,
-      bgColor: 'rgba(255,255,255,0.85)',
+      bgColor: cssVar('--canvas-label-bg'),
       bgPadding: 2,
       textAlign: 'left',
       textBaseline: 'bottom',
@@ -628,8 +677,8 @@ function drawSupports() {
 function drawPin(x, y) {
   const sc = getSymbolScale();
   const h = 14 * sc, hw = 12 * sc;
-  ctx.strokeStyle = '#1a1a2e';
-  ctx.fillStyle   = '#1a1a2e';
+  ctx.strokeStyle = cssVar('--canvas-support');
+  ctx.fillStyle   = cssVar('--canvas-support');
   ctx.lineWidth   = 1.5;
 
   // filled triangle
@@ -654,8 +703,8 @@ function drawPin(x, y) {
 function drawRollerH(x, y) {
   const sc = getSymbolScale();
   const h = 12 * sc, hw = 11 * sc, r = 3 * sc;
-  ctx.strokeStyle = '#1a1a2e';
-  ctx.fillStyle   = '#1a1a2e';
+  ctx.strokeStyle = cssVar('--canvas-support');
+  ctx.fillStyle   = cssVar('--canvas-support');
   ctx.lineWidth   = 1.5;
 
   // open triangle
@@ -689,8 +738,8 @@ function drawRollerH(x, y) {
 function drawRollerV(x, y) {
   const sc = getSymbolScale();
   const h = 12 * sc, hh = 11 * sc, r = 3 * sc;
-  ctx.strokeStyle = '#1a1a2e';
-  ctx.fillStyle   = '#1a1a2e';
+  ctx.strokeStyle = cssVar('--canvas-support');
+  ctx.fillStyle   = cssVar('--canvas-support');
   ctx.lineWidth   = 1.5;
 
   // open triangle pointing left
@@ -722,7 +771,7 @@ function drawRollerV(x, y) {
 
 // ── Hatching helper ───────────────────────────────────────────────────────
 function drawHatch(from, to, base, dir) {
-  ctx.strokeStyle = '#1a1a2e';
+  ctx.strokeStyle = cssVar('--canvas-support');
   ctx.lineWidth   = 1;
   const spacing = 5, len = 6;
   const count = Math.ceil((to - from) / spacing);
@@ -794,8 +843,8 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
       text: label, anchorX: node.x, anchorY: node.y,
       preferredX: lblX, preferredY: lblY,
       priority: 30, color,
-      font: fs + 'px Arial', fontSize: fs,
-      haloColor: 'rgba(255, 255, 255, 0.9)', haloWidth: 3,
+      font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+      bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
       textAlign: 'center', textBaseline: isHoriz ? 'bottom' : 'middle',
       type: 'load', skipCollision: true,
     });
@@ -807,7 +856,7 @@ function drawLoads(labelManager) {
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
     const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + 'kN';
-    drawForceArrow(n, l.direction, l.magnitude, '#2e7d32', label, labelManager, false);
+    drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), label, labelManager, false);
   });
 }
 
@@ -815,9 +864,9 @@ function drawLegend() {
   if (!results) return;
   const sc = getSymbolScale();
 
-  // Legend lives in screen space — reset transform so pan/zoom don't shift or scale it.
+  // Legend lives in screen space — DPR-scaled so dimensions stay in CSS pixels.
   ctx.save();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const fs      = Math.round(11 * sc);
   const lh      = Math.round(16 * sc);
@@ -827,26 +876,26 @@ function drawLegend() {
   const gap     = Math.round(8 * sc);
 
   const items = [
-    { color: '#1565c0', label: 'Tension (+)' },
-    { color: '#b71c1c', label: 'Compression (-)' },
-    { color: '#999',    label: 'Near-zero' },
+    { color: cssVar('--canvas-tension'), label: 'Tension (+)' },
+    { color: cssVar('--canvas-compression'), label: 'Compression (-)' },
+    { color: cssVar('--canvas-zero'),    label: 'Near-zero' },
   ];
   if (document.getElementById('chkReactions')?.checked) {
-    items.push({ color: '#7b1fa2', label: 'Reaction' });
+    items.push({ color: cssVar('--canvas-reaction'), label: 'Reaction' });
   }
 
-  ctx.font = `${fs}px Arial`;
+  ctx.font = `${fs}px ${LABEL_FONT_FAMILY}`;
   let maxTextW = 0;
   items.forEach(it => { maxTextW = Math.max(maxTextW, ctx.measureText(it.label).width); });
   const boxW = padX * 2 + swatchW + gap + Math.ceil(maxTextW);
   const boxH = padY * 2 + items.length * lh;
 
   const margin = Math.round(10 * sc);
-  const x0 = canvas.width  - boxW - margin;
+  const x0 = LOGICAL_W - boxW - margin;
   const y0 = margin;
 
-  ctx.fillStyle   = 'rgba(255, 255, 255, 0.92)';
-  ctx.strokeStyle = '#ccc';
+  ctx.fillStyle   = cssVar('--canvas-label-bg');
+  ctx.strokeStyle = cssVar('--color-border');
   ctx.lineWidth   = 1;
   ctx.beginPath();
   ctx.rect(x0, y0, boxW, boxH);
@@ -863,7 +912,7 @@ function drawLegend() {
     ctx.moveTo(x0 + padX, rowY);
     ctx.lineTo(x0 + padX + swatchW, rowY);
     ctx.stroke();
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = cssVar('--canvas-label');
     ctx.fillText(it.label, x0 + padX + swatchW + gap, rowY);
   });
 
@@ -891,7 +940,7 @@ function drawReactions(labelManager) {
       const idx = base + (dir === 'y' ? 1 : 0);
       const r   = FG[idx];
       if (Math.abs(r) < ZERO) return;
-      drawForceArrow(n, dir, r, '#7b1fa2', '', labelManager, true);
+      drawForceArrow(n, dir, r, cssVar('--canvas-reaction'), '', labelManager, true);
     });
 
     // Determine outside direction for horizontal reactions
@@ -913,9 +962,9 @@ function drawReactions(labelManager) {
         labelManager.add({
           text: txt, anchorX: n.x, anchorY: n.y,
           preferredX: n.x, preferredY: n.y + 28 * sc,
-          priority: 20, color: '#7b1fa2',
-          font: fs + 'px Arial', fontSize: fs,
-          bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
+          priority: 20, color: cssVar('--canvas-reaction'),
+          font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: 'center', textBaseline: 'top',
           type: 'reaction', skipCollision: true,
         });
@@ -925,9 +974,9 @@ function drawReactions(labelManager) {
         labelManager.add({
           text: txt, anchorX: n.x, anchorY: n.y,
           preferredX: n.x + offsetX, preferredY: n.y,
-          priority: 20, color: '#7b1fa2',
-          font: fs + 'px Arial', fontSize: fs,
-          bgColor: 'rgba(255, 255, 255, 0.85)', bgPadding: 1,
+          priority: 20, color: cssVar('--canvas-reaction'),
+          font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY, fontSize: fs,
+          bgColor: cssVar('--canvas-label-bg'), bgPadding: 1,
           textAlign: isLeft ? 'right' : 'left', textBaseline: 'middle',
           type: 'reaction', skipCollision: true,
         });
@@ -941,7 +990,7 @@ function drawDeflected() {
   const scale = parseFloat(document.getElementById('inputScale').value) || 100;
   const UG = results.UG;
 
-  ctx.strokeStyle = 'rgba(255,152,0,0.7)';
+  ctx.strokeStyle = cssVar('--canvas-deflected');
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 4]);
 
@@ -990,8 +1039,8 @@ updateScaleVisibility();
 canvas.addEventListener('mousemove', e => {
   if (isPanning) {
     const rect = canvas.getBoundingClientRect();
-    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+    const mx = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+    const my = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
     view.tx = panStartTx + (mx - panStartX);
     view.ty = panStartTy + (my - panStartY);
     draw();
@@ -1008,8 +1057,8 @@ canvas.addEventListener('mousemove', e => {
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const rect = canvas.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
-  const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  const mx = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+  const my = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
   const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
   view.tx = mx - (mx - view.tx) * factor;
   view.ty = my - (my - view.ty) * factor;
@@ -1023,8 +1072,8 @@ canvas.addEventListener('mousedown', e => {
   e.preventDefault();
   isPanning = true;
   const rect = canvas.getBoundingClientRect();
-  panStartX = (e.clientX - rect.left) * (canvas.width / rect.width);
-  panStartY = (e.clientY - rect.top)  * (canvas.height / rect.height);
+  panStartX = (e.clientX - rect.left) * (LOGICAL_W / rect.width);
+  panStartY = (e.clientY - rect.top)  * (LOGICAL_H / rect.height);
   panStartTx = view.tx;
   panStartTy = view.ty;
 });
@@ -1391,13 +1440,8 @@ function createDownloadLink(res) {
   a.download = filename;
   a.textContent = 'Download results (JSON)';
   a.className = 'download-link';
-  a.style.color = '#1a2744';
-  a.style.textDecoration = 'underline';
   a.style.display = 'block';
   a.style.marginBottom = '8px';
-  a.style.fontSize = '12px';
-  a.addEventListener('mouseover', function() { a.style.color = '#3f51b5'; });
-  a.addEventListener('mouseout',  function() { a.style.color = '#1a2744'; });
   return a;
 }
 
