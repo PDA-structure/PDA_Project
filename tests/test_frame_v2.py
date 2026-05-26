@@ -1153,3 +1153,146 @@ def test_trust_20_legacy_unstable_returns_flat_payload(client):
     assert "detail" in body
     # If cause is present, it MUST NOT be 'udl_on_bar' (this is genuine instability).
     assert body.get("cause") != "udl_on_bar"
+
+
+# ---------------------------------------------------------------------------
+# Case 21: Frame member axial force sign convention (TRUST-21)
+#
+# Horizontal cantilever with a horizontal (axial) tip load P in +x.
+# Fixed at node 1, loaded at node 2.
+#
+# The member is in pure tension P. mbrForces must be +P (tension positive),
+# consistent with the bar formula and engineering convention.
+#
+# Also tests an inclined member (45° cantilever with vertical tip load)
+# where the axial component is P·cos(45°) in compression (negative).
+# ---------------------------------------------------------------------------
+def test_trust_21_frame_member_axial_sign_horizontal():
+    """TRUST-21a: Horizontal cantilever with axial tip load — tension positive."""
+    P = 5000.0
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L, 0.0]],
+        members=[[1, 2]],
+        ENForces=[[0.0, 0.0]],
+        ENMoments=[[0.0, 0.0]],
+        force_vector=[0.0, 0.0, 0.0, P, 0.0, 0.0],
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 3],
+    )
+    s.solve_structure()
+
+    assert s.mbrForces[0] == pytest.approx(P, rel=1e-6)
+
+
+def test_trust_21_frame_member_axial_sign_compression():
+    """TRUST-21b: Horizontal cantilever with axial tip load in -x — compression negative."""
+    P = 5000.0
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [L, 0.0]],
+        members=[[1, 2]],
+        ENForces=[[0.0, 0.0]],
+        ENMoments=[[0.0, 0.0]],
+        force_vector=[0.0, 0.0, 0.0, -P, 0.0, 0.0],
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 3],
+    )
+    s.solve_structure()
+
+    assert s.mbrForces[0] == pytest.approx(-P, rel=1e-6)
+
+
+def test_trust_21_frame_member_axial_sign_inclined():
+    """TRUST-21c: 45° cantilever with vertical tip load — axial component is compressive."""
+    P = 10000.0
+    h = 1.0
+    s = BeamBarStructure_v2(
+        nodes=[[0.0, 0.0], [h, h]],
+        members=[[1, 2]],
+        ENForces=[[0.0, 0.0]],
+        ENMoments=[[0.0, 0.0]],
+        force_vector=[0.0, 0.0, 0.0, 0.0, -P, 0.0],
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 3],
+    )
+    s.solve_structure()
+
+    # Axial component of vertical load on 45° member: -P * sin(45°) (compression)
+    expected_axial = -P * np.sin(np.pi / 4)
+    assert s.mbrForces[0] == pytest.approx(expected_axial, rel=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# Case 22: Inclined cantilever with UDL — varying axial via ENAxialForces
+# adapter correction (TRUST-22)
+#
+# End-to-end test through FrameV2Adapter verifying that ENAxialForces
+# produces different axial values at each end of an inclined member.
+#
+# Setup: 45° cantilever (0,0)→(L,L), fixed at node 1, free at node 2.
+# Vertical UDL w applied to the member.
+#   Transverse component: w_t = w * cos(45°)
+#   Axial component:      w_ax = w * sin(45°)  (positive = from i to j)
+#
+# The solver gives constant N_avg. The adapter corrects:
+#   N_i = N_avg + w_ax*L_mbr/2    (larger at fixed end)
+#   N_j = N_avg - w_ax*L_mbr/2    (smaller at free end)
+#
+# At the free end (j), the true axial should be zero (no support there
+# to generate axial reaction in the axial direction), confirmed by
+# equilibrium of the free-end segment.
+# ---------------------------------------------------------------------------
+def test_trust_22_inclined_cantilever_udl_varying_axial():
+    """TRUST-22: Inclined cantilever with UDL — ENAxialForces produces
+    correct per-end axial forces through the adapter pipeline."""
+    w_vert = 10000.0   # N/m vertical UDL
+    Lx = 4.0           # horizontal projection
+    Ly = 4.0           # vertical projection (45° member)
+    L_mbr = np.hypot(Lx, Ly)
+    theta = np.arctan2(Ly, Lx)  # 45°
+
+    # Transverse component of vertical UDL
+    w_t = -w_vert * np.cos(theta)
+    enf = w_t * L_mbr / 2
+    enm_i = w_t * L_mbr**2 / 12
+    enm_j = -w_t * L_mbr**2 / 12
+
+    # Axial component lumped to forceVector (same as UI does)
+    q_ax = -w_vert * np.sin(theta)  # local axial load per unit length
+    Nx = q_ax * L_mbr / 2
+    fxi = Nx * np.cos(theta)
+    fyi = Nx * np.sin(theta)
+
+    fv = np.zeros(6)
+    fv[0] += fxi;  fv[1] += fyi   # at node 1
+    fv[3] += fxi;  fv[4] += fyi   # at node 2
+
+    # ENAxialForces for the adapter correction
+    ena_axial = np.array([[Nx, Nx]], float)
+
+    model = FrameModel2D(
+        nodes=np.array([[0.0, 0.0], [Lx, Ly]]),
+        members=np.array([[1, 2]]),
+        ENForces=np.array([[enf, enf]]),
+        ENMoments=np.array([[enm_i, enm_j]]),
+        forceVector=fv.reshape(-1, 1),
+        E=E, I=I, A=A,
+        restrainedDoF=[1, 2, 3],
+        ENAxialForces=ena_axial,
+    )
+    result = FrameV2Adapter(model).solve()
+
+    # member_forces is now (n_members, 2): [N_i, N_j]
+    assert result.member_forces.shape == (1, 2)
+    Ni = result.member_forces[0, 0]
+    Nj = result.member_forces[0, 1]
+
+    # N_i should differ from N_j by w_ax * L_mbr
+    assert Ni - Nj == pytest.approx(q_ax * L_mbr, rel=1e-4)
+
+    # At the free end (j), the true axial force is zero: the only axial
+    # load beyond the j-end is nothing (no support reaction in the axial
+    # direction at the free tip).
+    assert Nj == pytest.approx(0.0, abs=50)  # small residual from bending coupling
+
+    # N_i equals the total distributed axial load on the member
+    assert Ni == pytest.approx(q_ax * L_mbr, abs=50)

@@ -32,3 +32,9 @@ class FrameModel2D:
     # springs
     springDoF: Optional[List[int]] = None
     springStiffness: Optional[List[float]] = None
+
+    # axial equivalent nodal forces from distributed axial loads (e.g. vertical
+    # UDL on inclined members).  Shape (n_members, 2): [Nx_i, Nx_j] in local
+    # member coordinates, positive in +local-x.  Used by the adapter for
+    # post-processing member axial forces into per-end values [N_i, N_j].
+    ENAxialForces: Optional[np.ndarray] = None

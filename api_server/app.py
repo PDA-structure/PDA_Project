@@ -104,6 +104,7 @@ class Frame2DRequest(BaseModel):
     springDoF: List[int] = []
     springStiffness: List[float] = []
     udl_x: Optional[List[float]] = None   # one value per member, N/m, positive = left-to-right
+    ENAxialForces: Optional[List[List[float]]] = None  # [Nx_i, Nx_j] per member, local coords
 
 
 @app.post("/solve/frame2d")
@@ -178,6 +179,7 @@ def solve_frame2d(req: Frame2DRequest):
         pinDoF=req.pinDoF,
         springDoF=req.springDoF,
         springStiffness=req.springStiffness,
+        ENAxialForces=np.array(req.ENAxialForces, float) if req.ENAxialForces else None,
     )
 
     result = engine.solve(model, solver_name=req.solver)
@@ -187,7 +189,7 @@ def solve_frame2d(req: Frame2DRequest):
         "solver": result.solver,
         "UG": result.UG.reshape(-1).tolist(),
         "FG": result.FG.reshape(-1).tolist(),
-        "member_forces": None if result.member_forces is None else result.member_forces.reshape(-1).tolist(),
+        "member_forces": None if result.member_forces is None else result.member_forces.tolist(),
         "member_shears": None if result.member_shears is None else result.member_shears.tolist(),
         "member_moments": None if result.member_moments is None else result.member_moments.tolist(),
         "meta": result.meta or {},

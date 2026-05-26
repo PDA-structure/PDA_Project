@@ -606,7 +606,7 @@ class BeamBarStructure_v2:
 
             f_local = Kl @ u_local  # [Nx_i, Vy_i, Mi, Nx_j, Vy_j, Mj]
 
-            self.mbrForces[e] = float(f_local[0, 0])
+            self.mbrForces[e] = -float(f_local[0, 0])
             Vy_i = float(f_local[1, 0])
             Vy_j = float(f_local[4, 0])
             Mi = float(f_local[2, 0])

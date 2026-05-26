@@ -341,8 +341,9 @@ def test_uat_spring_support_beam(client: TestClient) -> None:
     assert abs(mm[0]) < 1e-3
     assert abs(mm[1]) < 1e-3
 
-    # Member axial force zero (load is perpendicular to axial direction).
-    assert res["member_forces"][0] == pytest.approx(0.0, abs=1e-4)
+    # Member axial force zero at both ends (load is perpendicular to axial direction).
+    assert res["member_forces"][0][0] == pytest.approx(0.0, abs=1e-4)
+    assert res["member_forces"][0][1] == pytest.approx(0.0, abs=1e-4)
 
 
 # ---------------------------------------------------------------------------

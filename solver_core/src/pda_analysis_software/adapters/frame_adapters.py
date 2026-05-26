@@ -83,10 +83,34 @@ class FrameV2Adapter:
 
         s.solve_structure()
 
-        # Per-member stress using solver's resolved area array
         A_eff_arr = np.array(s.Am, float)
-        member_forces_arr = np.array(s.mbrForces, float) if s.mbrForces is not None else None
-        member_stresses = (member_forces_arr / A_eff_arr).tolist() if member_forces_arr is not None else None
+
+        # Build (n_members, 2) axial force array: [N_i, N_j] per member.
+        # The solver gives a single constant N per member (correct for the
+        # point-load FEM model). When the model carries ENAxialForces —
+        # the axial equivalent nodal forces from a distributed axial load
+        # (e.g. vertical UDL decomposed onto an inclined member) — we
+        # correct each end:
+        #   N_i = N_avg + ENAx_i   (toward i-end, load accumulates)
+        #   N_j = N_avg - ENAx_j   (toward j-end, load depletes)
+        if s.mbrForces is not None:
+            n_mbr = len(s.mbrForces)
+            member_forces_arr = np.zeros((n_mbr, 2), float)
+            ena = self.model.ENAxialForces
+            for e in range(n_mbr):
+                n_avg = float(s.mbrForces[e])
+                if ena is not None and ena.shape[0] > e:
+                    member_forces_arr[e, 0] = n_avg + float(ena[e, 0])
+                    member_forces_arr[e, 1] = n_avg - float(ena[e, 1])
+                else:
+                    member_forces_arr[e, 0] = n_avg
+                    member_forces_arr[e, 1] = n_avg
+        else:
+            member_forces_arr = None
+
+        member_stresses = None
+        if member_forces_arr is not None:
+            member_stresses = (member_forces_arr / A_eff_arr[:, np.newaxis]).tolist()
 
         return AnalysisResult(
             solver="frame_v2",
