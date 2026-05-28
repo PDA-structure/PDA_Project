@@ -28,6 +28,21 @@
   --color-danger-bg: #ffebee;
   --color-danger-bg-soft: #fce4ec;
 
+  /* ── Spike — modernised toolbar palette (260528-vzl) ───────
+     Mirrored from frame2d (commit fd2a801..d650341). Three
+     semantic accents:
+       --spike-accent-active  → mode-active glyph
+       --spike-accent-primary → Solve button fill (loudest CTA)
+       --spike-accent-danger  → Reset All destructive signal
+     Delete this block + all `.*--spike` rules to retire spike. */
+  --spike-bg: #1E2228;
+  --spike-surface: #3A3735;
+  --spike-ink: #EAE6D8;
+  --spike-accent-active: #56E892;
+  --spike-accent-primary: #F5C82E;
+  --spike-accent-danger: #A8323A;
+  --spike-border: rgba(234, 230, 216, 0.12);
+
   /* Spacing scale */
   --space-1: 4px;
   --space-2: 8px;
@@ -216,6 +231,83 @@ header h1 {
 .tool-btn.active { background: var(--color-accent-bright); color: var(--color-on-accent); border-color: var(--color-accent-bright); box-shadow: var(--shadow-sm); }
 .tool-btn.danger { color: var(--color-danger); }
 .tool-btn.danger:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
+
+/* ── Spike modifier: .tool-btn--spike (260528-vzl) ────────────
+   Mirrored from frame2d. Additive on top of `.tool-btn`. Layout
+   (display: block, width, padding, margin-bottom, font-size,
+   font-family, transition) inherits from the base rule. Active-state
+   uses Option A — accent on glyph + thin ring, NO full background
+   fill swap. Delete this block + `--spike-*` tokens to retire. */
+.tool-btn--spike {
+  background: var(--spike-surface);
+  color: var(--spike-ink);
+  border: 1px solid var(--spike-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tool-btn--spike .spike-glyph {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: currentColor;
+}
+.tool-btn--spike:hover {
+  background: var(--spike-surface);
+  border-color: rgba(234, 230, 216, 0.24);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30);
+}
+.tool-btn--spike:focus-visible {
+  outline: 2px solid var(--spike-accent-active);
+  outline-offset: 2px;
+}
+.tool-btn--spike.active {
+  background: var(--spike-surface);
+  color: var(--spike-accent-active);
+  border: 1.5px solid var(--spike-accent-active);
+  box-shadow: var(--shadow-sm);
+}
+.tool-btn--spike.active:hover {
+  background: var(--spike-surface);
+  border-color: var(--spike-accent-active);
+}
+
+/* Support-button glyph+label wrapper: groups SVG + text on LEFT,
+   support-tag badge stays right via flex space-between. */
+.support-btn .support-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Danger override: applied to Reset All. Subtle burgundy ink at rest,
+   loud burgundy fill on hover — destructive action signal. */
+.tool-btn--spike.danger {
+  color: var(--spike-accent-danger);
+  border-color: rgba(168, 50, 58, 0.35);
+}
+.tool-btn--spike.danger:hover {
+  background: var(--spike-accent-danger);
+  color: var(--spike-ink);
+  border-color: var(--spike-accent-danger);
+  box-shadow: 0 2px 8px rgba(168, 50, 58, 0.35);
+}
+
+/* Solve button uses --spike-accent-primary (yellow) full fill,
+   dark ink for high contrast — loudest CTA on screen. */
+.solve-btn--spike {
+  background: var(--spike-accent-primary);
+  color: var(--spike-bg);
+  border: 1.5px solid var(--spike-accent-primary);
+  box-shadow: 0 2px 8px rgba(245, 200, 46, 0.25);
+}
+.solve-btn--spike:hover {
+  background: var(--spike-accent-primary);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 14px rgba(245, 200, 46, 0.40);
+}
 
 .support-btn {
   display: flex;
