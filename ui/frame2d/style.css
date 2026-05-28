@@ -92,19 +92,19 @@
   --canvas-diagnostic: #e53935;                     /* offending nodes/members highlight */
   --canvas-label-size: 10px;                        /* default canvas label font size (Task 3 reads this) */
 
-  /* ── Spike — Add Member button (260528-vzl) ────────────────
+  /* ── Spike — modernised toolbar palette (260528-vzl) ───────
      Theme-independent palette evaluated against the existing
-     toolbar buttons. `--spike-accent-primary` and
-     `--spike-accent-danger` are reserved tokens — intentionally
-     unused by this spike so the full proposed palette is
-     observable in DevTools alongside `--spike-accent-active`.
-     Delete this block + `.tool-btn--spike` rules to retire spike. */
+     toolbar buttons. Three semantic accents are now live:
+       --spike-accent-active  → mode-active glyph (Add Member)
+       --spike-accent-primary → Solve button fill (loudest CTA)
+       --spike-accent-danger  → Reset All destructive signal
+     Delete this block + all `.*--spike` rules to retire spike. */
   --spike-bg: #1E2228;
   --spike-surface: #3A3735;
   --spike-ink: #EAE6D8;
   --spike-accent-active: #56E892;
-  --spike-accent-primary: #F5C82E;   /* reserved — not used in this spike */
-  --spike-accent-danger: #A8323A;    /* reserved — not used in this spike */
+  --spike-accent-primary: #F5C82E;
+  --spike-accent-danger: #A8323A;
   --spike-border: rgba(234, 230, 216, 0.12);
 }
 
@@ -337,6 +337,35 @@ details[open] > summary {
 .tool-btn--spike.active:hover {
   background: var(--spike-surface);
   border-color: var(--spike-accent-active);
+}
+
+/* Danger override: applied to Reset All. Subtle burgundy ink at rest,
+   loud burgundy fill on hover — destructive action signal. Higher
+   specificity than .tool-btn--spike alone, so wins the cascade. */
+.tool-btn--spike.danger {
+  color: var(--spike-accent-danger);
+  border-color: rgba(168, 50, 58, 0.35);
+}
+.tool-btn--spike.danger:hover {
+  background: var(--spike-accent-danger);
+  color: var(--spike-ink);
+  border-color: var(--spike-accent-danger);
+  box-shadow: 0 2px 8px rgba(168, 50, 58, 0.35);
+}
+
+/* Solve button uses --spike-accent-primary (yellow) as a full fill,
+   reading as the loudest call-to-action on screen. Dark ink on yellow
+   gives high contrast. Layout/sizing/typography inherits from .solve-btn. */
+.solve-btn--spike {
+  background: var(--spike-accent-primary);
+  color: var(--spike-bg);
+  border: 1.5px solid var(--spike-accent-primary);
+  box-shadow: 0 2px 8px rgba(245, 200, 46, 0.25);
+}
+.solve-btn--spike:hover {
+  background: var(--spike-accent-primary);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 14px rgba(245, 200, 46, 0.40);
 }
 
 /* ── Support buttons ──────────────────────────────────────── */
