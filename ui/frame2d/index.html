@@ -24,7 +24,19 @@
       <details class="card">
         <summary>Geometry</summary>
         <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
-        <button class="tool-btn" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">🔗 Add Member</button>
+        <button class="tool-btn tool-btn--spike" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- member line: bottom-left node-dot to top-right node-dot -->
+            <line x1="4" y1="14" x2="14" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <!-- two node-dots (filled circles) at the line endpoints -->
+            <circle cx="4" cy="14" r="2.5" fill="currentColor"/>
+            <circle cx="14" cy="4" r="2.5" fill="currentColor"/>
+            <!-- small "+" badge in the top-right corner, slightly offset from the top-right node-dot -->
+            <line x1="15.5" y1="13.5" x2="15.5" y2="17.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="13.5" y1="15.5" x2="17.5" y2="15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Add Member
+        </button>
         <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
       </details>
 

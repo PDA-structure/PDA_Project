@@ -91,6 +91,21 @@
   --canvas-member-preview: #3f51b5;                 /* per-member E/I/A override outline */
   --canvas-diagnostic: #e53935;                     /* offending nodes/members highlight */
   --canvas-label-size: 10px;                        /* default canvas label font size (Task 3 reads this) */
+
+  /* ── Spike — Add Member button (260528-vzl) ────────────────
+     Theme-independent palette evaluated against the existing
+     toolbar buttons. `--spike-accent-primary` and
+     `--spike-accent-danger` are reserved tokens — intentionally
+     unused by this spike so the full proposed palette is
+     observable in DevTools alongside `--spike-accent-active`.
+     Delete this block + `.tool-btn--spike` rules to retire spike. */
+  --spike-bg: #1E2228;
+  --spike-surface: #3A3735;
+  --spike-ink: #EAE6D8;
+  --spike-accent-active: #56E892;
+  --spike-accent-primary: #F5C82E;   /* reserved — not used in this spike */
+  --spike-accent-danger: #A8323A;    /* reserved — not used in this spike */
+  --spike-border: rgba(234, 230, 216, 0.12);
 }
 
 /* ── @font-face: self-hosted Inter ─────────────────────────── */
@@ -281,6 +296,48 @@ details[open] > summary {
 .tool-btn.active { background: var(--color-accent); color: var(--color-on-accent); border-color: var(--color-accent); box-shadow: var(--shadow-sm); }
 .tool-btn.danger { color: var(--color-danger); }
 .tool-btn.danger:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
+
+/* ── Spike modifier: .tool-btn--spike (260528-vzl) ────────────
+   Scoped to the Add Member button in the Geometry card. Additive
+   on top of `.tool-btn`; layout (display: block, width, padding,
+   margin-bottom, text-align, font-size, font-family, transition)
+   inherits from the base rule. Active-state uses Option A — accent
+   on glyph + thin ring, NO full background fill swap. Delete this
+   block + the `--spike-*` tokens at `:root` to retire the spike. */
+.tool-btn--spike {
+  background: var(--spike-surface);
+  color: var(--spike-ink);
+  border: 1px solid var(--spike-border);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tool-btn--spike .spike-glyph {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  color: currentColor;
+}
+.tool-btn--spike:hover {
+  background: var(--spike-surface);
+  border-color: rgba(234, 230, 216, 0.24);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.30);
+}
+.tool-btn--spike:focus-visible {
+  outline: 2px solid var(--spike-accent-active);
+  outline-offset: 2px;
+}
+.tool-btn--spike.active {
+  background: var(--spike-surface);
+  color: var(--spike-accent-active);
+  border: 1.5px solid var(--spike-accent-active);
+  box-shadow: var(--shadow-sm);
+}
+.tool-btn--spike.active:hover {
+  background: var(--spike-surface);
+  border-color: var(--spike-accent-active);
+}
 
 /* ── Support buttons ──────────────────────────────────────── */
 .support-btn {
