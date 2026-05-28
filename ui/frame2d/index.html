@@ -23,7 +23,15 @@
 
       <details class="card">
         <summary>Geometry</summary>
-        <button class="tool-btn" data-mode="node"   onclick="setMode('node')"   title="Click canvas to place a node">➕ Add Node</button>
+        <button class="tool-btn tool-btn--spike" data-mode="node" onclick="setMode('node')" title="Click canvas to place a node">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- node-dot with "+" badge: filled circle (node) + small plus mark top-right -->
+            <circle cx="8" cy="11" r="3.2" fill="currentColor"/>
+            <line x1="13" y1="4" x2="17" y2="4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="15" y1="2" x2="15" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+          Add Node
+        </button>
         <button class="tool-btn tool-btn--spike" data-mode="member" onclick="setMode('member')" title="Click two nodes to connect them">
           <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
             <!-- I-beam silhouette: top flange, central web, bottom flange -->
@@ -33,78 +41,276 @@
           </svg>
           Add Member
         </button>
-        <button class="tool-btn" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">✏️ Edit Node</button>
+        <button class="tool-btn tool-btn--spike" data-mode="editNode" onclick="setMode('editNode')" title="Edit node coordinates">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- node-dot bottom-left + pencil top-right -->
+            <circle cx="5" cy="13" r="2.8" fill="currentColor"/>
+            <!-- pencil: tilted rectangle body + triangular tip -->
+            <path d="M11 3 L15 7 L9 13 L7 13 L7 11 Z" fill="currentColor"/>
+          </svg>
+          Edit Node
+        </button>
       </details>
 
       <details class="card">
         <summary>Supports</summary>
-        <button class="tool-btn support-btn" data-mode="fixed" onclick="setMode('fixed')"
+        <button class="tool-btn support-btn tool-btn--spike" data-mode="fixed" onclick="setMode('fixed')"
           title="Fully fixed — restrains X, Y and rotation">
-          ▪ Fixed
+          <span class="support-label">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- fixed support: hatched wall on left + member extending right -->
+              <line x1="2" y1="2"  x2="2"  y2="16" stroke="currentColor" stroke-width="1.6"/>
+              <line x1="2" y1="3"  x2="0"  y2="5"  stroke="currentColor" stroke-width="1"/>
+              <line x1="2" y1="6"  x2="0"  y2="8"  stroke="currentColor" stroke-width="1"/>
+              <line x1="2" y1="9"  x2="0"  y2="11" stroke="currentColor" stroke-width="1"/>
+              <line x1="2" y1="12" x2="0"  y2="14" stroke="currentColor" stroke-width="1"/>
+              <line x1="2" y1="9"  x2="17" y2="9"  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Fixed
+          </span>
           <span class="support-tag fixed">X + Y + θ</span>
         </button>
-        <button class="tool-btn support-btn" data-mode="pinned" onclick="setMode('pinned')"
+        <button class="tool-btn support-btn tool-btn--spike" data-mode="pinned" onclick="setMode('pinned')"
           title="Pin — restrains X and Y, rotation is free">
-          📌 Pin
+          <span class="support-label">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- pinned support: triangle on hatched ground -->
+              <polygon points="9,4 4,12 14,12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+              <line x1="2"  y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.4"/>
+              <line x1="4"  y1="12" x2="2"  y2="15" stroke="currentColor" stroke-width="1"/>
+              <line x1="7"  y1="12" x2="5"  y2="15" stroke="currentColor" stroke-width="1"/>
+              <line x1="10" y1="12" x2="8"  y2="15" stroke="currentColor" stroke-width="1"/>
+              <line x1="13" y1="12" x2="11" y2="15" stroke="currentColor" stroke-width="1"/>
+              <line x1="16" y1="12" x2="14" y2="15" stroke="currentColor" stroke-width="1"/>
+            </svg>
+            Pin
+          </span>
           <span class="support-tag fixed">X + Y fixed</span>
         </button>
-        <button class="tool-btn support-btn" data-mode="rollerY" onclick="setMode('rollerY')"
+        <button class="tool-btn support-btn tool-btn--spike" data-mode="rollerY" onclick="setMode('rollerY')"
           title="Horizontal roller — free to slide left/right, vertical movement restrained">
-          🛞 Roller
+          <span class="support-label">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- roller (Y restrained): triangle on circle on ground — rolls horizontally -->
+              <polygon points="9,2 4,9 14,9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="9" cy="12" r="2.2" fill="none" stroke="currentColor" stroke-width="1.3"/>
+              <line x1="2"  y1="15.5" x2="16" y2="15.5" stroke="currentColor" stroke-width="1.2"/>
+              <line x1="5"  y1="15.5" x2="3"  y2="17.5" stroke="currentColor" stroke-width="0.9"/>
+              <line x1="9"  y1="15.5" x2="7"  y2="17.5" stroke="currentColor" stroke-width="0.9"/>
+              <line x1="13" y1="15.5" x2="11" y2="17.5" stroke="currentColor" stroke-width="0.9"/>
+            </svg>
+            Roller
+          </span>
           <span class="support-tag">↔ free &nbsp;|&nbsp; Y fixed</span>
         </button>
-        <button class="tool-btn support-btn" data-mode="rollerX" onclick="setMode('rollerX')"
+        <button class="tool-btn support-btn tool-btn--spike" data-mode="rollerX" onclick="setMode('rollerX')"
           title="Vertical roller — free to slide up/down, horizontal movement restrained">
-          🛞 Roller
+          <span class="support-label">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- roller (X restrained): triangle pointing at vertical hatched wall, circle between — rolls vertically -->
+              <line x1="2" y1="2"  x2="2"  y2="16" stroke="currentColor" stroke-width="1.4"/>
+              <line x1="2" y1="4"  x2="0"  y2="6"  stroke="currentColor" stroke-width="0.9"/>
+              <line x1="2" y1="8"  x2="0"  y2="10" stroke="currentColor" stroke-width="0.9"/>
+              <line x1="2" y1="12" x2="0"  y2="14" stroke="currentColor" stroke-width="0.9"/>
+              <polygon points="7,9 14,4 14,14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <circle cx="4.6" cy="9" r="1.7" fill="none" stroke="currentColor" stroke-width="1.2"/>
+            </svg>
+            Roller
+          </span>
           <span class="support-tag">↕ free &nbsp;|&nbsp; X fixed</span>
         </button>
-        <button class="tool-btn support-btn" data-mode="spring" onclick="setMode('spring')"
+        <button class="tool-btn support-btn tool-btn--spike" data-mode="spring" onclick="setMode('spring')"
           title="Elastic spring support — specify stiffness Kx, Ky, Kθ (blank = free)">
-          〰 Spring
+          <span class="support-label">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- spring: zigzag with short straight leads on each side -->
+              <line x1="1" y1="9" x2="3.5" y2="9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <polyline points="3.5,9 5,5 6.5,13 8,5 9.5,13 11,5 12.5,13 14.5,9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="14.5" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            Spring
+          </span>
           <span class="support-tag">Kx | Ky | Kθ</span>
         </button>
       </details>
 
       <details class="card">
         <summary>Node Loads</summary>
-        <button class="tool-btn" data-mode="loadX"      onclick="setMode('loadX')"      title="Apply horizontal force at a node">→ Force X</button>
-        <button class="tool-btn" data-mode="loadY"      onclick="setMode('loadY')"      title="Apply vertical force at a node">↓ Force Y</button>
-        <button class="tool-btn" data-mode="loadMoment" onclick="setMode('loadMoment')" title="Apply moment at a node">↺ Moment</button>
-        <button class="tool-btn" data-mode="editNodeLoad" onclick="setMode('editNodeLoad')" title="Click a node to edit its existing load magnitude">✏️ Edit Load</button>
+        <button class="tool-btn tool-btn--spike" data-mode="loadX" onclick="setMode('loadX')" title="Apply horizontal force at a node">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- horizontal load arrow: rectangular tail + filled triangular head pointing right -->
+            <rect x="2" y="8" width="9" height="2" fill="currentColor"/>
+            <polygon points="11,5 17,9 11,13" fill="currentColor"/>
+          </svg>
+          Force X
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="loadY" onclick="setMode('loadY')" title="Apply vertical force at a node">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- vertical load arrow: rectangular tail + filled triangular head pointing down -->
+            <rect x="8" y="2" width="2" height="9" fill="currentColor"/>
+            <polygon points="5,11 13,11 9,17" fill="currentColor"/>
+          </svg>
+          Force Y
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="loadMoment" onclick="setMode('loadMoment')" title="Apply moment at a node">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- moment: curved arrow (about 3/4 circle) with arrowhead at the open end -->
+            <path d="M 14 13 A 6 6 0 1 1 13 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polygon points="10,2 16,4 13,7" fill="currentColor"/>
+          </svg>
+          Moment
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="editNodeLoad" onclick="setMode('editNodeLoad')" title="Click a node to edit its existing load magnitude">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- small load arrow (vertical, top-left) + pencil (bottom-right) -->
+            <rect x="2" y="2" width="1.6" height="6" fill="currentColor"/>
+            <polygon points="0.4,8 5.2,8 2.8,11.5" fill="currentColor"/>
+            <path d="M11 6 L15 10 L9 16 L7 16 L7 14 Z" fill="currentColor"/>
+          </svg>
+          Edit Load
+        </button>
       </details>
 
       <details class="card">
         <summary>Member Loads</summary>
-        <button class="tool-btn" data-mode="udl" onclick="setMode('udl')" title="Apply uniform distributed load to a member (vertical and/or horizontal)">▤ UDL</button>
-        <button class="tool-btn" data-mode="editUdl" onclick="setMode('editUdl')" title="Click a member to edit its existing UDL">✏️ Edit UDL</button>
+        <button class="tool-btn tool-btn--spike" data-mode="udl" onclick="setMode('udl')" title="Apply uniform distributed load to a member (vertical and/or horizontal)">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- UDL: top beam line + row of small downward arrows beneath -->
+            <line x1="1" y1="5" x2="17" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="3"  y1="6" x2="3"  y2="13" stroke="currentColor" stroke-width="1"/>
+            <polygon points="1.8,12 4.2,12 3,15"   fill="currentColor"/>
+            <line x1="9"  y1="6" x2="9"  y2="13" stroke="currentColor" stroke-width="1"/>
+            <polygon points="7.8,12 10.2,12 9,15" fill="currentColor"/>
+            <line x1="15" y1="6" x2="15" y2="13" stroke="currentColor" stroke-width="1"/>
+            <polygon points="13.8,12 16.2,12 15,15" fill="currentColor"/>
+          </svg>
+          UDL
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="editUdl" onclick="setMode('editUdl')" title="Click a member to edit its existing UDL">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- mini UDL (top-left) + pencil (bottom-right) -->
+            <line x1="1" y1="3" x2="10" y2="3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="2.5" y1="4" x2="2.5" y2="7.5" stroke="currentColor" stroke-width="0.9"/>
+            <polygon points="1.6,7 3.4,7 2.5,9" fill="currentColor"/>
+            <line x1="5.5" y1="4" x2="5.5" y2="7.5" stroke="currentColor" stroke-width="0.9"/>
+            <polygon points="4.6,7 6.4,7 5.5,9" fill="currentColor"/>
+            <line x1="8.5" y1="4" x2="8.5" y2="7.5" stroke="currentColor" stroke-width="0.9"/>
+            <polygon points="7.6,7 9.4,7 8.5,9" fill="currentColor"/>
+            <path d="M12 8 L16 12 L10 18 L8 18 L8 16 Z" fill="currentColor"/>
+          </svg>
+          Edit UDL
+        </button>
       </details>
 
       <details class="card">
         <summary>Member Properties</summary>
-        <button class="tool-btn" data-mode="toggleBar"  onclick="setMode('toggleBar')"  title="Toggle member between beam (bending) and bar (axial only)">⇌ Beam / Bar</button>
-        <button class="tool-btn" data-mode="pinLeft"    onclick="setMode('pinLeft')"    title="Toggle rotation release at the start node of a member">◎ Pin — Left end</button>
-        <button class="tool-btn" data-mode="pinRight"   onclick="setMode('pinRight')"   title="Toggle rotation release at the end node of a member">◎ Pin — Right end</button>
-        <button class="tool-btn" data-mode="memberProps" onclick="setMode('memberProps')" title="Click a member to assign per-member E, I, A overrides">&#x229e; Per-Member E/I/A</button>
+        <button class="tool-btn tool-btn--spike" data-mode="toggleBar" onclick="setMode('toggleBar')" title="Toggle member between beam (bending) and bar (axial only)">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- beam (thick) on left ⇌ bar (thin) on right -->
+            <rect x="1" y="6.5" width="6" height="5" rx="0.5" fill="currentColor"/>
+            <path d="M8 6 L11 6 M11 6 L10 5 M11 6 L10 7" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+            <path d="M11 12 L8 12 M8 12 L9 11 M8 12 L9 13" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+            <line x1="12" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Beam / Bar
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="pinLeft" onclick="setMode('pinLeft')" title="Toggle rotation release at the start node of a member">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- pin release at LEFT tip: small open circle + member line + solid node at right -->
+            <circle cx="3" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="5" y1="9" x2="16" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="16" cy="9" r="1.4" fill="currentColor"/>
+          </svg>
+          Pin — Left end
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="pinRight" onclick="setMode('pinRight')" title="Toggle rotation release at the end node of a member">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- pin release at RIGHT tip: solid node on left + member line + small open circle right -->
+            <circle cx="2" cy="9" r="1.4" fill="currentColor"/>
+            <line x1="2" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="15" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          Pin — Right end
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="memberProps" onclick="setMode('memberProps')" title="Click a member to assign per-member E, I, A overrides">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- mini I-beam on left + sliders idiom on right (three rows = three properties E/I/A) -->
+            <rect x="1"    y="3"  width="6" height="1.6"          fill="currentColor"/>
+            <rect x="3.25" y="4.6" width="1.5" height="6.8"        fill="currentColor"/>
+            <rect x="1"    y="11.4" width="6" height="1.6"        fill="currentColor"/>
+            <line x1="9" y1="4"  x2="17" y2="4"  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="14" cy="4"  r="1.3" fill="currentColor"/>
+            <line x1="9" y1="9"  x2="17" y2="9"  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="11" cy="9"  r="1.3" fill="currentColor"/>
+            <line x1="9" y1="14" x2="17" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="15.5" cy="14" r="1.3" fill="currentColor"/>
+          </svg>
+          Per-Member E/I/A
+        </button>
       </details>
 
       <details class="card">
         <summary>Edit</summary>
-        <button class="tool-btn" onclick="undoLastAction()">↩️ Undo</button>
-        <button class="tool-btn" data-mode="delete" onclick="setMode('delete')"  title="Delete a node or member">🗑 Delete</button>
-        <button class="tool-btn tool-btn--spike danger" onclick="resetAll()">🔄 Reset All</button>
+        <button class="tool-btn tool-btn--spike" onclick="undoLastAction()" title="Undo last action">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- undo: counter-clockwise curved arrow -->
+            <path d="M 6 9 A 5 5 0 1 1 14 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polygon points="2,9 8,6 8,12" fill="currentColor"/>
+          </svg>
+          Undo
+        </button>
+        <button class="tool-btn tool-btn--spike" data-mode="delete" onclick="setMode('delete')" title="Delete a node or member">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- trash can: lid, handle, body, two interior strokes -->
+            <line x1="7" y1="3" x2="11" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="2" y1="5" x2="16" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M4 6 L5 16 L13 16 L14 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="7"  y1="8.5" x2="7"  y2="13.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            <line x1="11" y1="8.5" x2="11" y2="13.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+          Delete
+        </button>
+        <button class="tool-btn tool-btn--spike danger" onclick="resetAll()" title="Clear all geometry, loads and supports">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- reset: circular arrow with arrowhead -->
+            <path d="M 4 9 A 5 5 0 1 1 9 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polygon points="2,12 6,7 7,12" fill="currentColor"/>
+          </svg>
+          Reset All
+        </button>
       </details>
 
       <details class="card">
         <summary>File</summary>
-        <button class="tool-btn" id="btnSave" onclick="saveModel()" title="Download structure as JSON" disabled>
-          &#x1F4BE; Save JSON
+        <button class="tool-btn tool-btn--spike" id="btnSave" onclick="saveModel()" title="Download structure as JSON" disabled>
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- save: downward arrow into open tray -->
+            <line x1="9" y1="2" x2="9" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <polygon points="5,9 13,9 9,14" fill="currentColor"/>
+            <path d="M2 13 L2 16 L16 16 L16 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Save JSON
         </button>
-        <button class="tool-btn" id="btnLoad" onclick="triggerLoad()" title="Load structure from JSON file">
-          &#x1F4C2; Load JSON
+        <button class="tool-btn tool-btn--spike" id="btnLoad" onclick="triggerLoad()" title="Load structure from JSON file">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- load: upward arrow out of tray -->
+            <polygon points="5,5 13,5 9,1" fill="currentColor"/>
+            <line x1="9" y1="3" x2="9" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M2 13 L2 16 L16 16 L16 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Load JSON
         </button>
         <div class="export-dropdown" style="position:relative; display:inline-block; width:100%;">
-          <button class="tool-btn" id="btnExport" onclick="toggleExportMenu()" title="Export analysis results" disabled style="width:100%">
-            &#x1F4CA; Export Analysis &#x25BE;
+          <button class="tool-btn tool-btn--spike" id="btnExport" onclick="toggleExportMenu()" title="Export analysis results" disabled style="width:100%">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <!-- document with fold corner + text lines -->
+              <path d="M3 2 L11 2 L15 6 L15 16 L3 16 Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M11 2 L11 6 L15 6" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              <line x1="5"  y1="9"  x2="12" y2="9"  stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              <line x1="5"  y1="11" x2="12" y2="11" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+              <line x1="5"  y1="13" x2="10" y2="13" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            Export Analysis &#x25BE;
           </button>
           <div id="exportMenu" style="display:none; position:absolute; left:0; top:100%; z-index:200; background:var(--color-surface); border:1px solid var(--color-border); border-radius:4px; box-shadow:var(--shadow-md); min-width:160px;">
             <button class="tool-btn" style="width:100%; text-align:left; border:none; border-radius:0;" onclick="exportAnalysis('presentation'); hideExportMenu()">Presentation (auto)</button>
@@ -248,7 +454,16 @@
       </details>
 
       <section class="panel-section">
-        <button class="tool-btn" onclick="resetView()" title="Reset zoom and pan to default (or scroll wheel to zoom, middle-mouse to pan)">🔍 Reset View</button>
+        <button class="tool-btn tool-btn--spike" onclick="resetView()" title="Reset zoom and pan to default (or scroll wheel to zoom, middle-mouse to pan)">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <!-- fit-to-frame: square with four corner brackets -->
+            <path d="M2 6 L2 2 L6 2"   fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 2 L16 2 L16 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M16 12 L16 16 L12 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 16 L2 16 L2 12"  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Reset View
+        </button>
       </section>
 
       <section class="panel-section">
