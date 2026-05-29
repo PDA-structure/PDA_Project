@@ -346,6 +346,7 @@ details[open] > summary {
   opacity: 0.4;
   pointer-events: none;
   transition: opacity 0.15s;
+  font-size: 11px;
 }
 .density-gated.is-active {
   opacity: 1;
