@@ -121,3 +121,55 @@ None.
 - 70/70 pytest green — VERIFIED
 - Diff scope (2 files) — VERIFIED
 - All 7 plan grep gates green — VERIFIED
+
+---
+
+## Post-UAT iterations and close-out (added 2026-05-29)
+
+The single-button spike approved on first sight ("really good"), so it grew into a full toolbar rollout across both solver UIs. All iterations live on the same quick task per repo-established UAT-iteration pattern (cf. 260523-cyp 14 iterations, 260523-i52 3 commits + 2 follow-ups).
+
+### Commit arc (5 commits)
+
+| # | Hash | Scope | Description |
+|---|------|-------|-------------|
+| 1 | `fd2a801` | frame2d (1 button) | Original spike — Add Member button only with `.tool-btn--spike` modifier + two-dots-plus-line glyph. Side-by-side comparison with 9 surviving emoji buttons. |
+| 2 | `b8c9f42` | docs | Original close-of-spike-1 docs commit (PLAN + this SUMMARY + STATE.md row + stopped_at + last_activity) — landed before iteration. |
+| 3 | `45bc5f2` | frame2d (3 buttons) | Iteration 2 after UAT feedback: glyph swap to **I-beam silhouette** (engineering reference); **Solve** button gets `--spike-accent-primary` (yellow) full fill via new `.solve-btn--spike` class; **Reset All** gets `--spike-accent-danger` (burgundy) ink → fill-on-hover via new `.tool-btn--spike.danger` rule. The reserved palette tokens are now in use, `:root` comment updated to match. |
+| 4 | `d650341` | frame2d (full toolbar — 25 buttons) | Rollout across every remaining toolbar button. New SVG glyphs for: Add Node (node-dot + "+"), Edit Node (node + pencil), Fixed (hatched wall + member), Pin (triangle on hatched ground), Roller Y (triangle on circle on ground), Roller X (triangle pointing at hatched wall + circle), Spring (zigzag), Force X / Force Y (load arrows), Moment (curved arrow), Edit Load (load + pencil), UDL (beam + arrow row), Edit UDL (UDL + pencil), Beam/Bar (thick ⇌ thin), Pin Left (open circle at left tip), Pin Right (mirror), Per-Member E/I/A (I-beam + sliders idiom), Undo (curved arrow), Delete (trash), Save JSON (arrow into tray), Load JSON (arrow out of tray), Export Analysis (document + fold), Reset View (fit-to-frame corner brackets). Added `.support-btn .support-label` wrapper rule so the SVG+text group stays left-aligned while `.support-tag` badge gets pushed right via flex space-between. Dropdown menu items inside Export popover intentionally skipped (different inline-styled context). |
+| 5 | `2e88dce` | truss2d (full toolbar mirror — 14 buttons + Solve) | Truss2d mirror of frame2d rollout. Same `--spike-*` palette tokens added at truss2d's `:root`. Same `.tool-btn--spike` / `.solve-btn--spike` / `.tool-btn--spike.danger` / `.support-btn .support-label` rules added above truss2d's existing `.support-btn` block. Same SVG glyph set, adapted to the truss2d button subset: no Fixed, no Spring, no Member Properties (truss is pin/pin/roller, axial-only). Single Add Load button gets the vertical load arrow glyph. |
+
+### Cumulative scope
+
+- 39 buttons modernised total (25 frame2d + 14 truss2d)
+- 4 source files touched across the run: `ui/frame2d/{index.html,style.css}`, `ui/truss2d/{index.html,style.css}`
+- Zero touches to `solver_core/`, `api_server/`, `tests/`, `visualization/`, any `.js` file, or any input/checkbox/scale-row control
+- Zero behaviour change — every `data-mode`, `onclick`, `id`, `title` byte-preserved
+- pytest 70/70 green throughout (no regressions)
+
+### UAT outcome
+
+Frame2d: glyphs approved ("nice the glyphs"); I-beam silhouette confirmed as the right structural-engineering reference; palette confirmed ("looks really good"); active treatment Option A retained ("modern enough"); reserved tokens approved for rollout ("let's give it a try").
+
+Truss2d mirror landed without UAT-surfaced regressions.
+
+### Debug session opened and resolved as user-error
+
+During frame2d UAT (2026-05-28), user reported: "after solve the deflection and bending moment button does not work properly, but the shear diagram and axial load is the same". A debug session was opened at `.planning/debug/frame2d-bmd-deflected-broken.md` with 6 hypotheses. Headless reproduction by gsd-debugger (Chrome DevTools Protocol at `127.0.0.1:9223`) **eliminated all 6 hypotheses**: BMD polygon renders correctly, Deflected Hermite curve renders correctly, SFD/AFD render correctly, no JS errors caught, scale-slider visibility toggles fire correctly, solver outputs healthy.
+
+Root cause confirmed by user 2026-05-29: **stray node placed outside the visible canvas viewport** — solver analysed a different structure than the user saw on screen. Not a code bug.
+
+Debug session moved to `.planning/debug/resolved/frame2d-bmd-deflected-broken.md` with resolution note. Incident strengthens existing pending todo `.planning/todos/pending/2026-05-23-frame2d-accidental-node-placement.md` (Add-Node click-sensitivity fix is now justified by two independent UAT incidents).
+
+New feedback memory captured: `feedback_check_stray_offcanvas_node_first.md` — for future frame2d/truss2d "diagram looks wrong after solve" reports, first question is whether there's a stray node outside the viewport. Cheaper than headless reproduction.
+
+### What's still future work (deferred to separate quick tasks)
+
+- **Material Properties self-weight modernisation** — captured during this UAT as a separate `/btw` branched conversation; will land as its own quick task. Idea: promote the `chkSelfWeight` checkbox to a `.tool-btn--spike` toggle with a ρ (rho — density) glyph, and gate the density input on the toggle's active state.
+- **Add-Node click-sensitivity fix** — pending todo `.planning/todos/pending/2026-05-23-frame2d-accidental-node-placement.md` is now backed by a second UAT incident; should be picked up before more solver-UI polish.
+- **Frame2d toolbar background parity** — pre-existing todo from `dfbc07e` is unrelated and remains open.
+- **Light-mode adaptation of `--spike-*` palette** — palette is currently dark-first; if the theme toggle is exercised, the spike buttons keep the dark palette in light mode. Either define a `[data-theme="light"]` override block or accept the dark-first design as the intent (current default).
+- **Truss2d theme toggle** — truss2d's theme toggle button (`themeToggle`) is in the `<header>`, not the toolbar; left untouched and unstyled by the spike.
+
+### Final UAT status
+
+**APPROVED** — UAT closed 2026-05-29 with the resolved debug session. Both solver UIs at toolbar-modernisation parity.
