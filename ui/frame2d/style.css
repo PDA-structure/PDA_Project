@@ -346,8 +346,13 @@ details[open] > summary {
   opacity: 0.4;
   pointer-events: none;
   transition: opacity 0.15s;
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 11px;
+}
+/* Unit annotation (kg/m³) below the input — small, muted, structural-engineering style. */
+.density-gated .unit-suffix {
+  font-size: 9px;
+  color: var(--color-fg-subtle);
+  margin-top: 1px;
 }
 .density-gated.is-active {
   opacity: 1;
