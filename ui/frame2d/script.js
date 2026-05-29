@@ -194,6 +194,30 @@ const MODE_LABELS = {
 const SUPPORT_MODES = new Set(['fixed', 'pinned', 'rollerX', 'rollerY', 'spring']);
 const LOAD_MODES    = new Set(['loadX', 'loadY', 'loadMoment', 'udl', 'editNodeLoad', 'editUdl']);
 
+// ── Self-weight toggle (260529-7hw) ──────────────────────────────────────
+// Drives the ρ `.tool-btn--spike` button + density-gated input wrapper in
+// Material Properties card. The hidden #chkSelfWeight checkbox is the canonical
+// state — solve()/saveModel()/loadModelFromJson() all read/write it directly.
+function toggleSelfWeight() {
+  const btn = document.getElementById('btnSelfWeight');
+  const chk = document.getElementById('chkSelfWeight');
+  const densityLabel = document.querySelector('.density-gated');
+  const nowActive = !btn.classList.contains('active');
+  btn.classList.toggle('active', nowActive);
+  chk.checked = nowActive;
+  if (densityLabel) densityLabel.classList.toggle('is-active', nowActive);
+  draw();
+}
+
+function syncSelfWeightVisualState() {
+  const btn = document.getElementById('btnSelfWeight');
+  const chk = document.getElementById('chkSelfWeight');
+  const densityLabel = document.querySelector('.density-gated');
+  if (!btn || !chk) return;
+  btn.classList.toggle('active', !!chk.checked);
+  if (densityLabel) densityLabel.classList.toggle('is-active', !!chk.checked);
+}
+
 function setMode(m) {
   mode = m;
   currentMemberStart = null;
@@ -3125,6 +3149,8 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     } else {
       document.getElementById('chkSelfWeight').checked = false;
     }
+    // Sync ρ button + density-gated visual state to match the loaded chkSelfWeight.checked
+    syncSelfWeightVisualState();
 
     // D-02/D-04: Restore memberOverrides from canvas.memberOverrides back into member objects
     if (data.canvas && data.canvas.memberOverrides) {
@@ -3681,4 +3707,5 @@ function updateSectionsSummary() {
 setMode('view');
 updateSaveButtonState();
 updateSectionsSummary();
+syncSelfWeightVisualState();
 draw();

@@ -339,6 +339,19 @@ details[open] > summary {
   border-color: var(--spike-accent-active);
 }
 
+/* Density input gates on the Self-weight toggle's .active class.
+   Dimmed + non-interactive when self-weight is off, full-opacity when on.
+   Companion to `.tool-btn--spike` ρ toggle in Material Properties card. */
+.density-gated {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.density-gated.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* Support-button glyph+label wrapper: keeps the SVG glyph and the
    button text grouped on the LEFT of the flex row so the existing
    `.support-tag` badge stays pushed to the right by `justify-content:

@@ -332,10 +332,14 @@
           <input type="number" id="inputA" value="100" min="0" step="1">
         </label>
         <hr style="margin:6px 0;border:none;border-top:1px solid var(--border)">
-        <label class="checkbox-label">
-          <input type="checkbox" id="chkSelfWeight"> Include self-weight
-        </label>
-        <label>Density (kg/m<sup>3</sup>)
+        <button class="tool-btn tool-btn--spike" id="btnSelfWeight" type="button" onclick="toggleSelfWeight()" title="Toggle self-weight (ρ × A × g applied as distributed dead load on every beam member)">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <text x="9" y="14" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="16" font-style="italic" fill="currentColor">ρ</text>
+          </svg>
+          Self-weight
+        </button>
+        <input type="checkbox" id="chkSelfWeight" style="display:none" aria-hidden="true">
+        <label class="density-gated">Density (kg/m<sup>3</sup>)
           <input type="number" id="inputDensity" value="7850" min="0" step="50">
         </label>
       </details>
