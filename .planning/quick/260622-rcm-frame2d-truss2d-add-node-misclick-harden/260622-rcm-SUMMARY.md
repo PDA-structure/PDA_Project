@@ -42,7 +42,7 @@ Runs inside `validateBeforeSolve()` (extended in frame2d, **newly added** in tru
 - `node --check` clean on both files.
 - `pytest -q` 70/70 green throughout (no Python / solver / API touched).
 - Scope contract held: only `ui/frame2d/script.js` and `ui/truss2d/script.js` changed across all four commits.
-- **Browser UAT (checkpoint T6): PENDING HUMAN VERIFICATION.** Server is running; the headline check is: place a single disconnected node in frame2d → Solve → expect a red-highlighted node + actionable block message instead of the opaque API error.
+- **Browser UAT (checkpoint T6): PASSED 2026-06-22.** User confirmed both UIs — frame2d (load frame + add loose node → Solve → red-highlighted node + actionable block message instead of the opaque API error) and truss2d. A stale cached `script.js` initially masked the fix; resolved by hard refresh, and permanently fixed by the `no-cache` headers follow-up (commit `ec3b948`).
 
 ## Notes / follow-ups
 
