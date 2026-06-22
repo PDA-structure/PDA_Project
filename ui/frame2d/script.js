@@ -140,6 +140,8 @@ let offendingMembers = [];
 // ── View transform (zoom / pan) ───────────────────────────────────────────
 let view = { scale: 1, tx: 0, ty: 0 };
 let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy = 0;
+const CLICK_DRAG_PX = 3;            // mirrors the 260523-i52 <summary> click-vs-drag threshold
+let clickDownX = null, clickDownY = null;
 
 function toWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
@@ -243,6 +245,12 @@ function setMode(m) {
 canvas.addEventListener('click', e => {
   try {
   if (isPanning) return;
+  if (clickDownX !== null) {
+    const movedX = Math.abs(e.clientX - clickDownX);
+    const movedY = Math.abs(e.clientY - clickDownY);
+    clickDownX = null; clickDownY = null;   // consume — one mousedown per click
+    if (movedX > CLICK_DRAG_PX || movedY > CLICK_DRAG_PX) return;  // drag/scrub → place nothing
+  }
   let { x: px, y: py } = toWorld(e.clientX, e.clientY);
 
   // ---- Geometry ----
@@ -255,6 +263,11 @@ canvas.addEventListener('click', e => {
     const realY = ((origin.y - py) / GRID) * UNIT;
     nodes.push({ id: nodes.length, x: px, y: py, realX, realY });
     results = null;
+    const screenX = px * view.scale + view.tx;
+    const screenY = py * view.scale + view.ty;
+    if (screenX < 0 || screenX > LOGICAL_W || screenY < 0 || screenY > LOGICAL_H) {
+      setStatus('Node ' + nodes.length + ' placed OFF-SCREEN (outside the visible area). Use Reset View to see it.', true);
+    }
 
   } else if (mode === 'member') {
     const n = findNodeAt(px, py);
@@ -3356,6 +3369,7 @@ function renderResults(res) {
 
 // ── Pan (middle-mouse drag) ───────────────────────────────────────────────
 canvas.addEventListener('mousedown', e => {
+  if (e.button === 0) { clickDownX = e.clientX; clickDownY = e.clientY; }
   if (e.button === 1) {
     e.preventDefault();
     isPanning = true;
