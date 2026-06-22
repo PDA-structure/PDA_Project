@@ -68,9 +68,23 @@ engine.register("truss2d", lambda model: Truss2DAdapter(model))
 # ---- serve UIs as static files (Tailscale / Render-ready) ----
 # Resolves to <repo_root>/ui/ — siblings: api_server/, ui/, solver_core/.
 # Access: /ui/truss2d/index.html and /ui/frame2d/index.html.
+class NoCacheStaticFiles(StaticFiles):
+    """Serve UI assets with ``Cache-Control: no-cache`` so browsers always
+    revalidate against the ETag/Last-Modified before reusing a cached copy.
+    Revalidation is cheap (304 Not Modified when unchanged) but guarantees a
+    changed script.js / style.css is picked up immediately — removing the
+    "hard-refresh after every UI edit" foot-gun (see quick task 260622-rcm,
+    where a cached script.js masked a working fix)."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 app.mount(
     "/ui",
-    StaticFiles(directory=str(Path(__file__).resolve().parent.parent / "ui")),
+    NoCacheStaticFiles(directory=str(Path(__file__).resolve().parent.parent / "ui")),
     name="ui",
 )
 
