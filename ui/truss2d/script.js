@@ -103,6 +103,7 @@ let view = { scale: 1, tx: 0, ty: 0 };
 let isPanning = false, panStartX = 0, panStartY = 0, panStartTx = 0, panStartTy = 0;
 const CLICK_DRAG_PX = 3;            // mirrors the 260523-i52 <summary> click-vs-drag threshold
 let clickDownX = null, clickDownY = null;
+let offendingNodes = [];   // 0-based node ids flagged by the pre-solve rogue scan
 
 function toWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
@@ -383,6 +384,70 @@ function reindexNodes() {
   loads.forEach(l => { l.nodeId = idMap[l.nodeId]; });
 }
 
+// ── Pre-solve validation ───────────────────────────────────────────────────
+/**
+ * Runs before every solve attempt.  Returns false to BLOCK when a loose /
+ * rogue node is found (zero incident members → singular stiffness matrix →
+ * opaque API "unstable / under-restrained").  Warns (but does NOT block) when
+ * two nodes are within 50 mm of each other.  Resets offendingNodes each call.
+ */
+function validateBeforeSolve() {
+  offendingNodes = [];
+
+  // Incidence: nodeId (0-based) → list of incident members.
+  const incidence = new Map();
+  members.forEach(m => {
+    if (!incidence.has(m.start)) incidence.set(m.start, []);
+    if (!incidence.has(m.end))   incidence.set(m.end,   []);
+    incidence.get(m.start).push(m);
+    incidence.get(m.end).push(m);
+  });
+
+  // 1. Loose / rogue node → BLOCK (LOCKED 2026-06-22).
+  const loose = [];
+  nodes.forEach(n => {
+    if (!incidence.has(n.id) || incidence.get(n.id).length === 0) loose.push(n.id);
+  });
+  if (loose.length > 0) {
+    offendingNodes = loose;
+    const oneBased = loose.map(id => id + 1);
+    const noun = loose.length === 1 ? 'Node' : 'Nodes';
+    const verb = loose.length === 1 ? 'is' : 'are';
+    setStatus(
+      noun + ' ' + oneBased.join(', ') + ' ' + verb +
+      ' not connected to any member — delete or connect before solving.',
+      true
+    );
+    draw();
+    return false;   // BLOCK
+  }
+
+  // 2. Too-close / coincident → WARN, do NOT block (LOCKED 2026-06-22).
+  const TOO_CLOSE_M = 0.05;   // 50 mm
+  const closePairs = [];
+  const closeIds = new Set();
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const d = Math.hypot(nodes[j].realX - nodes[i].realX, nodes[j].realY - nodes[i].realY);
+      if (d < TOO_CLOSE_M) {
+        closePairs.push((nodes[i].id + 1) + ' and ' + (nodes[j].id + 1));
+        closeIds.add(nodes[i].id); closeIds.add(nodes[j].id);
+      }
+    }
+  }
+  if (closePairs.length > 0) {
+    offendingNodes = Array.from(closeIds);
+    setStatus(
+      'Nodes ' + closePairs.join('; ') +
+      ' are within 50 mm — possible duplicate; consider merging. Solving anyway.',
+      false
+    );
+    draw();
+  }
+
+  return true;
+}
+
 // ── Solve ─────────────────────────────────────────────────────────────────
 async function solve() {
   if (nodes.length < 2)   return setStatus('Need at least 2 nodes.', true);
@@ -393,6 +458,8 @@ async function solve() {
   const A_cm2 = parseFloat(document.getElementById('inputA').value);
   if (isNaN(E_GPa) || isNaN(A_cm2) || E_GPa <= 0 || A_cm2 <= 0)
     return setStatus('Check E and A values.', true);
+
+  if (!validateBeforeSolve()) return;
 
   const E = E_GPa * 1e9;          // GPa → Pa
   const A = A_cm2 * 1e-4;         // cm² → m²
@@ -616,7 +683,7 @@ function drawNodes(labelManager) {
   nodes.forEach(n => {
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = cssVar('--canvas-node');
+    ctx.fillStyle = offendingNodes.includes(n.id) ? '#e53935' : cssVar('--canvas-node');
     ctx.fill();
     if (showNodeIds) {
       labelManager.add({
