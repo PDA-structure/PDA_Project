@@ -1,8 +1,8 @@
 ---
 phase: quick-260627-dg0
 plan: 01
-status: incomplete
-completed_tasks: 3
+status: complete
+completed_tasks: 4
 total_tasks: 4
 date: 2026-06-27
 ---
@@ -52,11 +52,12 @@ and `solve_member_forces()` use it. So per-member A flows into stiffness AND str
 - Solver untouched (already array-capable). CLAUDE.md hard rules respected
   (no matplotlib/printing in solver_core; adapter returns AnalysisResult; A cm²→m² ×1e-4).
 
-## Remaining
+## Task 4 — browser UAT: APPROVED (2026-06-27)
 
-- **Task 4 (blocking checkpoint):** human browser UAT of the end-to-end flow against the
-  live UI. See PLAN.md `<how-to-verify>`. On approval, mark this task complete and flip
-  SUMMARY status to `complete`.
+User confirmed the feature works end-to-end in the browser ("yes, it works"). All 4 tasks
+complete; task closed. Follow-on improvements (multi-select A, max-deflection parity,
+stress→force+T/C results restructure, solver→marimo design handoff) captured as the next
+quick task / design scoping, not blockers on this one.
 
 ## Note on artifacts
 
