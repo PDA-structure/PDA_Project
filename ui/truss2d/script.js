@@ -166,6 +166,7 @@ const MODE_LABELS = {
   view: 'View', node: 'Add Node', member: 'Add Member',
   pinned: 'Pinned Support', rollerX: 'Roller (X fixed)', rollerY: 'Roller (Y fixed)',
   load: 'Add Load', editNode: 'Edit Node', delete: 'Delete',
+  memberA: 'Member A',
 };
 
 const SUPPORT_MODES = new Set(['pinned', 'rollerX', 'rollerY']);
@@ -288,6 +289,28 @@ canvas.addEventListener('click', e => {
       }
       if (nodes.length === 0) { origin = null; currentMemberStart = null; }
       results = null;
+    }
+
+  } else if (mode === 'memberA') {
+    const mi = findMemberAt(px, py);
+    if (mi !== null) {
+      const globalA_cm2 = parseFloat(document.getElementById('inputA').value) || 100;
+      const current = members[mi].A_override != null ? members[mi].A_override : globalA_cm2;
+      const raw = prompt(
+        'Member ' + (mi + 1) + ' — cross-sectional area A (cm²):\n' +
+        '(Leave blank or enter 0 to revert to global A = ' + globalA_cm2 + ' cm²)',
+        String(current)
+      );
+      if (raw === null) return;   // user cancelled
+      const val = parseFloat(raw);
+      saveHistory();
+      if (!isNaN(val) && val > 0) {
+        members[mi].A_override = val;   // store in cm²
+      } else {
+        members[mi].A_override = null;  // revert to global
+      }
+      results = null;
+      draw();
     }
   }
 
@@ -462,7 +485,14 @@ async function solve() {
   if (!validateBeforeSolve()) return;
 
   const E = E_GPa * 1e9;          // GPa → Pa
-  const A = A_cm2 * 1e-4;         // cm² → m²
+
+  // Per-member A resolution (mirrors frame2d pattern):
+  // If any member has an A_override, send a per-member array (cm² → m²);
+  // otherwise send the global scalar — payload is byte-identical to before.
+  const anyA = members.some(m => m.A_override != null);
+  const A = anyA
+    ? members.map(m => (m.A_override != null ? m.A_override : A_cm2) * 1e-4)
+    : A_cm2 * 1e-4;
 
   // Build restrainedDoF (1-based)
   const restrainedDoF = [];
@@ -617,6 +647,32 @@ function drawMembers(labelManager) {
 
     if (label && document.getElementById('chkMemberForces')?.checked) {
       drawMemberLabel(n1, n2, label, color, labelManager);
+    }
+    // Per-member A annotation: always show when an override is set
+    if (m.A_override != null) {
+      const mx = (n1.x + n2.x) / 2;
+      const my = (n1.y + n2.y) / 2;
+      const dx = n2.x - n1.x;
+      const dy = n2.y - n1.y;
+      let angle = Math.atan2(dy, dx);
+      if (Math.abs(angle) > Math.PI / 2) angle += Math.PI;
+      const fs = Math.round(7 * labelScale * getSymbolScale());
+      labelManager.add({
+        text: 'A=' + m.A_override + 'cm²',
+        anchorX: mx, anchorY: my,
+        preferredX: mx, preferredY: my + 10,
+        priority: 25,
+        color: cssVar('--canvas-label'),
+        font: '500 ' + fs + 'px ' + MONO_FONT_FAMILY,
+        fontSize: fs,
+        bgColor: cssVar('--canvas-label-bg'),
+        bgPadding: 1,
+        rotation: angle,
+        textAlign: 'center',
+        textBaseline: 'top',
+        radius: 14,
+        type: 'memberAreaOverride',
+      });
     }
     if (document.getElementById('chkMemberIds')?.checked) {
       drawMemberIdLabel(n1, n2, idx, labelManager);
