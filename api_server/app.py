@@ -14,6 +14,18 @@ from pda_analysis_software.models.truss2d_model import TrussModel2D
 from pda_analysis_software.adapters.frame_adapters import FrameV2Adapter
 from pda_analysis_software.adapters.truss_adapters import Truss2DAdapter
 from pda_analysis_software.errors import SolverDiagnosticError
+from pda_analysis_software.loads.code_packs import get_code_pack
+from pda_analysis_software.loads.natures import Nature
+from pda_analysis_software.loads.combinations import (
+    LoadCase,
+    Combination,
+    CombinationTerm,
+    generate_eurocode,
+    superpose,
+    superpose_displacement,
+    delta_max,
+    envelope,
+)
 
 app = FastAPI(title="PDA Analysis Software API")
 
@@ -246,4 +258,157 @@ def solve_truss2d(req: Truss2DRequest):
         "FG": result.FG.reshape(-1).tolist(),
         "member_forces": None if result.member_forces is None else result.member_forces.reshape(-1).tolist(),
         "meta": result.meta or {},
+    }
+
+
+# ===========================================================================
+# Phase 999.2 — additive load-combination endpoint (D-06/D-08/D-09).
+#
+# STRICTLY ADDITIVE: the existing Truss2DRequest model and /solve/truss2d route
+# above are byte-identical (no-regression gate). This endpoint orchestrates per
+# -case solves through the UNCHANGED Truss2DAdapter (engine.solve N times), then
+# uses the Wave-1 solver-agnostic loads engine to generate combinations,
+# superpose member forces AND displacements, and envelope with per-member
+# governing-combination provenance. Linear superposition (D-09): each non-empty
+# case is solved exactly once; combinations are weighted sums over cached
+# per-case results — no re-solve.
+# ===========================================================================
+class LoadDef(BaseModel):
+    nodeId: int          # same 0-based indexing as the UI 'loads' array / forceVector build
+    direction: str       # "x" | "y"
+    magnitude: float
+
+
+class LoadCaseDef(BaseModel):
+    id: str
+    name: str
+    nature: str          # Nature enum value, e.g. "Dead"
+    loads: List[LoadDef] = []
+    category: Optional[str] = None   # imposed psi0 category ("A-D/H" default, "E_storage"); Imposed only
+
+
+class CombinationTermDef(BaseModel):
+    caseId: str
+    factor: float
+
+
+class CombinationDef(BaseModel):
+    name: str
+    cls: str             # "STR" | "SLS"  ('class' is reserved → field name cls)
+    terms: List[CombinationTermDef]
+
+
+class Truss2DCombinationsRequest(BaseModel):
+    solver: str = "truss2d"
+    nodes: List[List[float]]
+    members: List[List[int]]
+    E: float
+    A: Union[float, List[float]]
+    restrainedDoF: List[int]
+    cases: List[LoadCaseDef]
+    combinations: List[CombinationDef] = []          # explicit manual combos
+    generate: Optional[dict] = None                  # {"code":"eurocode_uk","families":["STR","SLS"]}
+
+
+@app.post("/solve/truss2d/combinations")
+def solve_truss2d_combinations(req: Truss2DCombinationsRequest):
+    n_nodes = len(req.nodes)
+    n_members = len(req.members)
+    n_dof = 2 * n_nodes
+
+    # ---- input-validation guards (added in Task 2) ----
+
+    # ---- per-case solve (D-09): solve each non-empty case ONCE through the
+    #      unchanged Truss2DAdapter; cache BOTH member forces AND displacements.
+    per_case_forces = {}
+    per_case_ug = {}
+    for case in req.cases:
+        if not case.loads:          # Pitfall 4: skip empty cases
+            continue
+        fv = [0.0] * (2 * n_nodes)
+        for ld in case.loads:
+            idx = ld.nodeId * 2 + (1 if ld.direction.lower() == "y" else 0)
+            fv[idx] = ld.magnitude
+        model = TrussModel2D(
+            nodes=np.array(req.nodes, float),
+            members=np.array(req.members, int),
+            E=req.E,
+            A=req.A,
+            forceVector=np.array(fv, float),
+            restrainedDoF=req.restrainedDoF,
+        )
+        result = engine.solve(model, solver_name="truss2d")
+        per_case_forces[case.id] = (
+            None if result.member_forces is None
+            else np.asarray(result.member_forces, float).reshape(-1)
+        )
+        per_case_ug[case.id] = np.asarray(result.UG, float).reshape(-1)
+
+    # ---- no-loaded-cases guard (added in Task 2) ----
+
+    # ---- build the combination list: manual combos first, then generated ----
+    cases_by_id = {c.id: c for c in req.cases}
+    combos = []
+    for cdef in req.combinations:
+        terms = [CombinationTerm(t.caseId, t.factor) for t in cdef.terms]
+        expr_parts = []
+        for t in cdef.terms:
+            c = cases_by_id.get(t.caseId)
+            symbol = c.name if c is not None else t.caseId
+            expr_parts.append(f"{t.factor:g}·{symbol}")
+        combos.append(Combination(
+            name=cdef.name, cls=cdef.cls, terms=terms,
+            expression=" + ".join(expr_parts), leading="",
+        ))
+
+    if req.generate is not None:
+        engine_cases = [
+            LoadCase(
+                id=c.id, name=c.name, nature=Nature(c.nature),
+                loads=[ld.model_dump() for ld in c.loads], category=c.category,
+            )
+            for c in req.cases
+        ]
+        pack = get_code_pack(req.generate.get("code", "eurocode_uk"))
+        families = tuple(req.generate.get("families", ["STR", "SLS"]))
+        combos.extend(generate_eurocode(engine_cases, pack, families))
+
+    # ---- envelope with provenance (D-18/D-19) ----
+    env = envelope(combos, per_case_forces, n_members)
+
+    return {
+        "per_case": {
+            cid: {
+                "member_forces": [] if f is None else f.tolist(),
+                "displacements": per_case_ug[cid].reshape(-1).tolist(),
+            }
+            for cid, f in per_case_forces.items()
+        },
+        "combinations": [
+            {
+                "name": c.name,
+                "cls": c.cls,
+                "leading": c.leading,
+                "expression": c.expression,
+                "member_forces": superpose(c, per_case_forces, n_members).tolist(),
+                "delta_max_m": delta_max(superpose_displacement(c, per_case_ug, n_dof)),
+            }
+            for c in combos
+        ],
+        "envelope": {
+            "members": [
+                {
+                    "member": m.member,
+                    "max_tension_N": m.max_tension, "gov_tension": m.gov_tension,
+                    "max_compression_N": m.max_compression, "gov_compression": m.gov_compression,
+                }
+                for m in env.members
+            ],
+            "combo_to_members": env.combo_to_members,
+        },
+        "meta": {
+            "n_nodes": n_nodes,
+            "n_members": n_members,
+            "n_cases_solved": len(per_case_forces),
+        },
     }
