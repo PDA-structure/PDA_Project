@@ -151,6 +151,7 @@ function getSymbolScale() {
 let mode   = 'node';
 let origin = null;           // canvas pixel of real-world (0,0)
 let currentMemberStart = null;
+let selectedMembers = new Set();  // member indices selected for batch Member-A
 
 let nodes    = [];
 let members  = [];
@@ -175,6 +176,7 @@ const LOAD_MODES    = new Set(['load']);
 function setMode(m) {
   mode = m;
   currentMemberStart = null;
+  selectedMembers.clear();  // leaving any mode drops pending multi-select
   document.querySelectorAll('.tool-btn[data-mode]').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === m)
   );
@@ -293,24 +295,60 @@ canvas.addEventListener('click', e => {
 
   } else if (mode === 'memberA') {
     const mi = findMemberAt(px, py);
-    if (mi !== null) {
-      const globalA_cm2 = parseFloat(document.getElementById('inputA').value) || 100;
-      const current = members[mi].A_override != null ? members[mi].A_override : globalA_cm2;
-      const raw = prompt(
-        'Member ' + (mi + 1) + ' — cross-sectional area A (cm²):\n' +
-        '(Leave blank or enter 0 to revert to global A = ' + globalA_cm2 + ' cm²)',
-        String(current)
-      );
-      if (raw === null) return;   // user cancelled
-      const val = parseFloat(raw);
-      saveHistory();
-      if (!isNaN(val) && val > 0) {
-        members[mi].A_override = val;   // store in cm²
-      } else {
-        members[mi].A_override = null;  // revert to global
-      }
-      results = null;
+    if (e.shiftKey && mi !== null) {
+      // SHIFT-CLICK: toggle member in/out of selection set; no prompt yet
+      if (selectedMembers.has(mi)) selectedMembers.delete(mi);
+      else selectedMembers.add(mi);
       draw();
+      return;
+    }
+    if (mi !== null) {
+      if (selectedMembers.size > 0) {
+        // BATCH APPLY: include the clicked member, prompt once for all
+        selectedMembers.add(mi);
+        const globalA_cm2 = parseFloat(document.getElementById('inputA').value) || 100;
+        const count = selectedMembers.size;
+        const raw = prompt(
+          count + ' member' + (count > 1 ? 's' : '') + ' selected — enter A (cm²):\n' +
+          '(Leave blank or 0 to revert all to global A = ' + globalA_cm2 + ' cm²)',
+          String(globalA_cm2)
+        );
+        if (raw === null) { draw(); return; }  // cancelled — keep selection visible
+        const val = parseFloat(raw);
+        saveHistory();  // single undo step for the whole batch
+        selectedMembers.forEach(function (selIdx) {
+          if (!isNaN(val) && val > 0) {
+            members[selIdx].A_override = val;   // store in cm²
+          } else {
+            members[selIdx].A_override = null;  // revert to global
+          }
+        });
+        selectedMembers.clear();
+        results = null;
+      } else {
+        // SINGLE-MEMBER: existing behaviour unchanged
+        const globalA_cm2 = parseFloat(document.getElementById('inputA').value) || 100;
+        const current = members[mi].A_override != null ? members[mi].A_override : globalA_cm2;
+        const raw = prompt(
+          'Member ' + (mi + 1) + ' — cross-sectional area A (cm²):\n' +
+          '(Leave blank or enter 0 to revert to global A = ' + globalA_cm2 + ' cm²)',
+          String(current)
+        );
+        if (raw === null) return;   // user cancelled
+        const val = parseFloat(raw);
+        saveHistory();
+        if (!isNaN(val) && val > 0) {
+          members[mi].A_override = val;   // store in cm²
+        } else {
+          members[mi].A_override = null;  // revert to global
+        }
+        results = null;
+      }
+    } else if (selectedMembers.size > 0) {
+      // PLAIN CLICK on empty space — clear the selection
+      selectedMembers.clear();
+      draw();
+      return;
     }
   }
 
@@ -355,6 +393,7 @@ document.addEventListener('keydown', e => {
     undoLastAction();
   }
   if (e.key === 'Escape') {
+    // setMode clears selectedMembers; no separate clear needed here
     setMode('view');
   }
 });
@@ -644,6 +683,19 @@ function drawMembers(labelManager) {
     ctx.moveTo(n1.x, n1.y);
     ctx.lineTo(n2.x, n2.y);
     ctx.stroke();
+
+    // Multi-select highlight for Member-A batch mode
+    if (selectedMembers.has(idx)) {
+      ctx.save();
+      ctx.strokeStyle = '#ff9800';  // same accent as highlightNode — clearly distinct from T/C colours
+      ctx.lineWidth = thickness + 4;
+      ctx.globalAlpha = 0.45;
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     if (label && document.getElementById('chkMemberForces')?.checked) {
       drawMemberLabel(n1, n2, label, color, labelManager);
