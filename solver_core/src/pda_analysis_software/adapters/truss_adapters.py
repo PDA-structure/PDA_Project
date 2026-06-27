@@ -24,7 +24,14 @@ class Truss2DAdapter:
         FG = t.solve_reactions()
 
         member_forces_arr = np.array(t.mbrForces, float) if t.mbrForces is not None else None
-        member_stresses = member_forces_arr / self.model.A if member_forces_arr is not None else None
+        # Use np.asarray so that both a scalar float and a per-member list/array
+        # produce element-wise division: scalar broadcasts across all members,
+        # length-N array divides each member force by its own area.
+        member_stresses = (
+            member_forces_arr / np.asarray(self.model.A, float)
+            if member_forces_arr is not None
+            else None
+        )
 
         return AnalysisResult(
             solver="truss2d",

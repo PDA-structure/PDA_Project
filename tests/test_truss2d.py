@@ -159,3 +159,53 @@ def test_two_bar_truss_equilibrium():
 
 
 import math
+
+
+# ---------------------------------------------------------------------------
+# Case 3: Per-member cross-sectional area (test_truss_per_member_area)
+#
+# Two collinear bars in series:
+#   Node 1 (0,0) ── Node 2 (1,0) ── Node 3 (2,0)
+#   Member 0: A1 = 0.01 m²,  Member 1: A2 = 0.02 m²
+#   E = 200 GPa, F = +1000 N at Node 3 in x-direction (DoF 5, index 4).
+#   Restraints: Node 1 fully fixed (DoF 1,2); Node 2 y fixed (DoF 4);
+#               Node 3 y fixed (DoF 6).
+#
+# Series equilibrium → both members carry +1000 N (tension).
+#
+# Displacement at Node 3 x (index 4):
+#   d = F*(L1/(E*A1) + L2/(E*A2))
+#     = 1000*(1/(200e9*0.01) + 1/(200e9*0.02))
+#     = 1000*(5e-11 + 2.5e-11) = 7.5e-7 m
+#
+# Per-member stresses (must differ — proves A fed the stress calc):
+#   σ1 = 1000 / 0.01 = 1.0e5 Pa
+#   σ2 = 1000 / 0.02 = 5.0e4 Pa
+# ---------------------------------------------------------------------------
+def test_truss_per_member_area():
+    """Per-member area feeds stiffness (EA/L) AND stress (F/A)."""
+    E_test = 200e9
+    model = TrussModel2D(
+        nodes=np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]]),
+        members=np.array([[1, 2], [2, 3]]),
+        E=E_test,
+        A=[0.01, 0.02],          # per-member list: m² (NOT cm²)
+        forceVector=np.array([0.0, 0.0, 0.0, 0.0, 1000.0, 0.0]),
+        restrainedDoF=[1, 2, 4, 6],
+    )
+    result = Truss2DAdapter(model).solve()
+
+    # Series equilibrium: both members carry +1000 N tension
+    assert result.member_forces[0] == pytest.approx(1000.0, rel=1e-6)
+    assert result.member_forces[1] == pytest.approx(1000.0, rel=1e-6)
+
+    # Stiffness assertion: Node 3 x-displacement is 7.5e-7 m (index 4 in UG)
+    expected_u3x = 1000.0 * (1.0 / (E_test * 0.01) + 1.0 / (E_test * 0.02))
+    assert result.UG[4, 0] == pytest.approx(expected_u3x, rel=1e-6)
+
+    # Stress assertion: per-member stresses differ, proving A reached stress calc
+    stresses = result.meta["member_stresses"]
+    assert stresses[0] == pytest.approx(1000.0 / 0.01, rel=1e-6)  # 1.0e5 Pa
+    assert stresses[1] == pytest.approx(1000.0 / 0.02, rel=1e-6)  # 5.0e4 Pa
+    # They MUST differ (backward-compat scalar would give same stress)
+    assert abs(stresses[0] - stresses[1]) > 1e3

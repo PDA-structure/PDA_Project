@@ -215,13 +215,22 @@ class Truss2DRequest(BaseModel):
     nodes: List[List[float]]
     members: List[List[int]]
     E: float
-    A: float
+    A: Union[float, List[float]]
     forceVector: List[float]
     restrainedDoF: List[int]
 
 
 @app.post("/solve/truss2d")
 def solve_truss2d(req: Truss2DRequest):
+    # T-dg0-01: guard against per-member A list with wrong length
+    if isinstance(req.A, list) and len(req.A) != len(req.members):
+        raise SolverDiagnosticError(
+            detail=(
+                f"A has {len(req.A)} values but there are {len(req.members)} members. "
+                "Provide a scalar A (uniform) or a list with one value per member."
+            ),
+            cause="shape_mismatch",
+        )
     model = TrussModel2D(
         nodes=np.array(req.nodes, float),
         members=np.array(req.members, int),
