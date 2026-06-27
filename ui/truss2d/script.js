@@ -569,7 +569,7 @@ function draw() {
   if (document.getElementById('chkLoads')?.checked) drawLoads(labelManager);
   if (results && document.getElementById('chkReactions')?.checked) drawReactions(labelManager);
   if (currentMemberStart) highlightNode(currentMemberStart, '#ff9800');
-  if (results && document.getElementById('chkDeflected').checked) drawDeflected();
+  if (results && document.getElementById('chkDeflected').checked) drawDeflected(labelManager);
 
   // Resolve and render all collected labels
   labelManager.resolve();
@@ -1122,10 +1122,13 @@ function drawReactions(labelManager) {
   });
 }
 
-function drawDeflected() {
+function drawDeflected(labelManager) {
   try {
   const scale = parseFloat(document.getElementById('inputScale').value) || 100;
   const UG = results.UG;
+
+  // Track max displacement magnitude for canvas annotation
+  let maxMag = 0, maxScreenX = 0, maxScreenY = 0;
 
   ctx.strokeStyle = cssVar('--canvas-deflected');
   ctx.lineWidth = 1.5;
@@ -1151,9 +1154,34 @@ function drawDeflected() {
     ctx.moveTo(n1.x + dx1, n1.y + dy1);
     ctx.lineTo(n2.x + dx2, n2.y + dy2);
     ctx.stroke();
+
+    // Raw (pre-scale) magnitudes for max tracking
+    const mag1 = Math.hypot(UG[m.start * 2], UG[m.start * 2 + 1]);
+    if (mag1 > maxMag) { maxMag = mag1; maxScreenX = n1.x + dx1; maxScreenY = n1.y + dy1; }
+    const mag2 = Math.hypot(UG[m.end * 2], UG[m.end * 2 + 1]);
+    if (mag2 > maxMag) { maxMag = mag2; maxScreenX = n2.x + dx2; maxScreenY = n2.y + dy2; }
   });
 
   ctx.setLineDash([]);
+
+  // Canvas label at max-displaced node (gated on labelManager presence and non-trivial displacement)
+  if (labelManager && maxMag > 1e-12) {
+    const dfFs = Math.round(BASE_LABEL_SIZE * labelScale * getSymbolScale());
+    labelManager.add({
+      text: 'δ=' + (maxMag * 1000).toFixed(3) + ' mm',
+      anchorX: maxScreenX, anchorY: maxScreenY,
+      preferredX: maxScreenX, preferredY: maxScreenY - 10,
+      priority: 50,
+      color: cssVar('--canvas-deflected'),
+      font: 'bold ' + dfFs + 'px ' + MONO_FONT_FAMILY,
+      fontSize: dfFs,
+      bgColor: cssVar('--canvas-label-bg'),
+      bgPadding: 2,
+      textAlign: 'center',
+      textBaseline: 'middle',
+      type: 'diagram',
+    });
+  }
   } catch (err) {
     showError(err.message, err.fileName || '', err.lineNumber || 0, 0, err);
     throw err;
@@ -1662,6 +1690,22 @@ function renderResults(res) {
   const dBody = document.querySelector('#tableDisplacements tbody');
   dBody.innerHTML = '';
   const UG = res.UG;
+
+  // δ_max summary row: max nodal displacement magnitude (parity with frame2d)
+  let dMaxMag = 0, dMaxNode = 0;
+  nodes.forEach((n, i) => {
+    const mag = Math.hypot(UG[i * 2], UG[i * 2 + 1]);
+    if (mag > dMaxMag) { dMaxMag = mag; dMaxNode = i + 1; }  // 1-based for display
+  });
+  const dMaxTr = document.createElement('tr');
+  if (dMaxMag > 1e-12) {
+    dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">' +
+      (dMaxMag * 1000).toFixed(4) + ' mm @ Node ' + dMaxNode + '</td>';
+  } else {
+    dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">—</td>';
+  }
+  dBody.appendChild(dMaxTr);
+
   nodes.forEach((n, i) => {
     const ux = (UG[i * 2]     * 1000).toFixed(4);  // m → mm
     const uy = (UG[i * 2 + 1] * 1000).toFixed(4);
