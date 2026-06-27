@@ -17,14 +17,16 @@ Imposed) without deleting and re-adding it. The user requested this flexibility 
 
 ## Solution
 
-Let the user reassign an existing load's case in place. Options to consider:
-- An "edit load" affordance (click/right-click a load glyph) that includes a case
-  selector alongside direction/magnitude.
+Let the user reassign an existing load's case **in place, on the spot**. Primary
+interaction requested at UAT: **click a load glyph on the canvas and change its load case
+right there** (e.g. a small inline case picker on click), with the Load Cases panel
+(counts + colour-by-nature) updating live. Options to consider:
+- Click/right-click a load glyph → inline case selector (alongside direction/magnitude edit).
 - A per-load case dropdown in a load list, or a "move selected loads to case ▾" action
   (mirrors the multi-select Member-A pattern from quick 260627-et7).
 
-Keep the case load-counts and colour-by-nature display in sync after reassignment, and
-carry the case field through save/load (already additive).
+Keep the case load-counts and colour-by-nature display in sync immediately after
+reassignment, and carry the case field through save/load (already additive).
 
 ## Notes
 
