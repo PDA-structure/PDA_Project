@@ -1,33 +1,51 @@
 # Next session — start here
 
-**Saved:** 2026-06-27 (end of SEED-005 Phase A session)
+**Saved:** 2026-06-27 (end of phase 999.2 session)
 
-Paste the prompt below to begin. Context: this session shipped the calc migrations
-(padstone/strip/load_buildup), truss2d per-member Area A + UX bundle, and the **full
-SEED-005 Phase A tension solver→calc handoff** (export → import notebook → EC3 tension
-sheets, validated against EN 1993 Ex 7.10). All pushed to both repos.
+Paste the prompt below to begin. Context: this session shipped the **full load-combination
+generator (phase 999.2)** through the GSD pipeline (discuss → UI-spec → research → plan →
+execute, 5 waves, all browser-UAT-approved, verified 22/22, code-review clean) and **scoped
+the compression handoff (SEED-005 Phase B)** for a future marimo_spike session. Both repos
+pushed (pda_project @ 5ccf420, marimo_spike @ c29b321).
+
+Chosen next focus: **improve load combinations** (NOT compression — that's parked for a
+marimo_spike session; brief at `marimo_spike/.planning/notes/seed-005-phase-b-compression-handoff-scoping.md`).
 
 ---
 
 ## Prompt
 
-> **Next: scope and build load combinations (roadmap 999.2) for the truss2d → calc pipeline.** This is the locked next step after SEED-005 Phase A (tension handoff), which is done and pushed.
+> **Improve the load combinations feature (truss2d, pda_project phase 999.2 — built & shipped, origin/main @ 5ccf420).**
 >
-> First read memory `project_next_session_priorities` and `~/Documents/handcals/marimo_spike/.planning/notes/seed-005-solver-to-calc-handoff-scoping.md` for full context.
+> First read for context:
+> - memory: `loadcomb-critical-combination-traceability` (the locked design + differentiator)
+> - memory: `project_next_session_priorities`
+> - `.planning/phases/999.2-load-combination-generator/999.2-CONTEXT.md` (D-01..D-22, esp. the "Deferred Ideas" section)
+> - `.planning/phases/999.2-load-combination-generator/999.2-REVIEW.md` (info items IN-01..IN-04)
 >
-> **Goal:** let the user define unfactored characteristic load cases (Dead / Imposed) in truss2d and produce the ULS design force `NEd = 1.35·G + 1.5·Q` (EN 1990 6.10) that feeds the EC3 tension check.
+> **What's already built:** solver_core `loads/` engine (code-pluggable packs, Eurocode UK; STR-ULS 6.10 + SLS-characteristic; superpose forces+displacement; provenance envelope), additive `POST /solve/truss2d/combinations`, truss2d UI (load-case table + natures Self weight/Dead/Imposed/Wind + imposed ψ₀ category, two-page TSD-style generator wizard, results selector per-case/per-combination/ENVELOPE, **per-member governing-combination traceability** + reverse-index canvas halo), export schema 1.2 carrying **factored governing NEd per member**. Quick-solve path + `/solve/truss2d` byte-identical.
 >
-> **Key facts already established:**
-> - The truss is linear → load combinations are a **superposition layer** (solve each case → combine member forces; no solver-math change).
-> - **Prerequisite:** truss2d loads are currently **untyped** (`{nodeId, direction, magnitude}`) — so this needs **load-typing (Dead/Imposed) in the UI + model, and solve-per-case**. That's the real work.
-> - The `load_combination` provenance string is **already wired** through the export → calc slice → tension sheet; combinations just need to populate it dynamically (e.g. `"1.35·Gk + 1.5·Qk (EN 1990 6.10)"`) and produce the combined NEd.
-> - Compression handoff (Phase B) comes **after** combinations.
+> **Candidate improvements — TRIAGE these first and pick a batch:**
 >
-> **Start with a scoping discussion** (this spans truss2d UI + model + solve + the combination layer + the export contract) before planning — surface where combinations are computed (recommend: at the force/export level, leveraging linearity) and how load cases are entered in the UI. Then route concrete build work through `/gsd-quick` per pda_project's GSD enforcement.
+> **A) UI polish** (parked todos in `.planning/todos/pending/`, all from 999.2 UAT):
+> - `2026-06-27-truss2d-load-case-colours-brighter.md` — brighter colour-by-nature palette
+> - `2026-06-27-truss2d-reassign-load-to-different-case.md` — click a load, change its case on the spot
+> - `2026-06-27-truss2d-load-case-panel-resizable-rightward.md` — resize case panel into canvas (frame2d results-tab style)
+> - `2026-06-27-truss2d-generate-combination-box-resizable.md` — resizable wizard box (bottom-right)
+> - `2026-06-27-truss2d-combination-term-to-case-mapping-by-nature.md` — key terms by `caseId` end-to-end (fixes same-nature limitation; = code-review IN-01)
+>
+> **B) Feature depth** (deferred stages from CONTEXT, in priority order):
+> - **Wind uplift / favourable-permanent** (γ_G,inf=1.0, load reversal) + **EQU** family — the next staged stage; the place a truss genuinely misleads if skipped
+> - SLS frequent / quasi-permanent (ψ₁/ψ₂)
+> - 6.10a/6.10b equation set
+> - **BS 5950 / BS 6399 code pack** (the code-pack seam is built — prove a 2nd pack), then ASCE 7 / NBR
+>
+> **C) Other:** capture any new ideas from using the feature.
+>
+> Start by asking me which track(s) to prioritise. Route small UI fixes through `/gsd-quick` (batch the resizable-panel + colour + wizard-box items); route wind-uplift / a new code pack through `/gsd-discuss-phase` (they touch the engine + UI). Honor the hard rules: solver_core no matplotlib/printing; `/solve/truss2d` byte-identical; new tests in separate files.
 
 ---
 
-## Open from this session (optional, low priority)
-- Real browser UAT of `report/import_solver.py` (marimo) — upload a truss2d export, assign grade, save, compile.
-- truss2d `260627-gp1` export-JSON inspection — optional (handoff already proven end-to-end).
+## Also parked (other tracks, not this session's focus)
+- **Compression handoff (SEED-005 Phase B)** — marimo_spike work, scoped & ready: `marimo_spike/.planning/notes/seed-005-phase-b-compression-handoff-scoping.md` (manual-first; 4 small tasks; compression EC3 renderer already exists + validated). Start in the marimo_spike repo.
 - 4 deferred calc-migration design checks: `beam_bs8110`, `beam_ec2`, `steel/beam`, `steel/column` (build-from-scratch, separate effort).
