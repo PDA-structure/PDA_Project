@@ -189,15 +189,19 @@ Plans:
 
 ---
 
-### Phase 999.2: Load Combination Generator — Eurocode and British Standard (BACKLOG)
+### Phase 999.2: Load Combination Generator — Eurocode and British Standard (BACKLOG — PLANNED 2026-06-27)
 
-**Goal:** Engineers can define actions (permanent, variable, wind, etc.) and generate ULS/SLS load combinations per EN 1990 and BS EN national annex. Combination generator produces load vectors that feed directly into the existing analysis solvers. Includes a UI for defining actions and selecting combination type, and a solver module that applies the correct ψ factors, partial factors, and combination expressions.
-**Context:** Identified 2026-04-18. Fits naturally between analysis and design — upstream of any future design solver. Well-scoped: combination logic is deterministic and fully specified by the codes. Should be sequenced after interchange format (Phase 3) so combination outputs can be saved/loaded as part of a model file.
-**Requirements:** TBD
-**Plans:** 0 plans
+**Goal:** Engineers can define typed load cases (nature-tagged: Self weight, Dead, Imposed, Wind) and generate EN 1990 6.10 STR-ULS + SLS-characteristic combinations via a solver-agnostic engine in `solver_core`, with per-member governing-combination traceability surfaced in results and carried into the EC3 export. Built + tested on truss2d first; engine/model/UX/export designed to transfer to frame2d and 3D solvers. Combination logic uses linear superposition over cached per-case member forces (no re-solve).
+**Context:** Identified 2026-04-18; planned 2026-06-27 against locked decisions D-01..D-22 (CONTEXT.md). Structured as 5 sequential waves (backend before UI; strict no-regression on `/solve/truss2d`). The differentiator is provenance-carrying envelopes (member→governing combo + reverse index) — designing out the Tekla "can't see which combo governs each member" pain.
+**Requirements:** Locked decisions D-01..D-22 (no formal REQ-IDs — backlog phase).
+**Plans:** 5 plans (5 waves)
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+- [ ] 999.2-01-PLAN.md — Wave 1: solver_core `loads/` engine (natures + Eurocode UK code pack + generate/superpose/envelope) + analytical tests [D-01,02,04,05,07,09,10,11,12,13,18,19,22]
+- [ ] 999.2-02-PLAN.md — Wave 2: additive `POST /solve/truss2d/combinations` endpoint (orchestrates per-case solves; structured-422 input guards) + API tests [D-06,07,08,09,18,19]
+- [ ] 999.2-03-PLAN.md — Wave 3: UI load-case model + case-table panel + colour-by-nature + per-case tagging + save/load back-compat [D-02,03,20,22]
+- [ ] 999.2-04-PLAN.md — Wave 4: UI combination table + two-page generator wizard + (i) info-popovers (engine-driven; JS superpose on edit, no re-solve) [D-08,09,14,15,16,17]
+- [ ] 999.2-05-PLAN.md — Wave 5: UI results selector (per-case/per-combination/ENVELOPE) + governing column + canvas reverse-index highlight + per-member export string (schema 1.2) [D-18,19,20,21]
 
 ---
 
