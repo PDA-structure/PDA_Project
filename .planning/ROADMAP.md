@@ -199,7 +199,7 @@ Plans:
 Plans:
 - [ ] 999.2-01-PLAN.md — Wave 1: solver_core `loads/` engine (natures + Eurocode UK code pack + generate/superpose/envelope) + analytical tests [D-01,02,04,05,07,09,10,11,12,13,18,19,22]
 - [ ] 999.2-02-PLAN.md — Wave 2: additive `POST /solve/truss2d/combinations` endpoint (orchestrates per-case solves; structured-422 input guards) + API tests [D-06,07,08,09,18,19]
-- [ ] 999.2-03-PLAN.md — Wave 3: UI load-case model + case-table panel + colour-by-nature + per-case tagging + save/load back-compat [D-02,03,20,22]
+- [ ] 999.2-03-PLAN.md — Wave 3: UI load-case model + case-table panel + colour-by-nature + per-case tagging + save/load back-compat [D-02,03,22]
 - [ ] 999.2-04-PLAN.md — Wave 4: UI combination table + two-page generator wizard + (i) info-popovers (engine-driven; JS superpose on edit, no re-solve) [D-08,09,14,15,16,17]
 - [ ] 999.2-05-PLAN.md — Wave 5: UI results selector (per-case/per-combination/ENVELOPE) + governing column + canvas reverse-index highlight + per-member export string (schema 1.2) [D-18,19,20,21]
 
