@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: — Revit Tier 2 + Results-Import
-status: executing
-stopped_at: 999.2-04 implementation complete — browser UAT pending
-last_updated: "2026-06-27T19:03:26.928Z"
+status: verifying
+stopped_at: 999.2-05 implementation complete — browser UAT pending (Task 3 checkpoint)
+last_updated: "2026-06-27T19:58:05.078Z"
 last_activity: 2026-06-27
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-26 — v1.3 milestone started)
 
 Phase: 999.2 (load-combination-generator) — EXECUTING
 Plan: 5 of 5
-Status: 999.2-04 implementation complete — browser UAT pending (Task 3 checkpoint); plan 05 next
+Status: Phase complete — ready for verification
 Milestone v1.3 progress: 1/6 phases complete (16.7%)
 Last activity: 2026-06-27
 
@@ -70,6 +70,8 @@ Per memory `project_2d_solver_remote_deployment_priority`, UI modernisation shou
 - Snapshot-before-mutation regression gate (D-16) is now a project-wide pattern; baseline lives at `tests/snapshots/baseline/` (56 JSONs); pytest plugin in `conftest.py`
 - `SolverDiagnosticError(RuntimeError)` typed-exception path added in v1.2; structured 422 payload (`detail`, `cause`, `offending_nodes`, `offending_members`) with backward-compat flat fallback
 - Pure-bar θ-DOF auto-restraint as structural invariant (D-01, reject D-02 regularisation); user-supplied DOFs always win
+- 999.2-05 (2026-06-27): truss2d δ_max re-derived in JS from cached per-case displacements (superposeDispJS) so the SLS deflection check stays correct under factor edits (D-09/D-13); engine `delta_max_m` kept as reference only
+- 999.2-05 (2026-06-27): export per-member `load_combination` is additive with legacy top-level fallback; schema 1.1→1.2 keeps the SEED-005 marimo reader binding intact (D-21)
 
 ### Pending Todos
 
@@ -162,6 +164,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-06-27T19:03:26.921Z
-Stopped at: 999.2-04 implementation complete — browser UAT pending
+Last session: 2026-06-27T19:58:05.072Z
+Stopped at: 999.2-05 implementation complete — browser UAT pending (Task 3 checkpoint)
 Resume: (1) **Phase 8 — Revit Tier 2 ExportToPDA hardening** is the next strategic entry point. `/gsd-discuss-phase 8` → `/gsd-plan-phase 8` → `/gsd-execute-phase 8`. Mostly sibling-repo work; small additive Pydantic passthrough in pda_project. Memory guidance: read AnalyticalMember directly (not detail lines), validate steel sections against Eurocode/AISC catalogue. (2) **34 unpushed commits** on origin/main — PII-clean during sanitisation, push when comfortable (`git push origin main`). (3) **Package A validation results** from 2026-05-16 will surface whether SEED-005 (`from_solver_result` solver→calc seam) needs to advance, or stays dormant. (4) **Frame2D UI follow-ups** (5 of 13 pending todos) deferred per memory `project_2d_solver_remote_deployment_priority` — UI modernisation waits for laptop-test signal. Tailnet active (`https://catrins-imac.tail568b7e.ts.net/`).
