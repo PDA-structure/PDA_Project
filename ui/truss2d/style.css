@@ -658,6 +658,258 @@ body.card-dragging canvas { pointer-events: none; }
 .case-delete:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
 .case-delete:focus-visible { outline: 2px solid var(--color-danger); outline-offset: 1px; }
 
+/* ── Combination table (999.2 C3) ────────────────────────────
+   Shared manual + generated rows. Reuses existing table/.tool-btn tokens —
+   no new spacing tokens. */
+.combo-actions { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
+.combo-table { width: 100%; min-width: 0; margin-bottom: var(--space-1); }
+.combo-table th, .combo-table td {
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+  vertical-align: middle;
+}
+.combo-table th { background: var(--color-surface-alt); color: var(--color-accent-bright); }
+.combo-table tr.combo-off { opacity: 0.5; }
+
+.combo-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  background: var(--color-surface-hover);
+  color: var(--color-accent-bright);
+}
+.combo-chip-sls { background: var(--color-danger-bg-soft); color: var(--color-danger); }
+
+.combo-terms { font-family: var(--font-mono); font-size: var(--font-size-sm); white-space: nowrap; }
+.combo-factor {
+  width: 44px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-fg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  padding: 1px 3px;
+  text-align: right;
+}
+.combo-factor:hover { border-color: var(--color-border-input); }
+.combo-factor:focus { border-color: var(--color-accent-bright); outline: none; background: var(--color-surface); }
+.combo-sym { color: var(--color-fg-muted); }
+.combo-op  { color: var(--color-fg-subtle); }
+.combo-term-empty { color: var(--color-fg-subtle); }
+.combo-lead-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--color-fg-subtle);
+}
+.combo-name {
+  width: 100%;
+  min-width: 70px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-fg);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  padding: 1px 3px;
+}
+.combo-name:hover { border-color: var(--color-border-input); }
+.combo-name:focus { border-color: var(--color-accent-bright); outline: none; background: var(--color-surface); }
+
+.combo-governs {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  background: var(--color-surface-hover);
+  color: var(--color-fg-muted);
+  white-space: nowrap;
+}
+.combo-delete {
+  width: 16px; height: 16px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.combo-delete:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
+.combo-delete:focus-visible { outline: 2px solid var(--color-danger); outline-offset: 1px; }
+.combo-empty {
+  font-size: var(--font-size-sm);
+  color: var(--color-fg-subtle);
+  line-height: 1.5;
+  padding: var(--space-2) 0;
+}
+.combo-empty strong { color: var(--color-fg-muted); }
+
+/* ── Generator wizard (999.2 C4) — the one justified modal ───── */
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+.wizard-overlay[hidden] { display: none; }
+.wizard-card {
+  width: 420px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.wizard-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+.wizard-title { font-size: var(--font-size-lg); font-weight: 600; color: var(--color-fg-strong); }
+.wizard-close {
+  width: 24px; height: 24px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-fg-faint);
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+.wizard-close:hover { background: var(--color-surface-hover); border-color: var(--color-border-hover); color: var(--color-fg-strong); }
+.wizard-step { font-size: var(--font-size-sm); color: var(--color-fg-subtle); margin-bottom: var(--space-3); }
+
+.wizard-field { margin-bottom: var(--space-3); }
+.wizard-label { display: flex; align-items: center; gap: var(--space-1); font-size: var(--font-size-sm); color: var(--color-fg-muted); margin-bottom: var(--space-1); }
+.wizard-select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-fg);
+}
+.wizard-select option:disabled { color: var(--color-fg-subtle); }
+
+.wizard-group-box {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.wizard-group-box legend {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-fg-faint);
+  font-weight: 600;
+  padding: 0 var(--space-1);
+}
+.wizard-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-fg);
+  padding: 2px 0;
+}
+.wizard-check.disabled { color: var(--color-fg-subtle); }
+.coming-soon {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-fg-faint);
+  background: var(--color-surface-alt);
+  border-radius: 8px;
+  padding: 0 5px;
+}
+
+.wizard-foot { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
+.wizard-primary {
+  background: var(--color-accent-bright);
+  color: var(--color-on-accent);
+  border: 1px solid var(--color-accent-bright);
+}
+.wizard-primary:hover { background: var(--color-accent); border-color: var(--color-accent); box-shadow: var(--shadow-sm); }
+
+.wizard-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-fg-muted);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.wizard-preview { display: flex; flex-direction: column; gap: var(--space-3); }
+.wizard-group-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-fg-faint); font-weight: 600; margin-bottom: var(--space-1); }
+.wizard-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  margin-bottom: var(--space-1);
+}
+.wizard-row.combo-off { opacity: 0.5; }
+.wizard-row .combo-name { flex: 0 0 84px; }
+.wizard-row .combo-terms { flex: 1 1 auto; overflow-x: auto; }
+
+/* ── (i) info-popover (999.2 C5) — reusable ──────────────────── */
+.info-btn {
+  width: 16px; height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-accent-bright);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-accent-bright);
+  font-size: 10px;
+  font-style: italic;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+.info-btn:hover { background: var(--color-surface-hover); }
+.info-btn[aria-expanded="true"] { box-shadow: 0 0 0 2px var(--color-surface-hover); }
+.info-popover {
+  position: fixed;
+  z-index: 600;
+  max-width: 260px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-lg);
+  border: 1.5px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.info-popover[hidden] { display: none; }
+.info-popover-title { display: block; color: var(--color-accent-bright); margin-bottom: var(--space-1); }
+.info-popover-body { color: var(--color-fg-muted); line-height: 1.4; }
+
+[data-theme="dark"] .wizard-card { background: rgba(22, 27, 34, 0.92); border-color: var(--color-border); }
+[data-theme="dark"] .info-popover { background: rgba(22, 27, 34, 0.96); border-color: var(--color-border); }
+
 /* ── Dark theme overrides ──────────────────────────────────── */
 [data-theme="dark"] {
   --color-bg: #0D1117;

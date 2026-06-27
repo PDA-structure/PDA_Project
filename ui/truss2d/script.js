@@ -201,6 +201,78 @@ function ensureDefaultCase() {
   }
 }
 
+// ── Combination model (Phase 999.2 Wave 4) ──────────────────────────────────
+// Manual AND generated combinations share ONE data shape (D-17):
+//   { id, name, cls ('STR'|'SLS'), terms:[{caseId, factor}], on, generated, leading }
+// Factors live ONLY on combination terms (D-01). The UI never computes γ/ψ
+// (D-08) — generated factors come from the engine response; manual factors are
+// typed by the user. `perCaseForces` caches each case's member_forces (from the
+// engine, keyed by caseId) so editing a factor or toggling a row re-superposes
+// in JS only — NO re-solve, NO network (D-09 / Pitfall 6).
+let combinations  = [];      // shared manual + generated rows
+let perCaseForces = {};      // caseId -> member_forces array (length = nMembers)
+let comboEnvelope = null;    // last envelopeJS result (carried for Wave 5)
+let wizardPreview = [];      // editable generated rows staged in the wizard (Task 2)
+
+let _comboSeq = 0;
+function makeComboId() {
+  _comboSeq += 1;
+  return 'cmb-' + Date.now().toString(36) + '-' + _comboSeq;
+}
+
+// Pure-JS superposition: Σ factor · perCaseForces[caseId]. Arithmetic only — NOT
+// factor logic (D-08 untouched; factors are already resolved). A missing case
+// contributes a zero vector (mirrors the engine's superpose()).
+function superposeJS(combo) {
+  const nM = members.length;
+  const out = new Array(nM).fill(0);
+  (combo.terms || []).forEach(function (t) {
+    const fc = perCaseForces[t.caseId];
+    if (!fc) return;
+    for (let i = 0; i < nM; i++) out[i] += t.factor * (fc[i] || 0);
+  });
+  return out;
+}
+
+// Provenance-carrying envelope over the active combinations (mirrors the engine
+// argmax/argmin). Returns per-member governing combo + a reverse index count
+// (comboId -> number of members it governs) for the "governs N" badge (D-19).
+function envelopeJS(activeCombos) {
+  const nM = members.length;
+  const governs = {};
+  const perMember = [];
+  if (!activeCombos.length || !nM) return { governs: governs, perMember: perMember };
+  const forces = activeCombos.map(superposeJS);
+  const govSets = {};
+  activeCombos.forEach(function (c) { govSets[c.id] = new Set(); });
+  for (let m = 0; m < nM; m++) {
+    let maxV = -Infinity, maxI = 0, minV = Infinity, minI = 0;
+    for (let i = 0; i < activeCombos.length; i++) {
+      const v = forces[i][m];
+      if (v > maxV) { maxV = v; maxI = i; }
+      if (v < minV) { minV = v; minI = i; }
+    }
+    const govT = activeCombos[maxI], govC = activeCombos[minI];
+    perMember.push({ member: m + 1, maxT: maxV, govT: govT.name, maxC: minV, govC: govC.name });
+    govSets[govT.id].add(m + 1);
+    govSets[govC.id].add(m + 1);
+  }
+  Object.keys(govSets).forEach(function (id) { governs[id] = govSets[id].size; });
+  return { governs: governs, perMember: perMember };
+}
+
+// Recompute superpose+envelope for every active combination and refresh the
+// "governs N" badges in place. Makes NO network call (Pitfall 6) — a factor edit
+// or a row toggle calls recombine() only, never the endpoint.
+function recombine() {
+  const active = combinations.filter(function (c) { return c.on; });
+  comboEnvelope = envelopeJS(active);
+  combinations.forEach(function (c) {
+    const badge = document.querySelector('.combo-table [data-governs-for="' + c.id + '"]');
+    if (badge) badge.textContent = 'governs ' + (comboEnvelope.governs[c.id] || 0);
+  });
+}
+
 let history  = [];
 let results  = null;         // last API response
 let exportMode = false;
@@ -451,11 +523,14 @@ function resetAll() {
   // Reset the load-case model back to a single default Dead case (D-03).
   loadCases = []; activeCaseId = null;
   ensureDefaultCase();
+  // Reset the combination model + cached per-case forces (Wave 4).
+  combinations = []; perCaseForces = {}; comboEnvelope = null; wizardPreview = [];
   view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
   setStatus('');
   setMode('view');
   if (typeof renderCaseTable === 'function') renderCaseTable();
+  if (typeof renderCombinationTable === 'function') renderCombinationTable();
   updateSaveButtonState();
   draw();
 }
@@ -1445,6 +1520,16 @@ function saveModel() {
       loadCases: loadCases.map(function (c) {
         return { id: c.id, name: c.name, nature: c.nature, active: !!c.active, category: c.category != null ? c.category : null };
       }),
+      // Combination model (additive, optional — old readers ignore it). Shared
+      // shape for manual + generated rows (D-17). perCaseForces is NOT saved —
+      // it is recomputed from the engine on the next generate (D-09).
+      combinations: combinations.map(function (c) {
+        return {
+          id: c.id, name: c.name, cls: c.cls,
+          terms: (c.terms || []).map(function (t) { return { caseId: t.caseId, factor: t.factor }; }),
+          on: !!c.on, generated: !!c.generated, leading: c.leading || '',
+        };
+      }),
       // Per-member A overrides (additive, optional — old readers ignore it)
       memberOverrides: (function () {
         const ov = {};
@@ -1734,6 +1819,26 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
       loads.forEach(function (l) { l.caseId = activeCaseId; });
     }
 
+    // Restore the combination model (additive, default-on-read). perCaseForces is
+    // left empty — it is recomputed from the engine on the next generate; the
+    // restored rows render with a 0 "governs" badge until then (D-09).
+    combinations = []; perCaseForces = {}; comboEnvelope = null; wizardPreview = [];
+    if (data.canvas && Array.isArray(data.canvas.combinations)) {
+      combinations = data.canvas.combinations.map(function (c) {
+        return {
+          id: c.id != null ? c.id : makeComboId(),
+          name: c.name != null ? c.name : 'Combination',
+          cls: c.cls != null ? c.cls : 'STR',
+          terms: Array.isArray(c.terms)
+            ? c.terms.map(function (t) { return { caseId: t.caseId, factor: t.factor }; })
+            : [],
+          on: c.on !== false,
+          generated: !!c.generated,
+          leading: c.leading || '',
+        };
+      });
+    }
+
     // Restore per-member A overrides (backward-compat: missing key → no overrides)
     if (data.canvas && data.canvas.memberOverrides) {
       Object.entries(data.canvas.memberOverrides).forEach(function ([idx, ov]) {
@@ -1754,6 +1859,7 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     if (resultsPanel) resultsPanel.style.display = 'none';
 
     if (typeof renderCaseTable === 'function') renderCaseTable();
+    if (typeof renderCombinationTable === 'function') renderCombinationTable();
     updateSaveButtonState();
     setStatus('', false);
     draw();
@@ -2055,6 +2161,493 @@ function renderCaseTable() {
   });
 }
 
+// ── Combination table (C3) ──────────────────────────────────────────────────
+function caseLabel(caseId) {
+  const c = loadCases.find(function (x) { return x.id === caseId; });
+  return c ? c.name : caseId;
+}
+
+// Trim a factor to a clean string (1.05, 1.5, 0.9 …) without trailing zeros.
+function formatFactor(f) {
+  if (!isFinite(f)) return '';
+  return String(Math.round(f * 10000) / 10000);
+}
+
+// Build the editable terms cell: one factor input per term + "·CaseName", joined
+// by " + ", plus a plain leading-action tag. Editing a factor commits + recombines.
+function buildTermsCell(host, combo) {
+  host.innerHTML = '';
+  const terms = combo.terms || [];
+  if (!terms.length) {
+    const s = document.createElement('span');
+    s.className = 'combo-term-empty';
+    s.textContent = '—';
+    host.appendChild(s);
+    return;
+  }
+  terms.forEach(function (t, i) {
+    if (i > 0) {
+      const op = document.createElement('span');
+      op.className = 'combo-op';
+      op.textContent = ' + ';
+      host.appendChild(op);
+    }
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'combo-factor';
+    inp.value = formatFactor(t.factor);
+    inp.setAttribute('aria-label', 'Factor for ' + caseLabel(t.caseId));
+    inp.addEventListener('change', function () { commitFactor(combo, t, inp); });
+    host.appendChild(inp);
+    const sym = document.createElement('span');
+    sym.className = 'combo-sym';
+    sym.textContent = '·' + caseLabel(t.caseId);
+    host.appendChild(sym);
+  });
+  if (combo.leading) {
+    const tag = document.createElement('span');
+    tag.className = 'combo-lead-tag';
+    tag.textContent = combo.leading + ' leading';
+    host.appendChild(tag);
+  }
+}
+
+// Validate + commit a factor edit (T-9992-11), then re-superpose in JS only.
+function commitFactor(combo, term, inp) {
+  const v = parseFloat(inp.value);
+  if (!isFinite(v)) {                                  // blank / NaN — not committed
+    setStatus('Enter a number for every factor.', true);
+    inp.value = formatFactor(term.factor);
+    return;
+  }
+  term.factor = v;
+  inp.value = formatFactor(v);
+  setStatus('', false);
+  recombine();                                         // NO fetch — D-09 / Pitfall 6
+}
+
+function renderCombinationTable() {
+  const tbl = document.getElementById('tableCombinations');
+  const empty = document.getElementById('comboEmpty');
+  if (!tbl) return;
+  const tbody = tbl.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  if (!combinations.length) {
+    tbl.style.display = 'none';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  tbl.style.display = '';
+  if (empty) empty.style.display = 'none';
+
+  // Recompute the envelope so the badges are correct on (re)render.
+  const active = combinations.filter(function (c) { return c.on; });
+  comboEnvelope = envelopeJS(active);
+
+  combinations.forEach(function (c) {
+    const tr = document.createElement('tr');
+    if (!c.on) tr.className = 'combo-off';
+
+    // on/off
+    const tdOn = document.createElement('td');
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = !!c.on;
+    chk.setAttribute('aria-label', 'Include combination ' + c.name + ' in the envelope');
+    chk.addEventListener('change', function () { c.on = chk.checked; renderCombinationTable(); });
+    tdOn.appendChild(chk);
+    tr.appendChild(tdOn);
+
+    // name (inline editable)
+    const tdName = document.createElement('td');
+    const nm = document.createElement('input');
+    nm.type = 'text';
+    nm.className = 'combo-name';
+    nm.value = c.name;
+    nm.setAttribute('aria-label', 'Combination name');
+    nm.addEventListener('change', function () { c.name = nm.value.trim() || c.name; recombine(); });
+    tdName.appendChild(nm);
+    tr.appendChild(tdName);
+
+    // class chip
+    const tdCls = document.createElement('td');
+    const chip = document.createElement('span');
+    chip.className = 'combo-chip combo-chip-' + String(c.cls || '').toLowerCase();
+    chip.textContent = c.cls || '';
+    tdCls.appendChild(chip);
+    tr.appendChild(tdCls);
+
+    // terms (font-mono, inline editable)
+    const tdTerms = document.createElement('td');
+    tdTerms.className = 'combo-terms';
+    buildTermsCell(tdTerms, c);
+    tr.appendChild(tdTerms);
+
+    // governs badge (reverse index, D-19)
+    const tdGov = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = 'combo-governs';
+    badge.setAttribute('data-governs-for', c.id);
+    badge.textContent = 'governs ' + (comboEnvelope.governs[c.id] || 0);
+    tdGov.appendChild(badge);
+    tr.appendChild(tdGov);
+
+    // delete (danger, inline confirm)
+    const tdDel = document.createElement('td');
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'combo-delete';
+    del.textContent = '✕';
+    del.title = 'Delete combination';
+    del.setAttribute('aria-label', 'Delete combination ' + c.name);
+    del.addEventListener('click', function () { deleteCombination(c.id); });
+    tdDel.appendChild(del);
+    tr.appendChild(tdDel);
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Add a blank manual combination using the shared shape (D-17). Seeds one term
+// per load case at factor 0 so the user can fill in factors. Populates the
+// per-case cache once (explicit action — a network call here is allowed; factor
+// edits stay offline) so the new row can immediately envelope.
+async function addManualCombination() {
+  const n = combinations.filter(function (c) { return !c.generated; }).length + 1;
+  const terms = loadCases.map(function (c) { return { caseId: c.id, factor: 0 }; });
+  combinations.push({
+    id: makeComboId(), name: 'Manual-' + n, cls: 'STR',
+    terms: terms, on: true, generated: false, leading: '',
+  });
+  renderCombinationTable();
+  if (!Object.keys(perCaseForces).length) {
+    const data = await fetchCombinations(null);   // generate-less — just cache per_case
+    if (data) recombine();
+  }
+}
+
+function deleteCombination(id) {
+  const c = combinations.find(function (x) { return x.id === id; });
+  if (!c) return;
+  if (!confirm('Delete combination ' + c.name + '? This removes it from the envelope.')) return;
+  combinations = combinations.filter(function (x) { return x.id !== id; });
+  renderCombinationTable();
+}
+
+function clearGeneratedCombinations() {
+  if (!combinations.some(function (c) { return c.generated; })) {
+    setStatus('No generated combinations to clear.', false);
+    return;
+  }
+  if (!confirm('Clear all generated combinations? Manual rows are kept.')) return;
+  combinations = combinations.filter(function (c) { return !c.generated; });
+  renderCombinationTable();
+}
+
+// ── Combinations payload + engine call ──────────────────────────────────────
+// Build the request body for POST /solve/truss2d/combinations. Mirrors solve()'s
+// geometry/material build verbatim, then attaches the case model + optional
+// generate spec. Returns null (after setStatus) when the model is not solvable.
+function buildCombinationsPayload(generateSpec) {
+  if (nodes.length < 2)    { setStatus('Need at least 2 nodes.', true); return null; }
+  if (members.length < 1)  { setStatus('Need at least 1 member.', true); return null; }
+  if (supports.length < 1) { setStatus('Need at least one support.', true); return null; }
+
+  const E_GPa = parseFloat(document.getElementById('inputE').value);
+  const A_cm2 = parseFloat(document.getElementById('inputA').value);
+  if (isNaN(E_GPa) || isNaN(A_cm2) || E_GPa <= 0 || A_cm2 <= 0) {
+    setStatus('Check E and A values.', true);
+    return null;
+  }
+  const E = E_GPa * 1e9;
+  const anyA = members.some(function (m) { return m.A_override != null; });
+  const A = anyA
+    ? members.map(function (m) { return (m.A_override != null ? m.A_override : A_cm2) * 1e-4; })
+    : A_cm2 * 1e-4;
+
+  const restrainedDoF = [];
+  supports.forEach(function (s) {
+    const base = s.nodeId * 2;
+    if (s.type === 'pinned')  { restrainedDoF.push(base + 1, base + 2); }
+    if (s.type === 'rollerX') { restrainedDoF.push(base + 1); }
+    if (s.type === 'rollerY') { restrainedDoF.push(base + 2); }
+  });
+
+  const cases = loadCases.map(function (c) {
+    return {
+      id: c.id,
+      name: c.name,
+      nature: c.nature,
+      category: c.nature === 'Imposed' ? (c.category || DEFAULT_IMPOSED_CATEGORY) : null,
+      loads: loads.filter(function (l) { return l.caseId === c.id; })
+                  .map(function (l) { return { nodeId: l.nodeId, direction: l.direction, magnitude: l.magnitude }; }),
+    };
+  });
+
+  const payload = {
+    solver: 'truss2d',
+    nodes:  nodes.map(function (n) { return [n.realX, n.realY]; }),
+    members: members.map(function (m) { return [m.start + 1, m.end + 1]; }),  // 1-based
+    E: E, A: A,
+    restrainedDoF: restrainedDoF,
+    cases: cases,
+  };
+  if (generateSpec) payload.generate = generateSpec;
+  return payload;
+}
+
+// Map a structured-422 cause to the UI-SPEC error copy (falls back to detail).
+function comboErrorCopy(err) {
+  const cause = err && err.cause;
+  if (cause === 'unknown_case')   return 'A combination references a case that no longer exists. Remove the term or restore the case.';
+  if (cause === 'non_finite_factor') return 'Enter a number for every factor.';
+  if (cause === 'no_loaded_cases') return 'Add a load to a case before generating combinations.';
+  return (err && err.detail) || 'Combination generation failed.';
+}
+
+// Call the engine. Caches per_case forces into perCaseForces and returns the full
+// response (or null on error). The wizard passes a generate spec; manual add
+// passes null (just to populate the cache).
+async function fetchCombinations(generateSpec) {
+  const payload = buildCombinationsPayload(generateSpec);
+  if (!payload) return null;
+  try {
+    const res = await fetch(`${API_URL}/solve/truss2d/combinations`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      let err = {};
+      try { err = await res.json(); } catch (e) { /* non-JSON */ }
+      setStatus(comboErrorCopy(err), true);
+      return null;
+    }
+    const data = await res.json();
+    perCaseForces = {};
+    Object.keys(data.per_case || {}).forEach(function (cid) {
+      perCaseForces[cid] = (data.per_case[cid] && data.per_case[cid].member_forces) || [];
+    });
+    return data;
+  } catch (e) {
+    setStatus('Cannot reach API. Is the server running?', true);
+    return null;
+  }
+}
+
+// Reconstruct {caseId, factor} terms from the engine's expression string (e.g.
+// "1.35·Dead + 1.5·Imposed + 0.9·Wind"). Factors come straight from the engine
+// output — the UI never computes γ/ψ (D-08). The nature symbol maps back to the
+// case it was generated from (consumed in case order for repeated natures).
+function reconstructTerms(expression) {
+  const parts = String(expression || '').split('+').map(function (s) { return s.trim(); }).filter(Boolean);
+  const loaded = loadCases.filter(function (c) { return caseLoadCount(c.id) > 0; });
+  const used = {};
+  const terms = [];
+  parts.forEach(function (p) {
+    const seg = p.split('·');
+    if (seg.length < 2) return;
+    const factor = parseFloat(seg[0]);
+    const symbol = seg.slice(1).join('·').trim();
+    const matches = loaded.filter(function (c) { return c.nature === symbol; });
+    if (!matches.length || !isFinite(factor)) return;
+    const k = used[symbol] || 0;
+    const c = matches[k] || matches[matches.length - 1];
+    used[symbol] = k + 1;
+    terms.push({ caseId: c.id, factor: factor });
+  });
+  return terms;
+}
+
+// ── Generator wizard (C4) + info-popover (C5) ───────────────────────────────
+function showWizardPage(n) {
+  const p1 = document.getElementById('wizardPage1');
+  const p2 = document.getElementById('wizardPage2');
+  if (p1) p1.hidden = (n !== 1);
+  if (p2) p2.hidden = (n !== 2);
+}
+
+function openWizard() {
+  const ov = document.getElementById('wizardOverlay');
+  if (!ov) return;
+  showWizardPage(1);
+  ov.hidden = false;
+  document.body.classList.add('card-dragging');   // block canvas behind the scrim
+}
+
+function closeWizard() {
+  const ov = document.getElementById('wizardOverlay');
+  if (!ov) return;
+  ov.hidden = true;
+  hideInfoPopover();
+  document.body.classList.remove('card-dragging');
+  wizardPreview = [];
+}
+
+// Page 1 → Page 2: call the engine GENERATE-ONLY, cache per_case, build editable
+// preview rows from the returned definitions (no γ/ψ in JS — D-08).
+async function wizardNext() {
+  const families = [];
+  const fSTR = document.getElementById('chkFamSTR');
+  const fSLS = document.getElementById('chkFamSLS');
+  if (fSTR && fSTR.checked) families.push('STR');
+  if (fSLS && fSLS.checked) families.push('SLS');
+  if (!families.length) { setStatus('Select at least one family (STR or SLS).', true); return; }
+
+  const data = await fetchCombinations({ code: 'eurocode_uk', families: families });
+  if (!data) return;   // error already surfaced
+
+  wizardPreview = (data.combinations || []).map(function (c) {
+    return {
+      id: makeComboId(), name: c.name, cls: c.cls, leading: c.leading || '',
+      expression: c.expression || '', terms: reconstructTerms(c.expression),
+      on: true, generated: true,
+    };
+  });
+  renderWizardPreview();
+  showWizardPage(2);
+  setStatus('', false);
+}
+
+function wizardBack() { showWizardPage(1); }
+
+// Page 2 preview: rows grouped by class, each editable (toggle / rename / inline
+// factor). Degenerate / no-variable notes are static copy in the HTML (no factor
+// literals in JS) toggled here.
+function renderWizardPreview() {
+  const host = document.getElementById('wizardPreview');
+  if (!host) return;
+  host.innerHTML = '';
+
+  const variableCount = loadCases.filter(function (c) {
+    return caseLoadCount(c.id) > 0 && (c.nature === 'Imposed' || c.nature === 'Wind');
+  }).length;
+  const noVar = document.getElementById('wizardNoteNoVar');
+  const degen = document.getElementById('wizardNoteDegenerate');
+  if (noVar) noVar.hidden = (variableCount !== 0);
+  if (degen) degen.hidden = (variableCount !== 1);
+
+  if (!wizardPreview.length) {
+    const e = document.createElement('div');
+    e.className = 'wizard-note';
+    e.textContent = 'No combinations generated for the selected families.';
+    host.appendChild(e);
+    return;
+  }
+
+  const groups = {};
+  const order = [];
+  wizardPreview.forEach(function (c) {
+    if (!groups[c.cls]) { groups[c.cls] = []; order.push(c.cls); }
+    groups[c.cls].push(c);
+  });
+  order.forEach(function (cls) {
+    const g = document.createElement('div');
+    g.className = 'wizard-group';
+    const h = document.createElement('div');
+    h.className = 'wizard-group-title';
+    h.textContent = cls === 'STR' ? 'STR — ULS' : (cls === 'SLS' ? 'SLS — characteristic' : cls);
+    g.appendChild(h);
+    groups[cls].forEach(function (c) { g.appendChild(buildPreviewRow(c)); });
+    host.appendChild(g);
+  });
+}
+
+function buildPreviewRow(c) {
+  const row = document.createElement('div');
+  row.className = 'wizard-row' + (c.on ? '' : ' combo-off');
+
+  const chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.checked = c.on;
+  chk.setAttribute('aria-label', 'Include ' + c.name);
+  chk.addEventListener('change', function () { c.on = chk.checked; row.classList.toggle('combo-off', !c.on); });
+  row.appendChild(chk);
+
+  const nm = document.createElement('input');
+  nm.type = 'text';
+  nm.className = 'combo-name';
+  nm.value = c.name;
+  nm.setAttribute('aria-label', 'Combination name');
+  nm.addEventListener('change', function () { c.name = nm.value.trim() || c.name; });
+  row.appendChild(nm);
+
+  const terms = document.createElement('span');
+  terms.className = 'combo-terms';
+  buildTermsCell(terms, c);
+  row.appendChild(terms);
+
+  return row;
+}
+
+// "Generate → table": push the (edited) preview rows into the shared model.
+function wizardGenerateToTable() {
+  const count = wizardPreview.length;
+  wizardPreview.forEach(function (c) {
+    combinations.push({
+      id: c.id, name: c.name, cls: c.cls, leading: c.leading,
+      terms: c.terms, on: c.on, generated: true,
+    });
+  });
+  closeWizard();
+  renderCombinationTable();
+  recombine();
+  setStatus('Generated ' + count + ' combination' + (count === 1 ? '' : 's') + ' → table', false);
+}
+
+// One reusable info-popover (C5) shared by every (i) trigger — content (EN 1990
+// clause citation + when-to-use) is read from the trigger's data attributes.
+let _openInfoBtn = null;
+function setupInfoPopovers() {
+  document.querySelectorAll('.info-btn').forEach(function (btn) {
+    btn.addEventListener('click', function (e) { e.stopPropagation(); toggleInfoPopover(btn); });
+  });
+}
+function toggleInfoPopover(btn) {
+  const pop = document.getElementById('infoPopover');
+  if (!pop) return;
+  if (_openInfoBtn === btn && !pop.hidden) { hideInfoPopover(); return; }
+  hideInfoPopover();
+  pop.innerHTML = '';
+  const title = document.createElement('strong');
+  title.className = 'info-popover-title';
+  title.textContent = btn.dataset.infoTitle || '';
+  pop.appendChild(title);
+  const body = document.createElement('div');
+  body.className = 'info-popover-body';
+  body.textContent = btn.dataset.infoBody || '';
+  pop.appendChild(body);
+  const r = btn.getBoundingClientRect();
+  pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 272)) + 'px';
+  pop.style.top  = (r.bottom + 6) + 'px';
+  pop.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  _openInfoBtn = btn;
+}
+function hideInfoPopover() {
+  const pop = document.getElementById('infoPopover');
+  if (pop) pop.hidden = true;
+  if (_openInfoBtn) { _openInfoBtn.setAttribute('aria-expanded', 'false'); _openInfoBtn = null; }
+}
+
+// Wizard / popover global dismiss wiring (Esc + outside-click).
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  if (_openInfoBtn) { hideInfoPopover(); return; }
+  const ov = document.getElementById('wizardOverlay');
+  if (ov && !ov.hidden) closeWizard();
+});
+document.addEventListener('click', function (e) {
+  if (_openInfoBtn && !e.target.closest('.info-popover') && !e.target.closest('.info-btn')) hideInfoPopover();
+});
+document.addEventListener('DOMContentLoaded', function () {
+  setupInfoPopovers();
+  const ov = document.getElementById('wizardOverlay');
+  if (ov) ov.addEventListener('click', function (e) { if (e.target === ov) closeWizard(); });
+  if (typeof renderCombinationTable === 'function') renderCombinationTable();
+});
+
 // -- Floating panels (port of frame2d i52) -----------------------------------------
 let _floatZIndex = 100;  // monotonic counter for D-7 bring-to-top
 
@@ -2235,5 +2828,6 @@ document.addEventListener('DOMContentLoaded', setupCardFloat);
 ensureDefaultCase();   // D-03: a default active Dead case always exists at startup
 setMode('view');
 if (typeof renderCaseTable === 'function') renderCaseTable();
+if (typeof renderCombinationTable === 'function') renderCombinationTable();
 updateSaveButtonState();
 draw();

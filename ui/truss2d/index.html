@@ -215,6 +215,52 @@
       </section>
 
       <section class="panel-section">
+        <h3>Combinations</h3>
+        <div class="combo-actions">
+          <button class="tool-btn tool-btn--spike" id="btnGenerateCombos" onclick="openWizard()" title="Open the code combination generator">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 9 L8 9 M6 7 L6 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <rect x="2" y="3" width="8" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M12 5 L15 5 M12 9 L15 9 M12 13 L15 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            Generate combinations…
+          </button>
+          <button class="tool-btn tool-btn--spike" id="btnAddCombo" onclick="addManualCombination()" title="Add a blank manual combination">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <line x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            Add row
+          </button>
+          <button class="tool-btn tool-btn--spike danger" id="btnClearGenerated" onclick="clearGeneratedCombinations()" title="Clear all generated combinations (manual rows kept)">
+            <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+              <line x1="7" y1="3" x2="11" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="2" y1="5" x2="16" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M4 6 L5 16 L13 16 L14 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Clear generated
+          </button>
+        </div>
+        <table id="tableCombinations" class="combo-table" style="display:none">
+          <thead>
+            <tr>
+              <th aria-label="Include in envelope">On</th>
+              <th>Name</th>
+              <th>Class</th>
+              <th>Terms (factors)</th>
+              <th>Governs</th>
+              <th aria-label="Delete"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="comboEmpty" class="combo-empty">
+          <strong>No combinations yet</strong><br>
+          Generate code combinations, or Add row for a manual one.
+        </div>
+      </section>
+
+      <section class="panel-section">
         <h3>Material Properties</h3>
         <label>E (GPa)
           <input type="number" id="inputE" value="200" min="0" step="1">
@@ -332,6 +378,140 @@
     </div><!-- .canvas-col -->
 
   </div>
+
+  <!-- ── Generator wizard (C4) — two-page modal over the canvas ───────────── -->
+  <div class="wizard-overlay" id="wizardOverlay" hidden>
+    <div class="wizard-card" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
+      <div class="wizard-head">
+        <h2 class="wizard-title" id="wizardTitle">Generate combinations</h2>
+        <button class="wizard-close" type="button" onclick="closeWizard()" aria-label="Close generator">✕</button>
+      </div>
+
+      <!-- Page 1 — Parameters -->
+      <div class="wizard-page" id="wizardPage1">
+        <p class="wizard-step">Step 1 of 2 · Parameters</p>
+
+        <div class="wizard-field">
+          <label class="wizard-label" for="wizCode">Code
+            <button class="info-btn" type="button" aria-label="About the design code"
+              aria-expanded="false"
+              data-info-title="EN 1990 — Basis of structural design"
+              data-info-body="Eurocode load-combination rules. BS 5950, ASCE 7 and NBR packs are planned — the engine owns all factors, so adding a code never changes this UI.">i</button>
+          </label>
+          <select id="wizCode" class="wizard-select">
+            <option value="eurocode_uk" selected>Eurocode (EN 1990)</option>
+            <option value="bs" disabled>BS 5950 — coming soon</option>
+            <option value="asce" disabled>ASCE 7 — coming soon</option>
+            <option value="nbr" disabled>NBR (Brazil) — coming soon</option>
+          </select>
+        </div>
+
+        <div class="wizard-field">
+          <label class="wizard-label" for="wizCountry">Country / National Annex
+            <button class="info-btn" type="button" aria-label="About the National Annex"
+              aria-expanded="false"
+              data-info-title="UK National Annex to EN 1990"
+              data-info-body="The National Annex sets the partial factors (γ) and combination factors (ψ₀) for the country. UK is implemented; other annexes are planned.">i</button>
+          </label>
+          <select id="wizCountry" class="wizard-select">
+            <option value="UK" selected>United Kingdom</option>
+            <option value="IE" disabled>Ireland — coming soon</option>
+            <option value="other" disabled>Other — coming soon</option>
+          </select>
+        </div>
+
+        <fieldset class="wizard-group-box">
+          <legend>Families / limit states</legend>
+          <label class="wizard-check">
+            <input type="checkbox" id="chkFamSTR" checked> STR — ULS
+            <button class="info-btn" type="button" aria-label="About STR-ULS"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.4.3.2, Eq 6.10 — STR/GEO (ULS)"
+              data-info-body="Strength ultimate limit state: 1.35·G with the leading variable at 1.5 and accompanying variables reduced by ψ₀. When to use: member strength design.">i</button>
+          </label>
+          <label class="wizard-check">
+            <input type="checkbox" id="chkFamSLS" checked> SLS — characteristic
+            <button class="info-btn" type="button" aria-label="About SLS-characteristic"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.5.3(a) — characteristic SLS"
+              data-info-body="Serviceability: all partial factors = 1.0 (1.0·G + 1.0·Q_lead + ψ₀·Q_accomp). When to use: irreversible deflection checks (drives δ_max).">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> SLS — frequent <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About SLS-frequent"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.5.3(b) — frequent SLS"
+              data-info-body="Uses ψ₁ on the leading variable. Planned: reversible serviceability effects.">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> SLS — quasi-permanent <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About SLS-quasi-permanent"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.5.3(c) — quasi-permanent SLS"
+              data-info-body="Uses ψ₂ on variable actions. Planned: long-term effects (creep, settlement).">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> EQU <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About EQU"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.4.3.1 — EQU (equilibrium)"
+              data-info-body="Static equilibrium / overturning, using favourable γG,inf = 1.0. Planned alongside wind uplift.">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> GEO <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About GEO"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.4.3.2 — GEO (geotechnical)"
+              data-info-body="Geotechnical ultimate limit state. Planned with foundation design.">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> Accidental / Seismic <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About accidental and seismic"
+              aria-expanded="false"
+              data-info-title="EN 1990 §6.4.3.3 / §6.4.3.4 — accidental & seismic"
+              data-info-body="Accidental and seismic design situations. Planned in a later phase.">i</button>
+          </label>
+        </fieldset>
+
+        <fieldset class="wizard-group-box">
+          <legend>Equation set</legend>
+          <label class="wizard-check">
+            <input type="checkbox" id="chkEq610" checked disabled> Eq 6.10
+            <button class="info-btn" type="button" aria-label="About equation 6.10"
+              aria-expanded="false"
+              data-info-title="EN 1990 Eq 6.10"
+              data-info-body="The single-equation STR combination — always on. Generates one combination per variable action taken as leading.">i</button>
+          </label>
+          <label class="wizard-check disabled">
+            <input type="checkbox" disabled> Eq 6.10a / 6.10b <span class="coming-soon">coming soon</span>
+            <button class="info-btn" type="button" aria-label="About equations 6.10a and 6.10b"
+              aria-expanded="false"
+              data-info-title="EN 1990 Eq 6.10a / 6.10b"
+              data-info-body="The two-equation, more economical alternative to 6.10. Designed into the wizard now; implemented later.">i</button>
+          </label>
+        </fieldset>
+
+        <div class="wizard-foot">
+          <button class="tool-btn wizard-primary" type="button" onclick="wizardNext()">Next ▸</button>
+        </div>
+      </div>
+
+      <!-- Page 2 — Preview -->
+      <div class="wizard-page" id="wizardPage2" hidden>
+        <p class="wizard-step">Step 2 of 2 · Preview &amp; edit</p>
+        <div class="wizard-note" id="wizardNoteNoVar" hidden>Add an Imposed or Wind case to generate multiple combinations.</div>
+        <div class="wizard-note" id="wizardNoteDegenerate" hidden>Only permanent + one variable action — generates a single combination: 1.35·G + 1.5·Q.</div>
+        <div id="wizardPreview" class="wizard-preview"></div>
+        <div class="wizard-foot">
+          <button class="tool-btn" type="button" onclick="wizardBack()">◂ Back</button>
+          <button class="tool-btn wizard-primary" type="button" onclick="wizardGenerateToTable()">Generate → table</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Reusable info-popover (C5) ───────────────────────────────────────── -->
+  <div class="info-popover" id="infoPopover" hidden></div>
 
   <script src="../label-manager.js"></script>
   <script src="script.js"></script>
