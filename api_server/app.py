@@ -316,7 +316,62 @@ def solve_truss2d_combinations(req: Truss2DCombinationsRequest):
     n_members = len(req.members)
     n_dof = 2 * n_nodes
 
-    # ---- input-validation guards (added in Task 2) ----
+    # ---- input-validation guards (structured 422 via SolverDiagnosticError) ----
+    # Mirror the /solve/truss2d per-member-A length guard.
+    if isinstance(req.A, list) and len(req.A) != len(req.members):
+        raise SolverDiagnosticError(
+            detail=(
+                f"A has {len(req.A)} values but there are {len(req.members)} members. "
+                "Provide a scalar A (uniform) or a list with one value per member."
+            ),
+            cause="shape_mismatch",
+        )
+
+    # Unknown caseId cross-reference + non-finite factors in any manual combination (T-9992-03/04).
+    case_ids = {c.id for c in req.cases}
+    for cdef in req.combinations:
+        for t in cdef.terms:
+            if t.caseId not in case_ids:
+                raise SolverDiagnosticError(
+                    detail=(
+                        "A combination references a case that no longer exists. "
+                        "Remove the term or restore the case."
+                    ),
+                    cause="unknown_case",
+                )
+            if not math.isfinite(t.factor):
+                raise SolverDiagnosticError(
+                    detail="Enter a number for every factor.",
+                    cause="non_finite_factor",
+                )
+
+    # Unknown nature on any case (T-9992-06) — Nature(value) raises ValueError for unknowns.
+    for c in req.cases:
+        try:
+            Nature(c.nature)
+        except ValueError:
+            raise SolverDiagnosticError(
+                detail=(
+                    f"Unknown load nature '{c.nature}'. "
+                    "Use one of: Self weight, Dead, Imposed, Wind."
+                ),
+                cause="unknown_nature",
+            )
+
+    # Unknown imposed category (T-9992-17) — guard BEFORE generation so the engine's
+    # psi0_imposed[cat] KeyError never escapes unstructured.
+    if req.generate is not None:
+        _pack = get_code_pack(req.generate.get("code", "eurocode_uk"))
+        for c in req.cases:
+            if Nature(c.nature) == Nature.IMPOSED and c.category is not None:
+                if c.category not in _pack.psi0_imposed:
+                    raise SolverDiagnosticError(
+                        detail=(
+                            f"Unknown imposed category '{c.category}'. "
+                            "Use 'A-D/H' or 'E_storage'."
+                        ),
+                        cause="unknown_category",
+                    )
 
     # ---- per-case solve (D-09): solve each non-empty case ONCE through the
     #      unchanged Truss2DAdapter; cache BOTH member forces AND displacements.
@@ -344,7 +399,12 @@ def solve_truss2d_combinations(req: Truss2DCombinationsRequest):
         )
         per_case_ug[case.id] = np.asarray(result.UG, float).reshape(-1)
 
-    # ---- no-loaded-cases guard (added in Task 2) ----
+    # No solvable cases: every case was empty (Pitfall 4 / no_loaded_cases).
+    if not per_case_forces:
+        raise SolverDiagnosticError(
+            detail="Add at least one load to a case before generating combinations.",
+            cause="no_loaded_cases",
+        )
 
     # ---- build the combination list: manual combos first, then generated ----
     cases_by_id = {c.id: c for c in req.cases}
