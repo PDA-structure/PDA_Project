@@ -1858,30 +1858,54 @@ function exportAnalysis(mode) {
 
   var tensionMembers = [];
   var compressionMembers = [];
-  if (results.member_forces) {
+
+  // Build one export row. forceN is the design axial force carried into the row;
+  // stress is recomputed from it so force/stress always correspond to the SAME
+  // (factored, when enveloped) force the row reports.
+  function buildExportRow(idx, forceN, comboStr) {
+    var m = members[idx];
+    var n1 = nodes.find(function (n) { return n.id === m.start; });
+    var n2 = nodes.find(function (n) { return n.id === m.end; });
+    var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
+    var effA_cm2 = (m && m.A_override != null) ? m.A_override : A_cm2;
+    var stressMPa = (effA_cm2 > 0) ? (forceN / (effA_cm2 * 1e-4)) / 1e6 : null;
+    return {
+      member: idx + 1,
+      nodes: [m.start + 1, m.end + 1],
+      length_m: parseFloat(L.toFixed(4)),
+      force_kN: parseFloat((forceN / 1000).toFixed(3)),
+      force_N: forceN,
+      stress_MPa: stressMPa !== null ? parseFloat(stressMPa.toFixed(2)) : null,
+      A_cm2: parseFloat(effA_cm2.toFixed(4)),
+      A_mm2: parseFloat((effA_cm2 * 100).toFixed(2)),
+      sense: forceN > 0 ? 'T' : 'C',
+      load_combination: comboStr
+    };
+  }
+
+  if (hasEnvelope) {
+    // D-21 (WR-02): when combinations exist, each member row carries its FACTORED
+    // governing-combination force (NEd) — maxT/govT for tension, maxC/govC for
+    // compression — mirroring the ENVELOPE results view. This is the force the
+    // SEED-005 marimo reader consumes as NEd, so it MUST be the factored design
+    // force, not the unfactored single solve. A member can appear in BOTH tables
+    // under different governing combinations (e.g. wind-uplift reversal).
+    comboEnvelope.perMember.forEach(function (p) {
+      if (!members[p.member - 1]) return;
+      if (p.maxT > 1e-3)  tensionMembers.push(buildExportRow(p.member - 1, p.maxT, p.govT));
+      if (p.maxC < -1e-3) compressionMembers.push(buildExportRow(p.member - 1, p.maxC, p.govC));
+    });
+    tensionMembers.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
+    compressionMembers.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
+  } else if (results.member_forces) {
+    // Legacy single-solve path (no combinations) — unfactored forces + top-level
+    // string. Preserves the original export shape exactly (stress from solver meta).
     var rows = [];
     results.member_forces.forEach(function (f, idx) {
-      var m = members[idx];
-      var n1 = nodes.find(function (n) { return n.id === m.start; });
-      var n2 = nodes.find(function (n) { return n.id === m.end; });
-      var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
+      var row = buildExportRow(idx, f, LOAD_COMBINATION);
       var stress = results.meta && results.meta.member_stresses ? results.meta.member_stresses[idx] : null;
-      var effA_cm2 = (m && m.A_override != null) ? m.A_override : A_cm2;
-      rows.push({
-        member: idx + 1,
-        nodes: [m.start + 1, m.end + 1],
-        length_m: parseFloat(L.toFixed(4)),
-        force_kN: parseFloat((f / 1000).toFixed(3)),
-        force_N: f,
-        stress_MPa: stress !== null ? parseFloat((stress / 1e6).toFixed(2)) : null,
-        A_cm2: parseFloat(effA_cm2.toFixed(4)),
-        A_mm2: parseFloat((effA_cm2 * 100).toFixed(2)),
-        sense: f > 0 ? 'T' : 'C',
-        // D-21: per-member governing-combination string (additive). Falls back to the
-        // legacy top-level string when no combinations exist — the SEED-005 marimo
-        // reader binds force_kN/A_cm2/top-level load_combination, all unchanged.
-        load_combination: governingComboFor(idx, f > 0 ? 'T' : 'C', LOAD_COMBINATION)
-      });
+      if (stress !== null) row.stress_MPa = parseFloat((stress / 1e6).toFixed(2));
+      rows.push(row);
     });
     rows.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
     rows.forEach(function (r) {

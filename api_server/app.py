@@ -383,7 +383,9 @@ def solve_truss2d_combinations(req: Truss2DCombinationsRequest):
         fv = [0.0] * (2 * n_nodes)
         for ld in case.loads:
             idx = ld.nodeId * 2 + (1 if ld.direction.lower() == "y" else 0)
-            fv[idx] = ld.magnitude
+            # Accumulate: two loads on the same node+direction within one case sum
+            # (WR-01) rather than clobbering — matches the test oracle and superposition.
+            fv[idx] += ld.magnitude
         model = TrussModel2D(
             nodes=np.array(req.nodes, float),
             members=np.array(req.members, int),
