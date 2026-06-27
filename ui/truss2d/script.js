@@ -158,6 +158,49 @@ let members  = [];
 let supports = [];
 let loads    = [];
 
+// ── Load-case model (Phase 999.2 Wave 3) ────────────────────────────────────
+// A load case is a named, nature-tagged container of loads (D-01). Loads carry a
+// `caseId` tagging them to a case; factors NEVER live on loads or cases (only on
+// combinations, a later wave). The model ALWAYS has a default active "Dead" case
+// (D-03) so the quick-solve path is never bottlenecked — a user can drop a load
+// and SOLVE without ever opening the Load-Case panel.
+//
+// Natures are code-agnostic PHYSICAL types (D-02): Self weight, Dead, Imposed,
+// Wind (the enum grows later). `category` is only meaningful for Imposed cases
+// (the engine ψ0 lookup, Plan 01): "A-D/H" (default) or "E_storage"; null otherwise.
+// Portable by design (D-22) — the same shape transfers to frame2d.
+let loadCases   = [];     // [{ id, name, nature, active, category }]
+let activeCaseId = null;  // id of the case new loads tag to
+
+const CASE_NATURES = ['Self weight', 'Dead', 'Imposed', 'Wind'];
+// Imposed ψ0 category options (engine PSI0_IMPOSED keys, Plan 01).
+const IMPOSED_CATEGORIES = [
+  { value: 'A-D/H',     label: 'A–D/H (offices/floors)' },
+  { value: 'E_storage', label: 'E (storage)' },
+];
+const DEFAULT_IMPOSED_CATEGORY = 'A-D/H';
+
+let _caseSeq = 0;
+function makeCaseId() {
+  _caseSeq += 1;
+  return 'case-' + Date.now().toString(36) + '-' + _caseSeq;
+}
+
+// Guarantees a usable case model at all times: if loadCases is empty, create the
+// default Dead case and make it active (D-03). Also repairs activeCaseId when it
+// points at a missing case (e.g. after a delete or a legacy load).
+function ensureDefaultCase() {
+  if (!Array.isArray(loadCases) || loadCases.length === 0) {
+    loadCases = [{ id: makeCaseId(), name: 'Dead', nature: 'Dead', active: true, category: null }];
+    activeCaseId = loadCases[0].id;
+    return;
+  }
+  if (!loadCases.some(c => c.id === activeCaseId)) {
+    const act = loadCases.find(c => c.active) || loadCases[0];
+    activeCaseId = act.id;
+  }
+}
+
 let history  = [];
 let results  = null;         // last API response
 let exportMode = false;
@@ -254,8 +297,9 @@ canvas.addEventListener('click', e => {
       if (!isNaN(mag)) {
         saveHistory();
         loads = loads.filter(l => !(l.nodeId === n.id && l.direction === dir.toLowerCase()));
-        loads.push({ nodeId: n.id, direction: dir.toLowerCase(), magnitude: mag });
+        loads.push({ nodeId: n.id, direction: dir.toLowerCase(), magnitude: mag, caseId: activeCaseId });
         results = null;
+        if (typeof renderCaseTable === 'function') renderCaseTable();
       }
     }
 
@@ -404,10 +448,14 @@ function resetAll() {
   nodes = []; members = []; supports = []; loads = [];
   origin = null; currentMemberStart = null; results = null;
   history = [];
+  // Reset the load-case model back to a single default Dead case (D-03).
+  loadCases = []; activeCaseId = null;
+  ensureDefaultCase();
   view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
   setStatus('');
   setMode('view');
+  if (typeof renderCaseTable === 'function') renderCaseTable();
   updateSaveButtonState();
   draw();
 }
@@ -1376,7 +1424,17 @@ function saveModel() {
       nodes: JSON.parse(JSON.stringify(nodes)),
       members: JSON.parse(JSON.stringify(members)),
       supports: canvasSupports,
-      loads: JSON.parse(JSON.stringify(loads)),
+      // Each saved load carries its caseId (default to the active case if a legacy
+      // in-memory load somehow lacks one — never write an untagged load).
+      loads: loads.map(function (l) {
+        return Object.assign({}, l, { caseId: l.caseId != null ? l.caseId : activeCaseId });
+      }),
+      // Load-case model (additive, optional — old readers ignore it). Mirrors the
+      // memberOverrides default-on-read backward-compat pattern. Each case carries
+      // its imposed `category` (null for non-imposed natures).
+      loadCases: loadCases.map(function (c) {
+        return { id: c.id, name: c.name, nature: c.nature, active: !!c.active, category: c.category != null ? c.category : null };
+      }),
       // Per-member A overrides (additive, optional — old readers ignore it)
       memberOverrides: (function () {
         const ov = {};
@@ -1636,6 +1694,36 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     // truss2d uses "loads" (not nodeLoads)
     loads = (data.canvas && data.canvas.loads) ? data.canvas.loads : [];
 
+    // Restore the load-case model (additive, default-on-read — mirrors the
+    // memberOverrides pattern). If the file carries loadCases, restore them and
+    // set activeCaseId to the first active (or first) case. Otherwise (legacy
+    // untyped file) create the default Dead case and assign every load to it.
+    // ensureDefaultCase() repairs any dangling activeCaseId. Never leave a load
+    // without a caseId and never leave loadCases empty. (T-9992-09 mitigation.)
+    if (data.canvas && Array.isArray(data.canvas.loadCases) && data.canvas.loadCases.length > 0) {
+      loadCases = data.canvas.loadCases.map(function (c) {
+        return {
+          id: c.id != null ? c.id : makeCaseId(),
+          name: c.name != null ? c.name : 'Case',
+          nature: c.nature != null ? c.nature : 'Dead',
+          active: !!c.active,
+          category: c.nature === 'Imposed'
+            ? (c.category != null ? c.category : DEFAULT_IMPOSED_CATEGORY)
+            : null,
+        };
+      });
+      const act = loadCases.find(function (c) { return c.active; }) || loadCases[0];
+      activeCaseId = act.id;
+      ensureDefaultCase();
+      // Any load whose caseId no longer resolves to a case → reassign to active.
+      const validIds = new Set(loadCases.map(function (c) { return c.id; }));
+      loads.forEach(function (l) { if (!validIds.has(l.caseId)) l.caseId = activeCaseId; });
+    } else {
+      loadCases = []; activeCaseId = null;
+      ensureDefaultCase();
+      loads.forEach(function (l) { l.caseId = activeCaseId; });
+    }
+
     // Restore per-member A overrides (backward-compat: missing key → no overrides)
     if (data.canvas && data.canvas.memberOverrides) {
       Object.entries(data.canvas.memberOverrides).forEach(function ([idx, ov]) {
@@ -1655,6 +1743,7 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     const resultsPanel = document.getElementById('resultsPanel');
     if (resultsPanel) resultsPanel.style.display = 'none';
 
+    if (typeof renderCaseTable === 'function') renderCaseTable();
     updateSaveButtonState();
     setStatus('', false);
     draw();
@@ -1954,6 +2043,8 @@ function onCardDragStart(e, section) {
 document.addEventListener('DOMContentLoaded', setupCardFloat);
 
 // ── Init ──────────────────────────────────────────────────────────────────
+ensureDefaultCase();   // D-03: a default active Dead case always exists at startup
 setMode('view');
+if (typeof renderCaseTable === 'function') renderCaseTable();
 updateSaveButtonState();
 draw();
