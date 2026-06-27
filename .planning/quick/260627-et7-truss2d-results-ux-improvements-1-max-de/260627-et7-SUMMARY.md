@@ -1,8 +1,8 @@
 ---
 phase: quick-260627-et7
 plan: 01
-status: incomplete
-completed_tasks: 3
+status: complete
+completed_tasks: 4
 total_tasks: 4
 date: 2026-06-27
 ---
@@ -46,11 +46,10 @@ remains in the JSON export for completeness / downstream use.
 - Scope contract held: only `ui/truss2d/{script.js, index.html}` changed; zero
   solver_core / api_server / tests touches.
 
-## Remaining
+## Task 4 — browser UAT: APPROVED (2026-06-27)
 
-- **Task 4 (blocking checkpoint):** human browser UAT — δ_max row + canvas annotation;
-  shift-click multi-select + batch A in one undo; results tables show Member/Nodes/Force(kN)
-  only; export JSON still carries `stress_MPa`. See PLAN.md `<how-to-verify>`.
+User approved all three improvements in the browser. Task closed. Presentation note from the
+executor (signed-kN vs magnitude+T/C tag in the split tables) accepted as-is.
 
 ## Note on artifacts
 
