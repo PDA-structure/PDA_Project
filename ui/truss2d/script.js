@@ -1702,19 +1702,17 @@ function renderResults(res) {
     var rows = [];
     res.member_forces.forEach(function (f, idx) {
       var m = members[idx];
-      var stress = res.meta && res.meta.member_stresses ? res.meta.member_stresses[idx] : undefined;
-      rows.push({ idx: idx, f: f, m: m, stress: stress });
+      rows.push({ idx: idx, f: f, m: m });
     });
     rows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
     rows.forEach(function (r) {
       if (Math.abs(r.f) < 1e-3) return;
       var fkN = r.f / 1000;
       var tr = document.createElement('tr');
-      var stressStr = r.stress !== undefined ? (r.stress / 1e6).toFixed(2) : '—';
+      // Signed kN: tension positive, compression negative (T/C sense from table placement)
       tr.innerHTML = '<td>' + (r.idx + 1) + '</td>'
         + '<td>' + (r.m.start + 1) + ' – ' + (r.m.end + 1) + '</td>'
-        + '<td>' + fkN.toFixed(3) + '</td>'
-        + '<td>' + stressStr + '</td>';
+        + '<td>' + fkN.toFixed(3) + '</td>';
       if (r.f > 0) tBody.appendChild(tr);
       else         cBody.appendChild(tr);
     });
