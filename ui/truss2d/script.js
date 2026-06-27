@@ -1252,7 +1252,11 @@ function saveModel() {
   const E_GPa = parseFloat(document.getElementById('inputE').value);
   const A_cm2 = parseFloat(document.getElementById('inputA').value);
   const E = E_GPa * 1e9;
-  const A = A_cm2 * 1e-4;
+  // Per-member A: scalar when no overrides, array when any override present
+  const anyA = members.some(m => m.A_override != null);
+  const A = anyA
+    ? members.map(m => (m.A_override != null ? m.A_override : A_cm2) * 1e-4)
+    : A_cm2 * 1e-4;
 
   // restrainedDoF — 1-based, 2 DOF per node (Ux, Uy)
   const restrainedDoF = [];
@@ -1286,13 +1290,21 @@ function saveModel() {
     E, A,
     forceVector,
     restrainedDoF,
-    // Canvas state — D-02/D-04 shape (no udl, no memberOverrides for truss2d)
+    // Canvas state — D-02/D-04 shape
     canvas: {
       origin: origin ? { x: origin.x, y: origin.y } : null,
       nodes: JSON.parse(JSON.stringify(nodes)),
       members: JSON.parse(JSON.stringify(members)),
       supports: canvasSupports,
       loads: JSON.parse(JSON.stringify(loads)),
+      // Per-member A overrides (additive, optional — old readers ignore it)
+      memberOverrides: (function () {
+        const ov = {};
+        members.forEach(function (m, idx) {
+          if (m.A_override != null) ov[String(idx)] = { A_cm2: m.A_override };
+        });
+        return ov;
+      }()),
     },
   };
 
@@ -1530,6 +1542,14 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
 
     // truss2d uses "loads" (not nodeLoads)
     loads = (data.canvas && data.canvas.loads) ? data.canvas.loads : [];
+
+    // Restore per-member A overrides (backward-compat: missing key → no overrides)
+    if (data.canvas && data.canvas.memberOverrides) {
+      Object.entries(data.canvas.memberOverrides).forEach(function ([idx, ov]) {
+        const m = members[parseInt(idx, 10)];
+        if (m) m.A_override = ov.A_cm2 != null ? ov.A_cm2 : null;
+      });
+    }
 
     // Recalculate pixel positions from real coordinates + origin (Pitfall 1)
     nodes.forEach(syncPixelFromReal);
