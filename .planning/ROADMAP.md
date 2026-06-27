@@ -194,11 +194,11 @@ Plans:
 **Goal:** Engineers can define typed load cases (nature-tagged: Self weight, Dead, Imposed, Wind) and generate EN 1990 6.10 STR-ULS + SLS-characteristic combinations via a solver-agnostic engine in `solver_core`, with per-member governing-combination traceability surfaced in results and carried into the EC3 export. Built + tested on truss2d first; engine/model/UX/export designed to transfer to frame2d and 3D solvers. Combination logic uses linear superposition over cached per-case member forces (no re-solve).
 **Context:** Identified 2026-04-18; planned 2026-06-27 against locked decisions D-01..D-22 (CONTEXT.md). Structured as 5 sequential waves (backend before UI; strict no-regression on `/solve/truss2d`). The differentiator is provenance-carrying envelopes (member→governing combo + reverse index) — designing out the Tekla "can't see which combo governs each member" pain.
 **Requirements:** Locked decisions D-01..D-22 (no formal REQ-IDs — backlog phase).
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 - [x] 999.2-01-PLAN.md — Wave 1: solver_core `loads/` engine (natures + Eurocode UK code pack + generate/superpose/envelope) + analytical tests [D-01,02,04,05,07,09,10,11,12,13,18,19,22]
-- [ ] 999.2-02-PLAN.md — Wave 2: additive `POST /solve/truss2d/combinations` endpoint (orchestrates per-case solves; structured-422 input guards) + API tests [D-06,07,08,09,18,19]
+- [x] 999.2-02-PLAN.md — Wave 2: additive `POST /solve/truss2d/combinations` endpoint (orchestrates per-case solves; structured-422 input guards) + API tests [D-06,07,08,09,18,19]
 - [ ] 999.2-03-PLAN.md — Wave 3: UI load-case model + case-table panel + colour-by-nature + per-case tagging + save/load back-compat [D-02,03,22]
 - [ ] 999.2-04-PLAN.md — Wave 4: UI combination table + two-page generator wizard + (i) info-popovers (engine-driven; JS superpose on edit, no re-solve) [D-08,09,14,15,16,17]
 - [ ] 999.2-05-PLAN.md — Wave 5: UI results selector (per-case/per-combination/ENVELOPE) + governing column + canvas reverse-index highlight + per-member export string (schema 1.2) [D-18,19,20,21]
