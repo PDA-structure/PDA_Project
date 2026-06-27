@@ -211,8 +211,19 @@ function ensureDefaultCase() {
 // in JS only — NO re-solve, NO network (D-09 / Pitfall 6).
 let combinations  = [];      // shared manual + generated rows
 let perCaseForces = {};      // caseId -> member_forces array (length = nMembers)
+let perCaseDisp   = {};      // caseId -> displacements (UG) array (length = 2·nNodes) — SLS δ_max (D-13)
 let comboEnvelope = null;    // last envelopeJS result (carried for Wave 5)
 let wizardPreview = [];      // editable generated rows staged in the wizard (Task 2)
+
+// ── Results-view + traceability state (Phase 999.2 Wave 5 — C6/C7/C8) ────────
+// resultsView: 'auto' resolves to ENVELOPE when active combinations exist, else
+// per-case (back-compat with today's single-solve results, D-20). The segmented
+// selector sets it explicitly; resetAll restores 'auto'.
+let resultsView          = 'auto';
+let selectedResultCaseId  = null;   // per-case view dropdown selection
+let selectedResultComboId = null;   // per-combination view dropdown selection
+let selectedComboName     = null;   // reverse-index canvas highlight (D-19 / C8)
+let selectedMemberDetail  = null;   // member index (0-based) shown in the detail strip (D-19 forward)
 
 let _comboSeq = 0;
 function makeComboId() {
@@ -271,6 +282,214 @@ function recombine() {
     const badge = document.querySelector('.combo-table [data-governs-for="' + c.id + '"]');
     if (badge) badge.textContent = 'governs ' + (comboEnvelope.governs[c.id] || 0);
   });
+  // Live re-render of the results panel + canvas so a factor edit re-envelopes the
+  // ENVELOPE view and the SLS δ_max instantly — no re-solve, no network (D-09).
+  if (typeof refreshResultsView === 'function') refreshResultsView();
+  if (typeof draw === 'function') draw();
+}
+
+// ── Results-view helpers (Phase 999.2 Wave 5 — C6/C7/C8) ────────────────────
+// True when at least one combination is on AND per-case forces are cached.
+function hasActiveCombos() {
+  return combinations.some(function (c) { return c.on; }) && Object.keys(perCaseForces).length > 0;
+}
+
+// Resolve 'auto' to ENVELOPE when combinations exist, else per-case (back-compat).
+function effectiveResultsView() {
+  if (resultsView !== 'auto') return resultsView;
+  return hasActiveCombos() ? 'envelope' : 'per-case';
+}
+
+// Pure-JS displacement superposition: Σ factor · perCaseDisp[caseId]. Mirrors
+// superposeJS for forces; drives the SLS-characteristic δ_max (D-13) without a
+// re-solve when a factor is edited (D-09).
+function superposeDispJS(combo) {
+  const nDof = nodes.length * 2;
+  const out = new Array(nDof).fill(0);
+  (combo.terms || []).forEach(function (t) {
+    const dc = perCaseDisp[t.caseId];
+    if (!dc) return;
+    for (let i = 0; i < nDof; i++) out[i] += t.factor * (dc[i] || 0);
+  });
+  return out;
+}
+
+// SLS-characteristic deflection check (D-13): max δ over the on SLS combinations
+// (the SLS envelope) + the governing SLS combination name. Returns null when no
+// SLS combos / no cached displacements exist → caller falls back to single-solve.
+function slsEnvelopeDeltaMax() {
+  if (!Object.keys(perCaseDisp).length) return null;
+  const sls = combinations.filter(function (c) { return c.on && c.cls === 'SLS'; });
+  if (!sls.length) return null;
+  let best = null;
+  sls.forEach(function (combo) {
+    const ug = superposeDispJS(combo);
+    let dMax = 0, dNode = 0;
+    nodes.forEach(function (n, i) {
+      const mag = Math.hypot(ug[i * 2] || 0, ug[i * 2 + 1] || 0);
+      if (mag > dMax) { dMax = mag; dNode = i + 1; }
+    });
+    if (!best || dMax > best.delta) best = { delta: dMax, node: dNode, combo: combo.name };
+  });
+  return best;
+}
+
+// Member forces for the active per-case / per-combination view (ENVELOPE is built
+// directly from comboEnvelope). Falls back to the single-solve result for the
+// no-combinations back-compat path (D-20).
+function forcesForView(view, res) {
+  if (view === 'per-combination' && hasActiveCombos()) {
+    let combo = combinations.find(function (c) { return c.id === selectedResultComboId && c.on; });
+    if (!combo) combo = combinations.filter(function (c) { return c.on; })[0];
+    if (combo) return superposeJS(combo);
+  }
+  if (view === 'per-case' && hasActiveCombos() && selectedResultCaseId && perCaseForces[selectedResultCaseId]) {
+    return perCaseForces[selectedResultCaseId];
+  }
+  return res ? res.member_forces : null;   // single-solve back-compat
+}
+
+// Sync the segmented selector active state + populate/show the case/combination
+// dropdowns appropriate to the active view.
+function populateResultsSelectors(view) {
+  document.querySelectorAll('#resultsViewSelector .results-view-seg').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.view === view);
+  });
+  const combosExist = hasActiveCombos();
+  const caseSel = document.getElementById('resultsCaseSelect');
+  const comboSel = document.getElementById('resultsComboSelect');
+  if (caseSel) {
+    if (view === 'per-case' && combosExist) {
+      caseSel.innerHTML = '';
+      loadCases.forEach(function (c) {
+        if (!perCaseForces[c.id]) return;   // only cases that were solved
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = c.name;
+        caseSel.appendChild(o);
+      });
+      if (!selectedResultCaseId || !perCaseForces[selectedResultCaseId]) {
+        selectedResultCaseId = caseSel.options.length ? caseSel.options[0].value : null;
+      }
+      caseSel.value = selectedResultCaseId || '';
+      caseSel.style.display = caseSel.options.length ? '' : 'none';
+    } else {
+      caseSel.style.display = 'none';
+    }
+  }
+  if (comboSel) {
+    if (view === 'per-combination' && combosExist) {
+      comboSel.innerHTML = '';
+      combinations.filter(function (c) { return c.on; }).forEach(function (c) {
+        const o = document.createElement('option');
+        o.value = c.id; o.textContent = c.name;
+        comboSel.appendChild(o);
+      });
+      if (!selectedResultComboId || !combinations.some(function (c) { return c.id === selectedResultComboId && c.on; })) {
+        selectedResultComboId = comboSel.options.length ? comboSel.options[0].value : null;
+      }
+      comboSel.value = selectedResultComboId || '';
+      comboSel.style.display = comboSel.options.length ? '' : 'none';
+    } else {
+      comboSel.style.display = 'none';
+    }
+  }
+}
+
+// User clicked a results-view segment.
+function setResultsView(v) {
+  resultsView = v;
+  if (results) renderResults(results);
+}
+
+// Re-render the results panel against the last solve result (used by the dropdowns
+// and by recombine() on factor edits). Safe no-op when nothing has been solved.
+function refreshResultsView() {
+  if (results) renderResults(results);
+}
+
+// Minimal HTML escape for combination-name / expression strings rendered into cells.
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Build one tension/compression result row; withGov adds the truncated Governing
+// column (ENVELOPE view only). Clicking the row opens the member-detail strip.
+function buildForceRow(r, withGov) {
+  const tr = document.createElement('tr');
+  const fkN = r.f / 1000;
+  let html = '<td>' + (r.idx + 1) + '</td>'
+    + '<td>' + (r.m.start + 1) + ' – ' + (r.m.end + 1) + '</td>'
+    + '<td>' + fkN.toFixed(3) + '</td>';
+  if (withGov) {
+    const g = r.gov || '—';
+    html += '<td class="gov-cell" title="' + esc(g) + '">' + esc(g) + '</td>';
+  }
+  tr.innerHTML = html;
+  tr.style.cursor = 'pointer';
+  tr.addEventListener('click', function () { showMemberDetail(r.idx); });
+  return tr;
+}
+
+// Forward map (D-19): show the clicked member's force in EVERY on combination, the
+// governing one flagged. The governing expression shown is exactly what the export
+// writes (D-21). No combinations → hides the strip.
+function showMemberDetail(memberIndex) {
+  const host = document.getElementById('memberDetail');
+  if (!host) return;
+  const m = members[memberIndex];
+  const active = combinations.filter(function (c) { return c.on; });
+  if (!m || !active.length || !Object.keys(perCaseForces).length) {
+    host.style.display = 'none';
+    selectedMemberDetail = null;
+    return;
+  }
+  selectedMemberDetail = memberIndex;
+  // Governing combo names for this member (from the cached envelope).
+  let govT = null, govC = null;
+  if (comboEnvelope && comboEnvelope.perMember) {
+    const pm = comboEnvelope.perMember.find(function (p) { return p.member === memberIndex + 1; });
+    if (pm) { govT = pm.govT; govC = pm.govC; }
+  }
+  let rowsHtml = '';
+  active.forEach(function (c) {
+    const f = superposeJS(c)[memberIndex] || 0;
+    const isGov = (c.name === govT || c.name === govC);
+    const sense = f > 1e-3 ? 'T' : (f < -1e-3 ? 'C' : '—');
+    rowsHtml += '<tr' + (isGov ? ' class="md-governing"' : '') + '>'
+      + '<td>' + esc(c.name) + (isGov ? ' <span class="md-flag">governs</span>' : '') + '</td>'
+      + '<td>' + (c.cls || '') + '</td>'
+      + '<td class="md-force">' + (f / 1000).toFixed(3) + ' kN</td>'
+      + '<td>' + sense + '</td>'
+      + '</tr>';
+  });
+  host.innerHTML =
+    '<div class="member-detail-head">'
+    + '<span class="member-detail-title">Member ' + (memberIndex + 1)
+    + ' (nodes ' + (m.start + 1) + '–' + (m.end + 1) + ') — force per combination</span>'
+    + '<button type="button" class="member-detail-close" aria-label="Close member detail" '
+    + 'onclick="hideMemberDetail()">✕</button>'
+    + '</div>'
+    + '<table><thead><tr><th>Combination</th><th>Class</th><th>Force</th><th>Sense</th></tr></thead>'
+    + '<tbody>' + rowsHtml + '</tbody></table>';
+  host.style.display = '';
+}
+
+function hideMemberDetail() {
+  selectedMemberDetail = null;
+  const host = document.getElementById('memberDetail');
+  if (host) host.style.display = 'none';
+}
+
+// Reverse index (D-19 / C8): select a combination so draw() paints the governing
+// halo on the members it governs. Passing null clears the selection.
+function selectComboForCanvas(comboId) {
+  const c = combinations.find(function (x) { return x.id === comboId; });
+  const name = c ? c.name : null;
+  selectedComboName = (selectedComboName === name) ? null : name;  // toggle
+  renderCombinationTable();
+  draw();
 }
 
 let history  = [];
@@ -466,6 +685,12 @@ canvas.addEventListener('click', e => {
       draw();
       return;
     }
+
+  } else if (mode === 'view') {
+    // Forward map (D-19): click a member in View mode to open its per-combination
+    // force breakdown (only meaningful once combinations have been run).
+    const mi = findMemberAt(px, py);
+    if (mi !== null && results) showMemberDetail(mi);
   }
 
   updateSaveButtonState();
@@ -524,7 +749,11 @@ function resetAll() {
   loadCases = []; activeCaseId = null;
   ensureDefaultCase();
   // Reset the combination model + cached per-case forces (Wave 4).
-  combinations = []; perCaseForces = {}; comboEnvelope = null; wizardPreview = [];
+  combinations = []; perCaseForces = {}; perCaseDisp = {}; comboEnvelope = null; wizardPreview = [];
+  // Reset the Wave-5 results-view + traceability state.
+  resultsView = 'auto'; selectedResultCaseId = null; selectedResultComboId = null;
+  selectedComboName = null; selectedMemberDetail = null;
+  if (typeof hideMemberDetail === 'function') hideMemberDetail();
   view = { scale: 1, tx: 0, ty: 0 };
   document.getElementById('resultsPanel').style.display = 'none';
   setStatus('');
@@ -768,6 +997,15 @@ function drawGrid() {
 }
 
 function drawMembers(labelManager) {
+  // Reverse-index governing halo (D-19 / C8): the set of member indices governed by
+  // the currently selected combination (selectedComboName). Empty when none selected.
+  const governedSet = new Set();
+  if (selectedComboName && comboEnvelope && comboEnvelope.perMember) {
+    comboEnvelope.perMember.forEach(function (p) {
+      if (p.govT === selectedComboName || p.govC === selectedComboName) governedSet.add(p.member - 1);
+    });
+  }
+
   // Normalisation pass: compute max |axial force| once per draw so thickness scales linearly across members.
   let maxAbsForce = 0;
   if (results && results.member_forces) {
@@ -798,6 +1036,21 @@ function drawMembers(labelManager) {
         const ratio = af < 1e-3 ? 0 : (af / maxAbsForce);
         thickness = 1.5 + 4.5 * ratio;
       }
+    }
+
+    // Governing halo painted UNDER the member (reverse index, D-19 / C8): thick
+    // semi-transparent spike-yellow ring on every member the selected combo governs.
+    if (governedSet.has(idx)) {
+      ctx.save();
+      ctx.strokeStyle = cssVar('--canvas-governing');
+      ctx.lineWidth = thickness + 8;
+      ctx.globalAlpha = 0.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(n1.x, n1.y);
+      ctx.lineTo(n2.x, n2.y);
+      ctx.stroke();
+      ctx.restore();
     }
 
     ctx.strokeStyle = color;
@@ -1575,10 +1828,31 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.export-dropdown')) hideExportMenu();
 });
 
+// Per-member governing-combination string (D-21). Returns the member's governing
+// combination from the cached envelope (gov_tension for tension rows, gov_compression
+// for compression rows). When NO combinations exist it returns the legacy top-level
+// fallback string so the export keeps its pre-999.2 shape (T-9992-15, back-compat).
+function governingComboFor(memberIndex, sense, fallback) {
+  if (comboEnvelope && comboEnvelope.perMember && comboEnvelope.perMember.length
+      && combinations.some(function (c) { return c.on; })) {
+    var pm = comboEnvelope.perMember.find(function (p) { return p.member === memberIndex + 1; });
+    if (pm) {
+      var g = (sense === 'C') ? pm.govC : pm.govT;
+      if (g) return g;
+    }
+  }
+  return fallback;
+}
+
 function exportAnalysis(mode) {
   if (!results) return;
   mode = mode || 'presentation';
   var LOAD_COMBINATION = 'as-modelled — ULS factored by user (single case)';
+  // When an envelope exists, the top-level field becomes a summary and each member
+  // row carries its own governing string; otherwise the legacy single string stands.
+  var hasEnvelope = comboEnvelope && comboEnvelope.perMember && comboEnvelope.perMember.length
+                    && combinations.some(function (c) { return c.on; });
+  var topLoadCombination = hasEnvelope ? 'ULS/SLS envelope — see per-member' : LOAD_COMBINATION;
   var E_GPa = parseFloat(document.getElementById('inputE').value);
   var A_cm2 = parseFloat(document.getElementById('inputA').value);
 
@@ -1602,7 +1876,11 @@ function exportAnalysis(mode) {
         stress_MPa: stress !== null ? parseFloat((stress / 1e6).toFixed(2)) : null,
         A_cm2: parseFloat(effA_cm2.toFixed(4)),
         A_mm2: parseFloat((effA_cm2 * 100).toFixed(2)),
-        sense: f > 0 ? 'T' : 'C'
+        sense: f > 0 ? 'T' : 'C',
+        // D-21: per-member governing-combination string (additive). Falls back to the
+        // legacy top-level string when no combinations exist — the SEED-005 marimo
+        // reader binds force_kN/A_cm2/top-level load_combination, all unchanged.
+        load_combination: governingComboFor(idx, f > 0 ? 'T' : 'C', LOAD_COMBINATION)
       });
     });
     rows.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
@@ -1694,10 +1972,10 @@ function exportAnalysis(mode) {
   draw();
 
   var pkg = {
-    schema_version: '1.1',
+    schema_version: '1.2',
     type: 'truss2d-analysis',
     timestamp: now.toISOString(),
-    load_combination: LOAD_COMBINATION,
+    load_combination: topLoadCombination,
     canvas_image: canvasImage,
     metadata: {
       solver: 'truss2d',
@@ -1822,7 +2100,11 @@ document.getElementById('fileInput').addEventListener('change', function(e) {
     // Restore the combination model (additive, default-on-read). perCaseForces is
     // left empty — it is recomputed from the engine on the next generate; the
     // restored rows render with a 0 "governs" badge until then (D-09).
-    combinations = []; perCaseForces = {}; comboEnvelope = null; wizardPreview = [];
+    combinations = []; perCaseForces = {}; perCaseDisp = {}; comboEnvelope = null; wizardPreview = [];
+    // Wave-5 view/traceability state is transient — never persisted, reset on load.
+    resultsView = 'auto'; selectedResultCaseId = null; selectedResultComboId = null;
+    selectedComboName = null; selectedMemberDetail = null;
+    if (typeof hideMemberDetail === 'function') hideMemberDetail();
     if (data.canvas && Array.isArray(data.canvas.combinations)) {
       combinations = data.canvas.combinations.map(function (c) {
         return {
@@ -1911,29 +2193,58 @@ function renderResults(res) {
   const downloadLink = createDownloadLink(res);
   panel.insertBefore(downloadLink, panel.firstChild);
 
-  // Split member forces into tension / compression tables sorted by |F| descending
+  // Member-force tables, view-aware (D-20): per-case / per-combination / ENVELOPE.
+  // (rView is the results view; do NOT confuse with the global canvas-transform `view`.)
+  var rView = effectiveResultsView();
+  populateResultsSelectors(rView);
   var tBody = document.querySelector('#tableTension tbody');
   var cBody = document.querySelector('#tableCompression tbody');
   tBody.innerHTML = '';
   cBody.innerHTML = '';
-  if (res.member_forces) {
-    var rows = [];
-    res.member_forces.forEach(function (f, idx) {
-      var m = members[idx];
-      rows.push({ idx: idx, f: f, m: m });
-    });
-    rows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
-    rows.forEach(function (r) {
-      if (Math.abs(r.f) < 1e-3) return;
-      var fkN = r.f / 1000;
-      var tr = document.createElement('tr');
-      // Signed kN: tension positive, compression negative (T/C sense from table placement)
-      tr.innerHTML = '<td>' + (r.idx + 1) + '</td>'
-        + '<td>' + (r.m.start + 1) + ' – ' + (r.m.end + 1) + '</td>'
-        + '<td>' + fkN.toFixed(3) + '</td>';
-      if (r.f > 0) tBody.appendChild(tr);
-      else         cBody.appendChild(tr);
-    });
+
+  // Governing column appears only in the ENVELOPE view (C7).
+  var showGov = (rView === 'envelope');
+  document.querySelectorAll('#tableTension .gov-col, #tableCompression .gov-col')
+    .forEach(function (el) { el.style.display = showGov ? '' : 'none'; });
+  var hint = document.getElementById('resultsViewHint');
+
+  if (rView === 'envelope') {
+    // One row PER MEMBER (legibility-at-scale, NOT one row per combination) with the
+    // governing combination filled from the cached envelope (D-18/D-19 forward map).
+    var pm = (comboEnvelope && comboEnvelope.perMember) ? comboEnvelope.perMember : [];
+    if (!pm.length) {
+      if (hint) { hint.textContent = 'Run combinations to see which one governs each member.'; hint.style.display = ''; }
+    } else {
+      if (hint) hint.style.display = 'none';
+      var tRows = [], cRows = [];
+      pm.forEach(function (p) {
+        var m = members[p.member - 1];
+        if (!m) return;
+        if (p.maxT > 1e-3)  tRows.push({ idx: p.member - 1, m: m, f: p.maxT, gov: p.govT });
+        if (p.maxC < -1e-3) cRows.push({ idx: p.member - 1, m: m, f: p.maxC, gov: p.govC });
+      });
+      tRows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
+      cRows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
+      tRows.forEach(function (r) { tBody.appendChild(buildForceRow(r, true)); });
+      cRows.forEach(function (r) { cBody.appendChild(buildForceRow(r, true)); });
+    }
+  } else {
+    if (hint) hint.style.display = 'none';
+    var forces = forcesForView(rView, res);   // per-case / per-combination / single-solve
+    if (forces) {
+      var rows = [];
+      forces.forEach(function (f, idx) {
+        if (!members[idx]) return;
+        rows.push({ idx: idx, f: f, m: members[idx], gov: null });
+      });
+      rows.sort(function (a, b) { return Math.abs(b.f) - Math.abs(a.f); });
+      rows.forEach(function (r) {
+        if (Math.abs(r.f) < 1e-3) return;
+        var tr = buildForceRow(r, false);
+        if (r.f > 0) tBody.appendChild(tr);
+        else         cBody.appendChild(tr);
+      });
+    }
   }
 
   // Reactions (restrained DOFs only)
@@ -1959,18 +2270,28 @@ function renderResults(res) {
   dBody.innerHTML = '';
   const UG = res.UG;
 
-  // δ_max summary row: max nodal displacement magnitude (parity with frame2d)
-  let dMaxMag = 0, dMaxNode = 0;
-  nodes.forEach((n, i) => {
-    const mag = Math.hypot(UG[i * 2], UG[i * 2 + 1]);
-    if (mag > dMaxMag) { dMaxMag = mag; dMaxNode = i + 1; }  // 1-based for display
-  });
+  // δ_max summary row (D-13): when combinations exist, the deflection check is
+  // driven by the SLS-characteristic combination/envelope (the worst δ over the on
+  // SLS combinations) and labelled with the governing SLS combination. When no
+  // combinations exist it falls back to the single-solve δ_max (back-compat).
   const dMaxTr = document.createElement('tr');
-  if (dMaxMag > 1e-12) {
+  const sls = slsEnvelopeDeltaMax();
+  if (sls) {
     dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">' +
-      (dMaxMag * 1000).toFixed(4) + ' mm @ Node ' + dMaxNode + '</td>';
+      (sls.delta * 1000).toFixed(4) + ' mm @ Node ' + sls.node +
+      ' <span class="dmax-gov">(SLS: ' + esc(sls.combo) + ')</span></td>';
   } else {
-    dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">—</td>';
+    let dMaxMag = 0, dMaxNode = 0;
+    nodes.forEach((n, i) => {
+      const mag = Math.hypot(UG[i * 2], UG[i * 2 + 1]);
+      if (mag > dMaxMag) { dMaxMag = mag; dMaxNode = i + 1; }  // 1-based for display
+    });
+    if (dMaxMag > 1e-12) {
+      dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">' +
+        (dMaxMag * 1000).toFixed(4) + ' mm @ Node ' + dMaxNode + '</td>';
+    } else {
+      dMaxTr.innerHTML = '<td><b>δ_max</b></td><td colspan="2">—</td>';
+    }
   }
   dBody.appendChild(dMaxTr);
 
@@ -1981,6 +2302,9 @@ function renderResults(res) {
     tr.innerHTML = `<td>${i + 1}</td><td>${ux}</td><td>${uy}</td>`;
     dBody.appendChild(tr);
   });
+
+  // Keep an open member-detail strip in sync after a re-render (e.g. factor edit).
+  if (selectedMemberDetail !== null) showMemberDetail(selectedMemberDetail);
 
   document.getElementById('resultsPanel').style.display = 'block';
 }
@@ -2248,6 +2572,15 @@ function renderCombinationTable() {
   combinations.forEach(function (c) {
     const tr = document.createElement('tr');
     if (!c.on) tr.className = 'combo-off';
+    if (selectedComboName && c.name === selectedComboName) tr.classList.add('combo-selected');
+    tr.title = 'Click to highlight the members this combination governs on the canvas';
+    // Reverse index (D-19 / C8): clicking the row (but not its inputs/buttons)
+    // selects this combination so draw() paints the governing halo on the members
+    // it governs. Clicking again deselects.
+    tr.addEventListener('click', function (e) {
+      if (e.target.closest('input, button, select')) return;
+      selectComboForCanvas(c.id);
+    });
 
     // on/off
     const tdOn = document.createElement('td');
@@ -2426,9 +2759,19 @@ async function fetchCombinations(generateSpec) {
     }
     const data = await res.json();
     perCaseForces = {};
+    perCaseDisp = {};
     Object.keys(data.per_case || {}).forEach(function (cid) {
       perCaseForces[cid] = (data.per_case[cid] && data.per_case[cid].member_forces) || [];
+      // Cache per-case displacements too so the SLS-characteristic δ_max (D-13) can
+      // be re-superposed in JS on factor edits with no re-solve (mirrors perCaseForces).
+      perCaseDisp[cid]   = (data.per_case[cid] && data.per_case[cid].displacements) || [];
     });
+    // The engine also returns each generated combination's delta_max_m (Plan 02
+    // response). The UI re-derives δ_max from perCaseDisp so it stays correct when a
+    // factor is edited (D-09); the engine delta_max_m is the un-edited reference.
+    if (data.combinations) {
+      data.combinations.forEach(function (c) { c._engine_delta_max_m = c.delta_max_m; });
+    }
     return data;
   } catch (e) {
     setStatus('Cannot reach API. Is the server running?', true);

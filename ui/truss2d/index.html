@@ -330,12 +330,28 @@
     <div class="canvas-col">
 
     <div class="results-panel" id="resultsPanel" style="display:none">
+
+      <!-- Results-view selector (C6 / D-20): per-case · per-combination · ENVELOPE -->
+      <div id="resultsViewSelector" class="results-view-selector" role="group" aria-label="Results view">
+        <button type="button" class="results-view-seg" data-view="per-case"
+                onclick="setResultsView('per-case')">per-case</button>
+        <button type="button" class="results-view-seg" data-view="per-combination"
+                onclick="setResultsView('per-combination')">per-combination</button>
+        <button type="button" class="results-view-seg" data-view="envelope"
+                onclick="setResultsView('envelope')">ENVELOPE</button>
+        <select id="resultsCaseSelect" class="results-view-pick" aria-label="Select load case to view"
+                onchange="selectedResultCaseId = this.value; refreshResultsView()" style="display:none"></select>
+        <select id="resultsComboSelect" class="results-view-pick" aria-label="Select combination to view"
+                onchange="selectedResultComboId = this.value; refreshResultsView()" style="display:none"></select>
+      </div>
+      <div id="resultsViewHint" class="results-view-hint" style="display:none"></div>
+
       <div class="results-grid">
 
         <div class="results-table-wrap results-tension">
           <h3>Tension Members</h3>
           <table id="tableTension">
-            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th></tr></thead>
+            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th class="gov-col" style="display:none">Governing combination</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -343,7 +359,7 @@
         <div class="results-table-wrap results-compression">
           <h3>Compression Members</h3>
           <table id="tableCompression">
-            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th></tr></thead>
+            <thead><tr><th>Member</th><th>Nodes</th><th>Force (kN)</th><th class="gov-col" style="display:none">Governing combination</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -365,6 +381,9 @@
         </div>
 
       </div>
+
+      <!-- Member-detail strip (C7 / D-19 forward map): a member's force in every combination -->
+      <div id="memberDetail" class="member-detail" style="display:none"></div>
     </div>
 
     <main class="canvas-area">

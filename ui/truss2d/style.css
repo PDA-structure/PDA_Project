@@ -90,6 +90,11 @@
   --canvas-nature-dead:    #455a64;  /* Dead — strong blue-grey (default active) */
   --canvas-nature-imposed: #b9770e;  /* Imposed — ochre/amber */
   --canvas-nature-wind:    #1f8fb5;  /* Wind — teal/cyan */
+
+  /* Governing-combination canvas highlight (999.2 C8 / D-19 reverse index).
+     Spike-primary yellow — its ONLY canvas use (SOLVE button is the only other
+     yellow), so there is no ambiguity with the 8 existing canvas colours. */
+  --canvas-governing: #F5C82E;
 }
 
 /* ── @font-face: self-hosted Inter ─────────────────────────── */
@@ -490,6 +495,99 @@ canvas {
   margin-bottom: 6px;
 }
 
+/* ── Results-view selector (999.2 C6 / D-20) — segmented control ─────────── */
+.results-view-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+.results-view-seg {
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-fg-muted);
+  cursor: pointer;
+}
+.results-view-seg:hover { background: var(--color-surface-hover); border-color: var(--color-border-hover); }
+.results-view-seg.active {
+  background: var(--color-accent-bright);
+  color: var(--color-on-accent);
+  border-color: var(--color-accent-bright);
+}
+.results-view-pick {
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  margin-left: var(--space-2);
+}
+.results-view-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-fg-subtle);
+  margin-bottom: var(--space-2);
+}
+
+/* Governing-combination column (C7) — truncate long expressions, full string on hover */
+.gov-cell {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+}
+
+/* Member-detail strip (C7 / D-19 forward map) — a member's force in every combo */
+.member-detail {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+.member-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+.member-detail-title { font-weight: 600; color: var(--color-fg-strong); }
+.member-detail-close {
+  width: 18px; height: 18px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-fg-muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.member-detail-close:hover { background: var(--color-surface-hover); border-color: var(--color-border-hover); }
+.member-detail table { min-width: 0; width: 100%; }
+.member-detail td, .member-detail th { text-align: left; }
+.member-detail .md-force { font-family: var(--font-mono); text-align: right; }
+.member-detail tr.md-governing { background: var(--color-surface-hover); }
+.member-detail .md-flag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--canvas-governing);
+  color: #3a2f00;
+}
+.dmax-gov { color: var(--color-fg-subtle); font-size: 11px; }
+
 table {
   border-collapse: collapse;
   font-size: var(--font-size-sm);
@@ -670,6 +768,8 @@ body.card-dragging canvas { pointer-events: none; }
 }
 .combo-table th { background: var(--color-surface-alt); color: var(--color-accent-bright); }
 .combo-table tr.combo-off { opacity: 0.5; }
+.combo-table tbody tr { cursor: pointer; }
+.combo-table tr.combo-selected td { background: var(--color-surface-hover); box-shadow: inset 2px 0 0 var(--color-accent-bright); }
 
 .combo-chip {
   display: inline-block;
@@ -957,6 +1057,9 @@ body.card-dragging canvas { pointer-events: none; }
   --canvas-nature-dead:    #b0bec5;
   --canvas-nature-imposed: #e0a93b;
   --canvas-nature-wind:    #4db6d6;
+
+  /* Governing-combination highlight — same spike yellow in dark */
+  --canvas-governing: #F5C82E;
 }
 
 /* Dark theme — results table accent overrides */
