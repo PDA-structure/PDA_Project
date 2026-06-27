@@ -200,6 +200,21 @@
       </section>
 
       <section class="panel-section">
+        <h3>Load Cases</h3>
+        <label class="case-active-row">Active case
+          <select id="activeCaseSelect" aria-label="Active load case — new loads tag to this case"></select>
+        </label>
+        <div id="caseTableBody" class="case-table"></div>
+        <button class="tool-btn tool-btn--spike" id="btnAddCase" onclick="addLoadCase()" title="Add a new load case">
+          <svg class="spike-glyph" viewBox="0 0 18 18" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+            <line x1="9" y1="3" x2="9" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <line x1="3" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Add case
+        </button>
+      </section>
+
+      <section class="panel-section">
         <h3>Material Properties</h3>
         <label>E (GPa)
           <input type="number" id="inputE" value="200" min="0" step="1">
@@ -222,6 +237,12 @@
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="chkLoads" checked onchange="draw()"> Show loads
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkColourByNature" onchange="draw()"> Colour loads by case
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="chkActiveCaseOnly" onchange="draw()"> Show active case only
         </label>
         <label class="checkbox-label">
           <input type="checkbox" id="chkReactions" checked onchange="draw()"> Show reactions

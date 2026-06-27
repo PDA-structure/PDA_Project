@@ -82,6 +82,14 @@
   --canvas-zero: #999999;
   --canvas-deflected: rgba(255, 152, 0, 0.7);
   --canvas-label-bg: rgba(255, 255, 255, 0.88);
+
+  /* Load-case nature palette (999.2 colour-by-nature). Categorical + muted —
+     must NOT collide with tension blue / compression red / reaction purple /
+     deflected orange. Each ships a dark value in [data-theme="dark"]. */
+  --canvas-nature-self:    #78909c;  /* Self weight — neutral slate (placeholder) */
+  --canvas-nature-dead:    #455a64;  /* Dead — strong blue-grey (default active) */
+  --canvas-nature-imposed: #b9770e;  /* Imposed — ochre/amber */
+  --canvas-nature-wind:    #1f8fb5;  /* Wind — teal/cyan */
 }
 
 /* ── @font-face: self-hosted Inter ─────────────────────────── */
@@ -576,6 +584,80 @@ td:first-child, td:nth-child(2) { text-align: center; }
 
 body.card-dragging canvas { pointer-events: none; }
 
+/* ── Load-Case panel (999.2 C1/C2) ───────────────────────────
+   Reuses existing spacing/border tokens — no new spacing tokens. Rows mirror
+   the .support-btn flex pattern. */
+.case-active-row { margin-bottom: var(--space-1); }
+#activeCaseSelect {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-fg);
+}
+.case-table { display: flex; flex-direction: column; gap: 3px; margin-bottom: 3px; }
+.case-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-alt);
+  font-size: var(--font-size-sm);
+}
+.case-row.active { border-color: var(--color-accent-bright); }
+.case-swatch {
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--color-border);
+}
+.case-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-fg);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  padding: 1px 3px;
+}
+.case-name:hover { border-color: var(--color-border-input); }
+.case-name:focus { border-color: var(--color-accent-bright); outline: none; background: var(--color-surface); }
+.case-nature, .case-category {
+  flex: 0 0 auto;
+  max-width: 88px;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-fg);
+  font-size: 10px;
+  font-family: inherit;
+  padding: 1px 2px;
+}
+.case-count { flex: 0 0 auto; font-size: 10px; color: var(--color-fg-subtle); white-space: nowrap; }
+.case-delete {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.case-delete:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
+.case-delete:focus-visible { outline: 2px solid var(--color-danger); outline-offset: 1px; }
+
 /* ── Dark theme overrides ──────────────────────────────────── */
 [data-theme="dark"] {
   --color-bg: #0D1117;
@@ -617,6 +699,12 @@ body.card-dragging canvas { pointer-events: none; }
   --canvas-zero: #6f747c;
   --canvas-deflected: rgba(255, 183, 77, 0.85);
   --canvas-label-bg: rgba(22, 26, 32, 0.88);
+
+  /* Load-case nature palette — dark overrides */
+  --canvas-nature-self:    #90a4ae;
+  --canvas-nature-dead:    #b0bec5;
+  --canvas-nature-imposed: #e0a93b;
+  --canvas-nature-wind:    #4db6d6;
 }
 
 /* Dark theme — results table accent overrides */

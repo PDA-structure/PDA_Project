@@ -1089,11 +1089,21 @@ function drawForceArrow(node, axis, forceValue, color, label, labelManager, isRe
 }
 
 function drawLoads(labelManager) {
+  // Colour-by-nature + show-active-only are gated behind Display checkboxes so a
+  // new glyph never "does nothing visible" (MEMORY feedback_check_render_toggle_first).
+  const colourByNature = document.getElementById('chkColourByNature')?.checked;
+  const activeOnly     = document.getElementById('chkActiveCaseOnly')?.checked;
   loads.forEach(l => {
+    if (activeOnly && l.caseId !== activeCaseId) return;
     const n = nodes.find(nd => nd.id === l.nodeId);
     if (!n) return;
     const label = (Math.abs(l.magnitude) / 1000).toFixed(1) + 'kN';
-    drawForceArrow(n, l.direction, l.magnitude, cssVar('--canvas-load'), label, labelManager, false);
+    let color = cssVar('--canvas-load');   // legacy green fallback when colour-by-nature OFF
+    if (colourByNature) {
+      const c = loadCases.find(x => x.id === l.caseId);
+      color = natureColor(c ? c.nature : 'Dead');
+    }
+    drawForceArrow(n, l.direction, l.magnitude, color, label, labelManager, false);
   });
 }
 
@@ -1869,6 +1879,182 @@ function renderResults(res) {
   document.getElementById('resultsPanel').style.display = 'block';
 }
 
+// ── Load-Case panel (Phase 999.2 Wave 3 — C1/C2) ────────────────────────────
+const NATURE_TOKEN = {
+  'Self weight': '--canvas-nature-self',
+  'Dead':        '--canvas-nature-dead',
+  'Imposed':     '--canvas-nature-imposed',
+  'Wind':        '--canvas-nature-wind',
+};
+
+// Resolve a case nature to its canvas-nature token colour; unknown natures fall
+// back to the legacy load green (T-9992-10 — unknown nature is a display key only).
+function natureColor(nature) {
+  const tok = NATURE_TOKEN[nature];
+  const v = tok ? cssVar(tok) : '';
+  return v || cssVar('--canvas-load');
+}
+
+function caseLoadCount(caseId) {
+  return loads.reduce((n, l) => n + (l.caseId === caseId ? 1 : 0), 0);
+}
+
+// Keep each case's `active` flag in sync with activeCaseId (the flag is persisted
+// in save/load; activeCaseId is the live source of truth).
+function syncActiveFlags() {
+  loadCases.forEach(c => { c.active = (c.id === activeCaseId); });
+}
+
+function addLoadCase() {
+  const c = { id: makeCaseId(), name: 'Case ' + (loadCases.length + 1), nature: 'Dead', active: true, category: null };
+  loadCases.push(c);
+  activeCaseId = c.id;
+  renderCaseTable();
+  draw();
+}
+
+function setActiveCase(id) {
+  if (!loadCases.some(c => c.id === id)) return;
+  activeCaseId = id;
+  renderCaseTable();
+  draw();
+}
+
+function renameCase(id, name) {
+  const c = loadCases.find(x => x.id === id);
+  if (c) c.name = name && name.trim() ? name.trim() : c.name;
+}
+
+function setCaseNature(id, nature) {
+  const c = loadCases.find(x => x.id === id);
+  if (!c) return;
+  c.nature = nature;
+  // Imposed cases carry a ψ0 category (engine, Plan 01); others clear it.
+  if (nature === 'Imposed') {
+    if (c.category == null) c.category = DEFAULT_IMPOSED_CATEGORY;
+  } else {
+    c.category = null;
+  }
+  renderCaseTable();
+  draw();
+}
+
+function setCaseCategory(id, category) {
+  const c = loadCases.find(x => x.id === id);
+  if (c && c.nature === 'Imposed') c.category = category;
+}
+
+function deleteCase(id) {
+  if (loadCases.length <= 1) { setStatus('At least one load case is required.', true); return; }
+  const c = loadCases.find(x => x.id === id);
+  if (!c) return;
+  const n = caseLoadCount(id);
+  const fallback = loadCases.find(x => x.id !== id && x.nature === 'Dead')
+                || loadCases.find(x => x.id !== id);
+  if (n > 0) {
+    // Destructive copy (UI-SPEC): never silently drop loads — offer reassign or delete.
+    if (!confirm("Case '" + c.name + "' has " + n + " load" + (n > 1 ? 's' : '') +
+                 ". Delete the case?\n\nOK to continue, Cancel to keep it.")) return;
+    const reassign = confirm("Reassign its " + n + " load" + (n > 1 ? 's' : '') +
+                 " to '" + fallback.name + "'?\n\nOK = move the loads.   Cancel = delete the loads too.");
+    if (reassign) loads.forEach(l => { if (l.caseId === id) l.caseId = fallback.id; });
+    else          loads = loads.filter(l => l.caseId !== id);
+  }
+  const wasActive = (activeCaseId === id);
+  loadCases = loadCases.filter(x => x.id !== id);
+  if (wasActive) activeCaseId = fallback.id;
+  ensureDefaultCase();
+  results = null;
+  renderCaseTable();
+  draw();
+}
+
+function renderCaseTable() {
+  syncActiveFlags();
+  const sel  = document.getElementById('activeCaseSelect');
+  const body = document.getElementById('caseTableBody');
+  if (!sel || !body) return;
+
+  // Active-case selector (C2)
+  sel.innerHTML = '';
+  loadCases.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + ' (' + c.nature + ')';
+    if (c.id === activeCaseId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.onchange = function () { setActiveCase(sel.value); };
+
+  // One row per case: [swatch] [name] [nature ▾] [category ▾ if imposed] [count] [✕]
+  body.innerHTML = '';
+  loadCases.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'case-row' + (c.id === activeCaseId ? ' active' : '');
+
+    const swatch = document.createElement('span');
+    swatch.className = 'case-swatch';
+    swatch.style.background = natureColor(c.nature);
+    row.appendChild(swatch);
+
+    const name = document.createElement('input');
+    name.className = 'case-name';
+    name.type = 'text';
+    name.value = c.name;
+    name.setAttribute('aria-label', 'Load case name');
+    name.addEventListener('change', function () { renameCase(c.id, name.value); renderCaseTable(); });
+    row.appendChild(name);
+
+    const nat = document.createElement('select');
+    nat.className = 'case-nature';
+    nat.setAttribute('aria-label', 'Load case nature');
+    // Render the 4 known natures plus any extra enum value already on the case
+    // (D-02 forward-extensible — new natures appear without code change).
+    const natureOpts = CASE_NATURES.slice();
+    if (natureOpts.indexOf(c.nature) === -1) natureOpts.push(c.nature);
+    natureOpts.forEach(nm => {
+      const o = document.createElement('option');
+      o.value = nm; o.textContent = nm;
+      if (nm === c.nature) o.selected = true;
+      nat.appendChild(o);
+    });
+    nat.addEventListener('change', function () { setCaseNature(c.id, nat.value); });
+    row.appendChild(nat);
+
+    // Imposed-only ψ0 category selector
+    if (c.nature === 'Imposed') {
+      const cat = document.createElement('select');
+      cat.className = 'case-category';
+      cat.setAttribute('aria-label', 'Imposed category');
+      IMPOSED_CATEGORIES.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.value; opt.textContent = o.label;
+        if (o.value === (c.category || DEFAULT_IMPOSED_CATEGORY)) opt.selected = true;
+        cat.appendChild(opt);
+      });
+      cat.addEventListener('change', function () { setCaseCategory(c.id, cat.value); });
+      row.appendChild(cat);
+    }
+
+    const count = document.createElement('span');
+    count.className = 'case-count';
+    const n = caseLoadCount(c.id);
+    count.textContent = n + ' load' + (n === 1 ? '' : 's');
+    row.appendChild(count);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'case-delete';
+    del.textContent = '✕';
+    del.title = 'Delete case';
+    del.setAttribute('aria-label', 'Delete load case ' + c.name);
+    del.addEventListener('click', function () { deleteCase(c.id); });
+    row.appendChild(del);
+
+    body.appendChild(row);
+  });
+}
+
 // -- Floating panels (port of frame2d i52) -----------------------------------------
 let _floatZIndex = 100;  // monotonic counter for D-7 bring-to-top
 
@@ -1901,6 +2087,7 @@ function setupCardFloat() {
     btn.type = 'button';
     btn.className = 'card-float-btn';
     btn.title = 'Float panel';
+    btn.setAttribute('aria-label', 'Float panel');  // glyph-only button (UI-SPEC A11y)
     btn.textContent = '↗';  // ↗
     btn.addEventListener('click', function () {
       if (section.dataset.state === 'docked') floatCard(section);
@@ -1929,6 +2116,7 @@ function floatCard(section) {
   if (btn) {
     btn.textContent = '↙';  // ↙
     btn.title = 'Dock to toolbar';
+    btn.setAttribute('aria-label', 'Dock panel to toolbar');
   }
 
   const h3 = section.querySelector('h3');
@@ -1978,6 +2166,7 @@ function dockCard(section) {
   if (btn) {
     btn.textContent = '↗';  // ↗
     btn.title = 'Float panel';
+    btn.setAttribute('aria-label', 'Float panel');
   }
 
   const h3 = section.querySelector('h3');
