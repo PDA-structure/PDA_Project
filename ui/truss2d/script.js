@@ -1425,6 +1425,7 @@ document.addEventListener('click', function(e) {
 function exportAnalysis(mode) {
   if (!results) return;
   mode = mode || 'presentation';
+  var LOAD_COMBINATION = 'as-modelled — ULS factored by user (single case)';
   var E_GPa = parseFloat(document.getElementById('inputE').value);
   var A_cm2 = parseFloat(document.getElementById('inputA').value);
 
@@ -1438,13 +1439,17 @@ function exportAnalysis(mode) {
       var n2 = nodes.find(function (n) { return n.id === m.end; });
       var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
       var stress = results.meta && results.meta.member_stresses ? results.meta.member_stresses[idx] : null;
+      var effA_cm2 = (m && m.A_override != null) ? m.A_override : A_cm2;
       rows.push({
         member: idx + 1,
         nodes: [m.start + 1, m.end + 1],
         length_m: parseFloat(L.toFixed(4)),
         force_kN: parseFloat((f / 1000).toFixed(3)),
         force_N: f,
-        stress_MPa: stress !== null ? parseFloat((stress / 1e6).toFixed(2)) : null
+        stress_MPa: stress !== null ? parseFloat((stress / 1e6).toFixed(2)) : null,
+        A_cm2: parseFloat(effA_cm2.toFixed(4)),
+        A_mm2: parseFloat((effA_cm2 * 100).toFixed(2)),
+        sense: f > 0 ? 'T' : 'C'
       });
     });
     rows.sort(function (a, b) { return Math.abs(b.force_N) - Math.abs(a.force_N); });
@@ -1536,9 +1541,10 @@ function exportAnalysis(mode) {
   draw();
 
   var pkg = {
-    schema_version: '1.0',
+    schema_version: '1.1',
     type: 'truss2d-analysis',
     timestamp: now.toISOString(),
+    load_combination: LOAD_COMBINATION,
     canvas_image: canvasImage,
     metadata: {
       solver: 'truss2d',
@@ -1556,7 +1562,14 @@ function exportAnalysis(mode) {
       var n1 = nodes.find(function (n) { return n.id === m.start; });
       var n2 = nodes.find(function (n) { return n.id === m.end; });
       var L = (n1 && n2) ? Math.hypot(n2.realX - n1.realX, n2.realY - n1.realY) : 0;
-      return { member: i + 1, nodes: [m.start + 1, m.end + 1], length_m: parseFloat(L.toFixed(4)) };
+      var mEffA_cm2 = (m.A_override != null) ? m.A_override : A_cm2;
+      return {
+        member: i + 1,
+        nodes: [m.start + 1, m.end + 1],
+        length_m: parseFloat(L.toFixed(4)),
+        A_cm2: parseFloat(mEffA_cm2.toFixed(4)),
+        A_mm2: parseFloat((mEffA_cm2 * 100).toFixed(2))
+      };
     }),
     tension_members: tensionMembers,
     compression_members: compressionMembers,
